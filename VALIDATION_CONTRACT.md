@@ -1,0 +1,59 @@
+# Frontend ⇄ Backend Validation Contract
+
+The frontend and backend validate the **same rules** for every request body.
+When you change a rule on one side, you **must** change it on the other.
+
+| Where | File |
+|---|---|
+| Frontend (Yup) | `frontend/src/utils/validators.ts` |
+| Backend (Joi) | `backend/src/validations/schemas.ts` |
+| Backend wiring | `backend/src/middleware/validate.ts` + each `*.routes.ts` |
+
+The backend `validate()` middleware runs Joi with `stripUnknown: true`
+(extra fields are dropped, not rejected) and `abortEarly: false`
+(all errors returned at once).
+
+## Rules (kept identical on both sides)
+
+### Password (signup, reset, change)
+- Minimum 8 characters
+- At least one capital letter
+- At least one number
+- At least one special symbol
+- (Login only checks presence, no complexity.)
+
+### Phone (optional everywhere)
+- Optional — may be blank
+- If provided: must start with a country code `+` and contain at least 10 digits
+- Example: `+91 9876543210`
+
+### Signup — mandatory vs optional
+- **Mandatory:** name (min 2), email, password, confirm password (must match)
+- **Optional:** phone, department, designation
+
+### Project create
+- **Required:** name (min 2), clientName, status, priority, technologies (≥1), startDate
+- **Optional:** clientLocation, clientWhatsapp, clientGmail (valid email), description,
+  tags, repositoryUrls[], liveUrls[], endDate, deadline, budget, teamMemberIds
+- Project **update** makes the required fields optional (partial update).
+
+### Weekly update create
+- **Required:** weekNumber (1–53), year (2020–2100), progressSummary (min 10),
+  healthStatus, completionPercentage (0–100)
+- **Optional:** completedTasks[], plannedTasks[], blockers, milestones, hoursLogged (0–168)
+
+### Edit request
+- **Required:** reason (min 10), duration
+- **Optional:** comments
+
+## Data model fields
+
+These project fields are collected in the UI, validated on both sides, **and**
+persisted in the database (`backend/prisma/schema.prisma` → `Project`):
+`clientLocation`, `clientWhatsapp`, `clientGmail`, `repositoryUrls[]`, `liveUrls[]`.
+
+> If you add a new field to a form, add it in all four places:
+> 1. Frontend type + Yup schema
+> 2. Backend Joi schema
+> 3. Backend controller (read + persist)
+> 4. Prisma schema (then run `npx prisma db push`)

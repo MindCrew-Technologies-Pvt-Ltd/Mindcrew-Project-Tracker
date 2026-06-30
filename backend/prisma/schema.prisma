@@ -84,21 +84,26 @@ model User {
 }
 
 model Project {
-  id           String        @id @default(cuid())
-  name         String
-  clientName   String?
-  description  String?
-  status       ProjectStatus @default(DRAFT)
-  priority     Priority      @default(MEDIUM)
-  technologies String[]
-  tags         String[]
-  startDate    DateTime?
-  endDate      DateTime?
-  deadline     DateTime?
-  budget       Float?
-  ownerId      String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  name           String
+  clientName     String?
+  clientLocation String?
+  clientWhatsapp String?
+  clientGmail    String?
+  description    String?
+  status         ProjectStatus @default(DRAFT)
+  priority       Priority      @default(MEDIUM)
+  technologies   String[]
+  tags           String[]
+  repositoryUrls String[]
+  liveUrls       String[]
+  startDate      DateTime?
+  endDate        DateTime?
+  deadline       DateTime?
+  budget         Float?
+  ownerId        String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   owner         User            @relation("owner", fields: [ownerId], references: [id])
   teamMembers   ProjectMember[]

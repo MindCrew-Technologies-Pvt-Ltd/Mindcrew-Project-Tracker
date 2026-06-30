@@ -4,13 +4,15 @@ import { getUsers, getUser, updateUser, deactivateUser, resetUserPassword } from
 import { getEditRequests, getEditRequest, approveEditRequest, rejectEditRequest } from '../controllers/editRequests.controller';
 import { generateReport, exportReport } from '../controllers/reports.controller';
 import { getActivityLogs } from '../controllers/activityLogs.controller';
+import { validate } from '../middleware/validate';
+import { updateUserSchema } from '../validations/schemas';
 
 const router = Router();
 router.use(authenticate, requireAdmin);
 
 router.get('/users', getUsers);
 router.get('/users/:id', getUser);
-router.put('/users/:id', updateUser);
+router.put('/users/:id', validate(updateUserSchema), updateUser);
 router.put('/users/:id/deactivate', deactivateUser);
 router.put('/users/:id/reset-password', resetUserPassword);
 

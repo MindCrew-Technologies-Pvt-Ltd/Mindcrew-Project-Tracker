@@ -55,9 +55,9 @@ export const getProject: RequestHandler = async (req, res, next) => {
 
 export const createProject: RequestHandler = async (req, res, next) => {
   try {
-    const { name, clientName, description, status, priority, technologies, tags, startDate, endDate, deadline, budget, teamMemberIds } = req.body;
+    const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, startDate, endDate, deadline, budget, teamMemberIds } = req.body;
     const project = await prisma.project.create({
-      data: { name, clientName, description, status, priority, technologies: technologies ?? [], tags: tags ?? [], startDate: startDate ? new Date(startDate) : undefined, endDate: endDate ? new Date(endDate) : undefined, deadline: deadline ? new Date(deadline) : undefined, budget, ownerId: req.user!.id, teamMembers: Array.isArray(teamMemberIds) && teamMemberIds.length ? { create: teamMemberIds.map((uid: string) => ({ userId: uid })) } : undefined },
+      data: { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies: technologies ?? [], tags: tags ?? [], repositoryUrls: repositoryUrls ?? [], liveUrls: liveUrls ?? [], startDate: startDate ? new Date(startDate) : undefined, endDate: endDate ? new Date(endDate) : undefined, deadline: deadline ? new Date(deadline) : undefined, budget, ownerId: req.user!.id, teamMembers: Array.isArray(teamMemberIds) && teamMemberIds.length ? { create: teamMemberIds.map((uid: string) => ({ userId: uid })) } : undefined },
       include: { owner: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } } },
     });
     await logActivity({ userId: req.user!.id, action: 'CREATE', module: 'PROJECT', description: `Created project "${project.name}"` });
@@ -76,10 +76,10 @@ export const updateProject: RequestHandler = async (req, res, next) => {
       const approved = await prisma.editRequest.findFirst({ where: { projectId: id, requestedById: req.user!.id, status: 'APPROVED', expiresAt: { gt: new Date() } } });
       if (!approved) return next(new AppError('No permission to update this project', 403));
     }
-    const { name, clientName, description, status, priority, technologies, tags, startDate, endDate, deadline, budget } = req.body;
+    const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, startDate, endDate, deadline, budget } = req.body;
     const updated = await prisma.project.update({
       where: { id },
-      data: { ...(name !== undefined && { name }), ...(clientName !== undefined && { clientName }), ...(description !== undefined && { description }), ...(status !== undefined && { status }), ...(priority !== undefined && { priority }), ...(technologies !== undefined && { technologies }), ...(tags !== undefined && { tags }), ...(startDate !== undefined && { startDate: new Date(startDate) }), ...(endDate !== undefined && { endDate: new Date(endDate) }), ...(deadline !== undefined && { deadline: new Date(deadline) }), ...(budget !== undefined && { budget }) },
+      data: { ...(name !== undefined && { name }), ...(clientName !== undefined && { clientName }), ...(clientLocation !== undefined && { clientLocation }), ...(clientWhatsapp !== undefined && { clientWhatsapp }), ...(clientGmail !== undefined && { clientGmail }), ...(description !== undefined && { description }), ...(status !== undefined && { status }), ...(priority !== undefined && { priority }), ...(technologies !== undefined && { technologies }), ...(tags !== undefined && { tags }), ...(repositoryUrls !== undefined && { repositoryUrls }), ...(liveUrls !== undefined && { liveUrls }), ...(startDate !== undefined && { startDate: new Date(startDate) }), ...(endDate !== undefined && { endDate: new Date(endDate) }), ...(deadline !== undefined && { deadline: new Date(deadline) }), ...(budget !== undefined && { budget }) },
       include: { owner: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } } },
     });
     await logActivity({ userId: req.user!.id, action: 'UPDATE', module: 'PROJECT', description: `Updated project "${updated.name}"` });
