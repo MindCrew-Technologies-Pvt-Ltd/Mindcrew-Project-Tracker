@@ -2,10 +2,9 @@ import * as yup from 'yup';
 
 const passwordRules = yup.string()
   .min(8, 'Minimum 8 characters')
-  .matches(/[A-Z]/, 'Must contain uppercase')
-  .matches(/[a-z]/, 'Must contain lowercase')
-  .matches(/[0-9]/, 'Must contain a number')
-  .matches(/[^A-Za-z0-9]/, 'Must contain a special character')
+  .matches(/[A-Z]/, 'Must contain one capital letter')
+  .matches(/[0-9]/, 'Must contain one number')
+  .matches(/[^A-Za-z0-9]/, 'Must contain one special symbol')
   .required('Password is required');
 
 export const loginSchema = yup.object({
@@ -14,12 +13,21 @@ export const loginSchema = yup.object({
   rememberMe: yup.boolean(),
 });
 
+const optionalPhone = yup.string()
+  .transform((value, original) => (original === '' ? undefined : value))
+  .test('phone-format', 'Enter a valid phone with country code, e.g. +91 9876543210', (value) => {
+    if (!value) return true; // optional — empty is fine
+    if (!value.trim().startsWith('+')) return false; // must include country code
+    return value.replace(/\D/g, '').length >= 10; // at least 10 digits
+  })
+  .optional();
+
 export const signupSchema = yup.object({
-  name: yup.string().min(2).required('Full name is required'),
+  name: yup.string().min(2, 'Name must be at least 2 characters').required('Full name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
-  phone: yup.string().min(7).required('Phone is required'),
-  department: yup.string().required('Department is required'),
-  designation: yup.string().required('Designation is required'),
+  phone: optionalPhone,
+  department: yup.string().optional(),
+  designation: yup.string().optional(),
   password: passwordRules,
   confirmPassword: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
 });

@@ -117,7 +117,15 @@ const authSlice = createSlice({
       })
       .addCase(loginThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
       .addCase(signupThunk.pending, (state) => { state.loading = true; state.error = null; })
-      .addCase(signupThunk.fulfilled, (state) => { state.loading = false; })
+      .addCase(signupThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.initializing = false;
+        state.user = action.payload.data.user;
+        state.accessToken = action.payload.data.accessToken;
+        state.isAuthenticated = true;
+        localStorage.setItem('accessToken', action.payload.data.accessToken);
+        if (action.payload.data.refreshToken) localStorage.setItem('refreshToken', action.payload.data.refreshToken);
+      })
       .addCase(signupThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
       .addCase(fetchMeThunk.pending, (state) => { state.loading = false; })
       .addCase(fetchMeThunk.fulfilled, (state, action) => { state.loading = false; state.initializing = false; state.user = action.payload; })

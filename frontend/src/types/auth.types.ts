@@ -7,9 +7,9 @@ export interface LoginPayload {
 export interface SignupPayload {
   name: string;
   email: string;
-  phone: string;
-  department: string;
-  designation: string;
+  phone?: string;
+  department?: string;
+  designation?: string;
   password: string;
   confirmPassword: string;
 }

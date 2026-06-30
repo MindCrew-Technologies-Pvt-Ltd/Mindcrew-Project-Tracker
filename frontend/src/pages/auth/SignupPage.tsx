@@ -10,7 +10,7 @@ import { signupThunk, clearError } from '../../store/slices/authSlice';
 import { signupSchema } from '../../utils/validators';
 import { ROUTES } from '../../constants/routes';
 
-interface FormData { name: string; email: string; phone: string; department: string; designation: string; password: string; confirmPassword: string; }
+interface FormData { name: string; email: string; phone?: string; department?: string; designation?: string; password: string; confirmPassword: string; }
 
 const SignupPage = () => {
   const dispatch = useAppDispatch();
@@ -20,22 +20,32 @@ const SignupPage = () => {
   const [success, setSuccess] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: yupResolver(signupSchema),
+    resolver: yupResolver(signupSchema) as any,
   });
 
   const onSubmit = async (data: FormData) => {
     dispatch(clearError());
-    const result = await dispatch(signupThunk(data));
+    // Only send optional fields when actually filled in
+    const payload = {
+      name: data.name.trim(),
+      email: data.email.trim(),
+      password: data.password,
+      confirmPassword: data.confirmPassword,
+      ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
+      ...(data.department?.trim() ? { department: data.department.trim() } : {}),
+      ...(data.designation?.trim() ? { designation: data.designation.trim() } : {}),
+    };
+    const result = await dispatch(signupThunk(payload));
     if (signupThunk.fulfilled.match(result)) {
       setSuccess(true);
-      setTimeout(() => navigate(ROUTES.LOGIN), 2000);
+      navigate(ROUTES.DASHBOARD, { replace: true });
     }
   };
 
   if (success) {
     return (
       <Box>
-        <Alert severity="success">Account created successfully! Redirecting to login...</Alert>
+        <Alert severity="success">Account created! Taking you to your dashboard...</Alert>
       </Box>
     );
   }
@@ -49,14 +59,14 @@ const SignupPage = () => {
 
       <TextField label="Full Name" fullWidth margin="normal" autoFocus error={!!errors.name} helperText={errors.name?.message} {...register('name')} />
       <TextField label="Email Address" fullWidth margin="normal" autoComplete="email" error={!!errors.email} helperText={errors.email?.message} {...register('email')} />
-      <TextField label="Phone Number" fullWidth margin="normal" error={!!errors.phone} helperText={errors.phone?.message} {...register('phone')} />
+      <TextField label="Phone Number (optional)" fullWidth margin="normal" placeholder="+91 9876543210" error={!!errors.phone} helperText={errors.phone?.message || 'Include country code, at least 10 digits'} {...register('phone')} />
 
       <Grid container spacing={2} sx={{ mt: 0 }}>
         <Grid item xs={12} sm={6}>
-          <TextField label="Department" fullWidth margin="normal" error={!!errors.department} helperText={errors.department?.message} {...register('department')} />
+          <TextField label="Department (optional)" fullWidth margin="normal" error={!!errors.department} helperText={errors.department?.message} {...register('department')} />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField label="Designation" fullWidth margin="normal" error={!!errors.designation} helperText={errors.designation?.message} {...register('designation')} />
+          <TextField label="Designation (optional)" fullWidth margin="normal" error={!!errors.designation} helperText={errors.designation?.message} {...register('designation')} />
         </Grid>
       </Grid>
 
