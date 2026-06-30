@@ -1,0 +1,211 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum HealthStatus {
+  ON_TRACK
+  AT_RISK
+  DELAYED
+}
+
+enum DocumentCategory {
+  PROPOSAL
+  TECHNICAL
+  DESIGN
+  CONTRACT
+  REPORT
+  OTHER
+}
+
+enum NotificationType {
+  EDIT_REQUEST_UPDATE
+  PROJECT_UPDATE
+  WEEKLY_UPDATE_REMINDER
+  SYSTEM
+}
+
+enum EditRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
+  passwordHash        String
+  phone               String?
+  department          String?
+  designation         String?
+  role                Role      @default(EMPLOYEE)
+  isActive            Boolean   @default(true)
+  fcmToken            String?
+  lastLoginAt         DateTime?
+  passwordResetToken  String?
+  passwordResetExpiry DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  ownedProjects    Project[]       @relation("owner")
+  projectMembers   ProjectMember[]
+  weeklyUpdates    WeeklyUpdate[]
+  documents        Document[]
+  notifications    Notification[]
+  editRequests     EditRequest[]   @relation("requester")
+  reviewedRequests EditRequest[]   @relation("reviewer")
+  activityLogs     ActivityLog[]
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  name         String
+  clientName   String?
+  description  String?
+  status       ProjectStatus @default(DRAFT)
+  priority     Priority      @default(MEDIUM)
+  technologies String[]
+  tags         String[]
+  startDate    DateTime?
+  endDate      DateTime?
+  deadline     DateTime?
+  budget       Float?
+  ownerId      String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  owner         User            @relation("owner", fields: [ownerId], references: [id])
+  teamMembers   ProjectMember[]
+  weeklyUpdates WeeklyUpdate[]
+  documents     Document[]
+  editRequests  EditRequest[]
+  notifications Notification[]
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      String   @default("MEMBER")
+  joinedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model WeeklyUpdate {
+  id                   String       @id @default(cuid())
+  projectId            String
+  authorId             String
+  weekNumber           Int
+  year                 Int
+  progressSummary      String
+  completedTasks       String[]
+  plannedTasks         String[]
+  blockers             String?
+  milestones           String?
+  healthStatus         HealthStatus @default(ON_TRACK)
+  completionPercentage Int          @default(0)
+  hoursLogged          Float?
+  attachments          String[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id])
+
+  @@unique([projectId, weekNumber, year])
+}
+
+model Document {
+  id           String           @id @default(cuid())
+  projectId    String
+  uploadedById String
+  fileName     String
+  fileUrl      String
+  fileType     String
+  fileSize     Int?
+  category     DocumentCategory @default(OTHER)
+  description  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation(fields: [uploadedById], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  projectId String?
+  relatedId String?
+  createdAt DateTime         @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
+model EditRequest {
+  id            String            @id @default(cuid())
+  projectId     String
+  requestedById String
+  reason        String
+  duration      String
+  comments      String?
+  status        EditRequestStatus @default(PENDING)
+  reviewedById  String?
+  reviewerNotes String?
+  expiresAt     DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedBy User    @relation("requester", fields: [requestedById], references: [id])
+  reviewedBy  User?   @relation("reviewer", fields: [reviewedById], references: [id])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  module      String
+  description String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
