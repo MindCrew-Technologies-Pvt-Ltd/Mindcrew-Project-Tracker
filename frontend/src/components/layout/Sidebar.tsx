@@ -69,7 +69,7 @@ interface ContentProps { onClose?: () => void; collapsed: boolean; onToggleColla
 const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) => {
   const { isAdmin } = useAuth();
 
-  const NavItem = ({ item }: { item: typeof employeeNav[0] }) => {
+  const NavItem = ({ item }: { item: { label: string; icon: React.ReactNode; to: string } }) => {
     const btn = (
       <ListItemButton
         component={NavLink}

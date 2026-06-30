@@ -2,7 +2,7 @@ import { AppBar, Toolbar, IconButton, Typography, Box, Avatar, Menu, MenuItem, D
 import { Menu as MenuIcon, AccountCircle as AccountCircleIcon, Logout as LogoutIcon, Lock as LockIcon } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DRAWER_WIDTH } from './Sidebar';
+import { } from './Sidebar';
 import NotificationBell from '../common/NotificationBell';
 import { useAuth } from '../../hooks/useAuth';
 import { useAppDispatch } from '../../hooks/useAppDispatch';

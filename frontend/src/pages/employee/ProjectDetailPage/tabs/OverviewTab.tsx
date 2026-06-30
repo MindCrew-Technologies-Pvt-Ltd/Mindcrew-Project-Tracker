@@ -45,16 +45,16 @@ const OverviewTab = ({ project }: Props) => (
               <Typography variant="body2" fontWeight={500}>{value || '–'}</Typography>
             </Box>
           ))}
-          {project.repositoryUrl && (
-            <Link href={project.repositoryUrl} target="_blank" rel="noopener" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-              <GitHubIcon fontSize="small" /> Repository
+          {(project.repositoryUrls || []).map((url, i) => (
+            <Link key={i} href={url} target="_blank" rel="noopener" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+              <GitHubIcon fontSize="small" /> Repository {(project.repositoryUrls?.length ?? 0) > 1 ? i + 1 : ''}
             </Link>
-          )}
-          {project.liveUrl && (
-            <Link href={project.liveUrl} target="_blank" rel="noopener" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-              <OpenInNewIcon fontSize="small" /> Live URL
+          ))}
+          {(project.liveUrls || []).map((url, i) => (
+            <Link key={i} href={url} target="_blank" rel="noopener" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+              <OpenInNewIcon fontSize="small" /> Live URL {(project.liveUrls?.length ?? 0) > 1 ? i + 1 : ''}
             </Link>
-          )}
+          ))}
         </CardContent>
       </Card>
       <Card>

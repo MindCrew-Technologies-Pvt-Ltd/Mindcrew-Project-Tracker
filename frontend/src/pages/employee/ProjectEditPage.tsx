@@ -30,7 +30,7 @@ const ProjectEditPage = () => {
       name: project.name, clientName: project.clientName, description: project.description,
       startDate: project.startDate?.slice(0, 10), endDate: (project.endDate || project.deadline)?.slice(0, 10),
       status: project.status, priority: project.priority, technologies: project.technologies,
-      tags: project.tags, repositoryUrl: project.repositoryUrl, liveUrl: project.liveUrl,
+      tags: project.tags, repositoryUrls: project.repositoryUrls || [], liveUrls: project.liveUrls || [],
     });
   }, [project, reset]);
 
@@ -100,8 +100,8 @@ const ProjectEditPage = () => {
                       )} />
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12} sm={6}><TextField label="Repository URL" fullWidth {...register('repositoryUrl')} /></Grid>
-                  <Grid item xs={12} sm={6}><TextField label="Live URL" fullWidth {...register('liveUrl')} /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Repository URL" fullWidth {...register('repositoryUrls.0')} /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Live URL" fullWidth {...register('liveUrls.0')} /></Grid>
                 </Grid>
               </CardContent>
             </Card>
