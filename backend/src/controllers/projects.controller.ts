@@ -49,6 +49,14 @@ export const getProject: RequestHandler = async (req, res, next) => {
       include: { owner: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } }, weeklyUpdates: { orderBy: { createdAt: 'desc' }, take: 1 }, _count: { select: { documents: true, editRequests: true } } },
     });
     if (!project) return next(new AppError('Project not found', 404));
+
+    // Non-admins may only view projects they own or are a team member of.
+    // Return 404 (not 403) so we don't reveal that the project exists.
+    const isAdmin = req.user?.role === 'ADMIN';
+    const isOwner = project.ownerId === req.user!.id;
+    const isMember = project.teamMembers.some((m) => m.userId === req.user!.id);
+    if (!isAdmin && !isOwner && !isMember) return next(new AppError('Project not found', 404));
+
     success(res, project);
   } catch (err) { next(err); }
 };

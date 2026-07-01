@@ -5,6 +5,7 @@ import { logActivity } from '../utils/activityLogger';
 import { createNotification } from '../utils/notifications';
 import { getPaginationParams } from '../utils/pagination';
 import { AppError } from '../middleware/errorHandler';
+import { assertProjectAccess } from '../utils/projectAccess';
 
 const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 
@@ -12,6 +13,7 @@ export const getWeeklyUpdates: RequestHandler = async (req, res, next) => {
   try {
     const { skip, take, page, pageSize } = getPaginationParams(req.query as Record<string, unknown>);
     const projectId = sp(req.params.projectId);
+    await assertProjectAccess(projectId, req.user!);
     const [items, total] = await Promise.all([
       prisma.weeklyUpdate.findMany({ where: { projectId }, skip, take, orderBy: [{ year: 'desc' }, { weekNumber: 'desc' }], include: { author: { select: { id: true, name: true, email: true } } } }),
       prisma.weeklyUpdate.count({ where: { projectId } }),
@@ -32,6 +34,7 @@ export const getWeeklyUpdate: RequestHandler = async (req, res, next) => {
 export const createWeeklyUpdate: RequestHandler = async (req, res, next) => {
   try {
     const projectId = sp(req.params.projectId);
+    await assertProjectAccess(projectId, req.user!);
     const { weekNumber, year, progressSummary, completedTasks, plannedTasks, blockers, milestones, healthStatus, completionPercentage, hoursLogged } = req.body;
     const update = await prisma.weeklyUpdate.create({
       data: { projectId, authorId: req.user!.id, weekNumber, year, progressSummary, completedTasks: completedTasks ?? [], plannedTasks: plannedTasks ?? [], blockers, milestones, healthStatus, completionPercentage: completionPercentage ?? 0, hoursLogged, attachments: [] },

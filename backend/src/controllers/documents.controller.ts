@@ -4,12 +4,14 @@ import { upload } from '../config/cloudinary';
 import { success, error } from '../utils/response';
 import { logActivity } from '../utils/activityLogger';
 import { AppError } from '../middleware/errorHandler';
+import { assertProjectAccess } from '../utils/projectAccess';
 import { DocumentCategory } from '@prisma/client';
 
 const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 
 export const getDocuments: RequestHandler = async (req, res, next) => {
   try {
+    await assertProjectAccess(sp(req.params.projectId), req.user!);
     const where: Record<string, unknown> = { projectId: sp(req.params.projectId) };
     const cat = req.query.category;
     if (cat && typeof cat === 'string') where.category = cat as DocumentCategory;
@@ -22,8 +24,7 @@ export const uploadDocument: RequestHandler = async (req, res, next) => {
   try {
     if (!req.file) { error(res, 'No file provided', 400); return; }
     const projectId = sp(req.params.projectId);
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) return next(new AppError('Project not found', 404));
+    await assertProjectAccess(projectId, req.user!);
     const { category, description } = req.body;
     const result = await upload(req.file.buffer, 'project-docs', `${projectId}-${Date.now()}`);
     const doc = await prisma.document.create({
