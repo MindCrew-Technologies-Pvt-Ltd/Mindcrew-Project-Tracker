@@ -82,7 +82,7 @@ const ProjectDetailPage = () => {
         <PriorityChip priority={project.priority} />
         <Typography variant="body2" color="text.secondary">Client: <strong>{project.clientName}</strong></Typography>
         <Typography variant="body2" color="text.secondary">·</Typography>
-        <Typography variant="body2" color="text.secondary">{formatDate(project.startDate)} – {formatDate(project.endDate || project.deadline || '')}</Typography>
+        <Typography variant="body2" color="text.secondary">{formatDate(project.startDate)} – {formatDate(project.endDate || project.deadline) || 'Ongoing'}</Typography>
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>

@@ -25,7 +25,7 @@ const ProjectCard = ({ project }: Props) => {
           <PersonIcon sx={{ fontSize: 14 }} /> {project.clientName}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-          <CalendarTodayIcon sx={{ fontSize: 14 }} /> {formatDate(project.startDate)} – {formatDate(project.endDate || project.deadline || '')}
+          <CalendarTodayIcon sx={{ fontSize: 14 }} /> {formatDate(project.startDate)} – {formatDate(project.endDate || project.deadline) || 'Ongoing'}
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {project.technologies.slice(0, 3).map((t) => <Chip key={t} label={t} size="small" variant="outlined" />)}

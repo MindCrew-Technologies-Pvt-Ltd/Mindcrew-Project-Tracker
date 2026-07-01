@@ -1,7 +1,15 @@
 import dayjs from 'dayjs';
 
-export const formatDate = (date: string) => dayjs(date).format('MMM DD, YYYY');
-export const formatDateTime = (date: string) => dayjs(date).format('MMM DD, YYYY HH:mm');
+export const formatDate = (date?: string | null) => {
+  if (!date) return '';
+  const d = dayjs(date);
+  return d.isValid() ? d.format('MMM DD, YYYY') : '';
+};
+export const formatDateTime = (date?: string | null) => {
+  if (!date) return '';
+  const d = dayjs(date);
+  return d.isValid() ? d.format('MMM DD, YYYY HH:mm') : '';
+};
 export const formatRelative = (date: string) => {
   const diff = dayjs().diff(dayjs(date), 'day');
   if (diff === 0) return 'Today';

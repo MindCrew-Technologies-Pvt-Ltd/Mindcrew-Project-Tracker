@@ -36,7 +36,7 @@ const OverviewTab = ({ project }: Props) => (
           <Typography variant="subtitle1" fontWeight={600} mb={2}>Project Details</Typography>
           {[
             { label: 'Start Date', value: formatDate(project.startDate) },
-            { label: 'End Date', value: formatDate(project.endDate || project.deadline || '') },
+            { label: 'End Date', value: formatDate(project.endDate || project.deadline) || 'Ongoing' },
             { label: 'Owner', value: project.owner?.name },
             { label: 'Created', value: formatDate(project.createdAt) },
           ].map(({ label, value }) => (
