@@ -56,4 +56,17 @@ persisted in the database (`backend/prisma/schema.prisma` → `Project`):
 > 1. Frontend type + Yup schema
 > 2. Backend Joi schema
 > 3. Backend controller (read + persist)
-> 4. Prisma schema (then run `npx prisma db push`)
+> 4. Prisma schema
+
+## Database stays in sync automatically
+
+The backend `start` script runs `prisma db push` before booting the server
+(`backend/package.json`). So **every deploy syncs the database to the Prisma
+schema automatically** — you never need to run a manual DB command after a
+schema change.
+
+- **Additive changes** (new columns/tables) apply automatically on deploy.
+- **Destructive changes** (removing/narrowing a column) intentionally make the
+  deploy **fail** instead of silently dropping data. If that happens, review the
+  change and run `prisma db push --accept-data-loss` manually in the backend
+  console once you've confirmed the data loss is intended.
