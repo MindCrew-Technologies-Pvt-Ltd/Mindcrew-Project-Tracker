@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Grid, TextField, Button, MenuItem, Select, FormControl, InputLabel, Chip, OutlinedInput, Typography, Alert, CircularProgress, Card, CardContent } from '@mui/material';
+import { Box, Grid, TextField, Button, MenuItem, Select, FormControl, InputLabel, Chip, Typography, Alert, CircularProgress, Card, CardContent, Autocomplete } from '@mui/material';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProjectByIdThunk, updateProjectThunk } from '../../store/slices/projectsSlice';
@@ -21,6 +21,7 @@ const ProjectEditPage = () => {
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<CreateProjectPayload>({
     resolver: yupResolver(projectSchema) as any,
+    defaultValues: { technologies: [], tags: [], repositoryUrls: [], liveUrls: [] },
   });
 
   useEffect(() => { if (id) dispatch(fetchProjectByIdThunk(id)); }, [id, dispatch]);
@@ -79,26 +80,26 @@ const ProjectEditPage = () => {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12}>
-                    <FormControl fullWidth><InputLabel>Technology Stack</InputLabel>
-                      <Controller name="technologies" control={control} render={({ field }) => (
-                        <Select {...field} multiple label="Technology Stack" input={<OutlinedInput label="Technology Stack" />}
-                          renderValue={(selected) => <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>{(selected as string[]).map(v => <Chip key={v} label={v} size="small" />)}</Box>}
-                        >
-                          {TECHNOLOGY_OPTIONS.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                        </Select>
-                      )} />
-                    </FormControl>
+                    <Controller name="technologies" control={control} render={({ field }) => (
+                      <Autocomplete
+                        multiple freeSolo options={TECHNOLOGY_OPTIONS}
+                        value={(field.value as string[]) || []}
+                        onChange={(_, value) => field.onChange(value)}
+                        renderTags={(value, getTagProps) => value.map((option, index) => <Chip label={option} size="small" {...getTagProps({ index })} key={option} />)}
+                        renderInput={(params) => <TextField {...params} label="Technology Stack" placeholder="Select or type to add" error={!!errors.technologies} helperText={errors.technologies ? String(errors.technologies.message) : 'Press Enter to add custom technology'} />}
+                      />
+                    )} />
                   </Grid>
                   <Grid item xs={12}>
-                    <FormControl fullWidth><InputLabel>Tags</InputLabel>
-                      <Controller name="tags" control={control} render={({ field }) => (
-                        <Select {...field} multiple label="Tags" input={<OutlinedInput label="Tags" />}
-                          renderValue={(selected) => <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>{(selected as string[]).map(v => <Chip key={v} label={v} size="small" />)}</Box>}
-                        >
-                          {TAG_OPTIONS.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                        </Select>
-                      )} />
-                    </FormControl>
+                    <Controller name="tags" control={control} render={({ field }) => (
+                      <Autocomplete
+                        multiple freeSolo options={TAG_OPTIONS}
+                        value={(field.value as string[]) || []}
+                        onChange={(_, value) => field.onChange(value)}
+                        renderTags={(value, getTagProps) => value.map((option, index) => <Chip label={option} size="small" {...getTagProps({ index })} key={option} />)}
+                        renderInput={(params) => <TextField {...params} label="Tags" placeholder="Select or type to add" helperText="Press Enter to add custom tag" />}
+                      />
+                    )} />
                   </Grid>
                   <Grid item xs={12} sm={6}><TextField label="Repository URL" fullWidth {...register('repositoryUrls.0')} /></Grid>
                   <Grid item xs={12} sm={6}><TextField label="Live URL" fullWidth {...register('liveUrls.0')} /></Grid>
