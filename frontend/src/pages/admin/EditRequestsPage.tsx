@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Box, Card, CardContent, Typography, Chip, Button, Grid, Snackbar, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, Snackbar, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip } from '@mui/material';
+import { CheckCircleOutline as ApproveIcon, HighlightOff as RejectIcon } from '@mui/icons-material';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchEditRequestsThunk, approveEditRequestThunk, rejectEditRequestThunk } from '../../store/slices/editRequestsSlice';
 import PageHeader from '../../components/common/PageHeader';
-import EmptyState from '../../components/common/EmptyState';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import DataTablePro, { Column } from '../../components/data-display/DataTablePro';
 import { formatDateTime } from '../../utils/formatters';
-import { EditRequestStatus } from '../../types/editRequest.types';
+import { EditRequestStatus, EditRequest } from '../../types/editRequest.types';
+
+const StatusPill = ({ status }: { status: EditRequestStatus }) => {
+  const map = {
+    PENDING: { bg: '#FEF3E2', color: '#B45309', label: 'Pending' },
+    APPROVED: { bg: '#E9F9EF', color: '#15803D', label: 'Approved' },
+    REJECTED: { bg: '#FDECEC', color: '#B91C1C', label: 'Rejected' },
+  }[status];
+  return <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.5, borderRadius: 2, fontSize: '0.78rem', fontWeight: 600, bgcolor: map.bg, color: map.color }}>{map.label}</Box>;
+};
 
 const EditRequestsPage = () => {
   const dispatch = useAppDispatch();
@@ -15,25 +24,32 @@ const EditRequestsPage = () => {
   const [statusFilter, setStatusFilter] = useState<EditRequestStatus | ''>('PENDING');
   const [toast, setToast] = useState('');
 
-  useEffect(() => {
-    dispatch(fetchEditRequestsThunk({ status: statusFilter || undefined }));
-  }, [statusFilter, dispatch]);
+  useEffect(() => { dispatch(fetchEditRequestsThunk({ status: statusFilter || undefined })); }, [statusFilter, dispatch]);
 
-  const handleApprove = async (id: string) => {
-    await dispatch(approveEditRequestThunk(id));
-    setToast('Edit request approved');
-  };
+  const handleApprove = async (id: string) => { await dispatch(approveEditRequestThunk(id)); setToast('Edit request approved'); };
+  const handleReject = async (id: string) => { await dispatch(rejectEditRequestThunk({ id, reason: 'Not approved by admin' })); setToast('Edit request rejected'); };
 
-  const handleReject = async (id: string) => {
-    await dispatch(rejectEditRequestThunk({ id, reason: 'Not approved by admin' }));
-    setToast('Edit request rejected');
-  };
+  const columns: Column<EditRequest>[] = [
+    { key: 'project', header: 'Project', width: '20%', sortable: true, value: (r) => r.project?.name || '', render: (r) => <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary' }}>{r.project?.name || '—'}</Typography> },
+    { key: 'requestedBy', header: 'Requested By', width: '16%', sortable: true, value: (r) => r.requestedBy?.name || '', render: (r) => r.requestedBy?.name || '—' },
+    { key: 'reason', header: 'Reason', width: '26%', render: (r) => r.reason },
+    { key: 'duration', header: 'Duration', width: '12%', render: (r) => r.duration },
+    { key: 'status', header: 'Status', width: '12%', sortable: true, value: (r) => r.status, render: (r) => <StatusPill status={r.status} /> },
+    { key: 'createdAt', header: 'Date', width: '14%', sortable: true, value: (r) => r.createdAt, render: (r) => formatDateTime(r.createdAt) },
+  ];
+
+  const rowActions = (r: EditRequest) => (r.status === 'PENDING' ? (
+    <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
+      <Tooltip title="Approve" arrow><IconButton size="small" sx={{ color: '#16A34A' }} onClick={() => handleApprove(r.id)}><ApproveIcon fontSize="small" /></IconButton></Tooltip>
+      <Tooltip title="Reject" arrow><IconButton size="small" sx={{ color: '#DC2626' }} onClick={() => handleReject(r.id)}><RejectIcon fontSize="small" /></IconButton></Tooltip>
+    </Box>
+  ) : <Box sx={{ color: 'text.disabled' }}>—</Box>);
 
   return (
     <Box>
       <PageHeader title="Edit Requests" subtitle="Manage project edit access requests" />
 
-      <FormControl size="small" sx={{ mb: 3, minWidth: 160 }}>
+      <FormControl size="small" sx={{ mb: 2.5, minWidth: 160 }}>
         <InputLabel>Status</InputLabel>
         <Select value={statusFilter} label="Status" onChange={(e) => setStatusFilter(e.target.value as EditRequestStatus | '')}>
           <MenuItem value="">All</MenuItem>
@@ -43,34 +59,15 @@ const EditRequestsPage = () => {
         </Select>
       </FormControl>
 
-      {loading ? <LoadingSpinner /> : requests.length === 0 ? (
-        <EmptyState title="No edit requests" description="There are no edit requests matching your filter." />
-      ) : (
-        <Grid container spacing={2}>
-          {requests.map(req => (
-            <Grid item xs={12} md={6} key={req.id}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="subtitle2">{req.project?.name || 'Project'}</Typography>
-                    <Chip label={req.status} size="small" color={req.status === 'APPROVED' ? 'success' : req.status === 'REJECTED' ? 'error' : 'warning'} />
-                  </Box>
-                  <Typography variant="body2"><strong>Requested by:</strong> {req.requestedBy?.name}</Typography>
-                  <Typography variant="body2"><strong>Reason:</strong> {req.reason}</Typography>
-                  <Typography variant="body2"><strong>Duration:</strong> {req.duration}</Typography>
-                  <Typography variant="caption" color="text.secondary">{formatDateTime(req.createdAt)}</Typography>
-                  {req.status === 'PENDING' && (
-                    <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
-                      <Button size="small" variant="contained" color="success" onClick={() => handleApprove(req.id)}>Approve</Button>
-                      <Button size="small" variant="outlined" color="error" onClick={() => handleReject(req.id)}>Reject</Button>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+      <DataTablePro
+        rows={requests}
+        columns={columns}
+        getId={(r) => r.id}
+        loading={loading}
+        emptyText="No edit requests"
+        minWidth={880}
+        rowActions={rowActions}
+      />
 
       <Snackbar open={!!toast} autoHideDuration={3000} onClose={() => setToast('')} message={toast} />
     </Box>

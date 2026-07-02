@@ -30,7 +30,6 @@ import AdminProjectsListPage from '../pages/admin/AdminProjectsListPage';
 import AdminProjectDetailPage from '../pages/admin/AdminProjectDetailPage';
 import EditRequestsPage from '../pages/admin/EditRequestsPage';
 import ReportsPage from '../pages/admin/ReportsPage';
-import ActivityLogsPage from '../pages/admin/ActivityLogsPage';
 
 const AppRouter = () => (
   <Routes>
@@ -69,7 +68,6 @@ const AppRouter = () => (
         <Route path="/admin/projects/:id" element={<AdminProjectDetailPage />} />
         <Route path="/admin/edit-requests" element={<EditRequestsPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
-        <Route path="/admin/activity-logs" element={<ActivityLogsPage />} />
       </Route>
     </Route>
 

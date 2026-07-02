@@ -2,7 +2,7 @@ import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box
 import { NavLink } from 'react-router-dom';
 import {
   Dashboard as DashboardIcon, Folder as FolderIcon, People as PeopleIcon,
-  Assessment as AssessmentIcon, EditNote as EditNoteIcon, History as HistoryIcon,
+  Assessment as AssessmentIcon, EditNote as EditNoteIcon,
   ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import { ROUTES } from '../../constants/routes';
@@ -23,7 +23,6 @@ const adminNav = [
   { label: 'Users', icon: <PeopleIcon fontSize="small" />, to: ROUTES.ADMIN_USERS },
   { label: 'Edit Requests', icon: <EditNoteIcon fontSize="small" />, to: ROUTES.ADMIN_EDIT_REQUESTS },
   { label: 'Reports', icon: <AssessmentIcon fontSize="small" />, to: ROUTES.ADMIN_REPORTS },
-  { label: 'Activity Logs', icon: <HistoryIcon fontSize="small" />, to: ROUTES.ADMIN_ACTIVITY_LOGS },
 ];
 
 interface Props {

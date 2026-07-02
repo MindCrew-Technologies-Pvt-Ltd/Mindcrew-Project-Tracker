@@ -24,10 +24,10 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) { error(res, 'Invalid credentials', 401); return; }
-    if (!user.isActive) { error(res, 'Account deactivated', 403); return; }
+    if (!user) { error(res, 'No account found with this email', 404); return; }
+    if (!user.isActive) { error(res, 'This account has been deactivated', 403); return; }
     const valid = await comparePassword(password, user.passwordHash);
-    if (!valid) { error(res, 'Invalid credentials', 401); return; }
+    if (!valid) { error(res, 'Incorrect password', 401); return; }
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     const tokens = generateTokens({ id: user.id, email: user.email, role: user.role });
     const { passwordHash, passwordResetToken, passwordResetExpiry, ...safeUser } = user;
