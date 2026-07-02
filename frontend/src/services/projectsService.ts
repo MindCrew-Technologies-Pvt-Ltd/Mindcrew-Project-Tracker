@@ -10,6 +10,9 @@ const projectsService = {
   deleteProject: (id: string) => axiosInstance.delete(`/projects/${id}`),
   archiveProject: (id: string) => axiosInstance.put(`/projects/${id}/archive`),
   requestEditAccess: (id: string, payload: CreateEditRequestPayload) => axiosInstance.post(`/projects/${id}/edit-request`, payload),
+  getAssignableUsers: () => axiosInstance.get('/projects/lookup/users'),
+  addTeamMember: (id: string, userId: string, role: string) => axiosInstance.post(`/projects/${id}/team`, { userId, role }),
+  removeTeamMember: (id: string, userId: string) => axiosInstance.delete(`/projects/${id}/team/${userId}`),
 };
 
 export default projectsService;

@@ -71,7 +71,7 @@ const AdminProjectDetailPage = () => {
       {tab === 0 && <OverviewTab project={project} />}
       {tab === 1 && <WeeklyUpdatesTab project={project} canEdit={true} />}
       {tab === 2 && <DocumentsTab project={project} canEdit={true} />}
-      {tab === 3 && <TeamMembersTab project={project} />}
+      {tab === 3 && <TeamMembersTab project={project} canEdit={true} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
       {tab === 4 && <ActivityLogsTab projectId={project.id} />}
       {tab === 5 && <EditRequestsTab project={project} isOwner={true} isAdmin={true} />}
       {tab === 6 && <TimelineTab project={project} />}

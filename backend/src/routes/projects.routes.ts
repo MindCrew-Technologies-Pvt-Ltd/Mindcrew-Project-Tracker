@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProjects, getProject, createProject, updateProject, deleteProject, archiveProject, addTeamMember, removeTeamMember, requestEditAccess } from '../controllers/projects.controller';
+import { getProjects, getProject, createProject, updateProject, deleteProject, archiveProject, addTeamMember, removeTeamMember, requestEditAccess, getAssignableUsers } from '../controllers/projects.controller';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createProjectSchema, updateProjectSchema, createEditRequestSchema } from '../validations/schemas';
@@ -7,6 +7,7 @@ import { createProjectSchema, updateProjectSchema, createEditRequestSchema } fro
 const router = Router();
 
 router.get('/', authenticate, getProjects);
+router.get('/lookup/users', authenticate, getAssignableUsers);
 router.post('/', authenticate, validate(createProjectSchema), createProject);
 router.get('/:id', authenticate, getProject);
 router.put('/:id', authenticate, validate(updateProjectSchema), updateProject);

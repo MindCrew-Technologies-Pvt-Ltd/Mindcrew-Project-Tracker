@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { TextField, Button, Box, Typography, Alert, IconButton, InputAdornment, Grid, CircularProgress } from '@mui/material';
@@ -17,11 +17,19 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const { loading, error } = useAppSelector((s) => s.auth);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: yupResolver(signupSchema) as any,
   });
+
+  // Allow only digits, spaces, hyphens and a single leading + in the phone field
+  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value.replace(/[^\d+\s-]/g, '');
+    v = v.replace(/(?!^)\+/g, ''); // only one leading +
+    setValue('phone', v, { shouldValidate: true });
+  };
 
   const onSubmit = async (data: FormData) => {
     dispatch(clearError());
@@ -59,7 +67,12 @@ const SignupPage = () => {
 
       <TextField label="Full Name" fullWidth margin="normal" autoFocus error={!!errors.name} helperText={errors.name?.message} {...register('name')} />
       <TextField label="Email Address" fullWidth margin="normal" autoComplete="email" error={!!errors.email} helperText={errors.email?.message} {...register('email')} />
-      <TextField label="Phone Number (optional)" fullWidth margin="normal" placeholder="+91 9876543210" error={!!errors.phone} helperText={errors.phone?.message || 'Include country code, at least 10 digits'} {...register('phone')} />
+      <TextField
+        label="Phone Number (optional)" fullWidth margin="normal" placeholder="+91 9876543210"
+        inputProps={{ inputMode: 'tel', maxLength: 20 }}
+        error={!!errors.phone} helperText={errors.phone?.message || 'Include country code, 10–15 digits'}
+        {...register('phone')} onChange={handlePhoneChange}
+      />
 
       <Grid container spacing={2} sx={{ mt: 0 }}>
         <Grid item xs={12} sm={6}>
@@ -76,7 +89,12 @@ const SignupPage = () => {
         InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)} edge="end">{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment> }}
         {...register('password')}
       />
-      <TextField label="Confirm Password" fullWidth margin="normal" type={showPassword ? 'text' : 'password'} error={!!errors.confirmPassword} helperText={errors.confirmPassword?.message} {...register('confirmPassword')} />
+      <TextField
+        label="Confirm Password" fullWidth margin="normal" type={showConfirm ? 'text' : 'password'}
+        error={!!errors.confirmPassword} helperText={errors.confirmPassword?.message}
+        InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end">{showConfirm ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment> }}
+        {...register('confirmPassword')}
+      />
 
       <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 2, mb: 2, py: 1.5 }} disabled={loading}>
         {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}

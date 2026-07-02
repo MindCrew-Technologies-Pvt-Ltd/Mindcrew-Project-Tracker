@@ -29,16 +29,19 @@ const documentsSlice = createSlice({
   reducers: {
     setUploadProgress: (state, action) => { state.uploadProgress[action.payload.key] = action.payload.progress; },
     clearUploadProgress: (state, action) => { delete state.uploadProgress[action.payload]; },
+    clearDocumentsError: (state) => { state.error = null; },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchDocumentsThunk.pending, (state) => { state.loading = true; })
       .addCase(fetchDocumentsThunk.fulfilled, (state, action) => { state.loading = false; state.documents[action.payload.projectId] = action.payload.data; })
       .addCase(fetchDocumentsThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
+      .addCase(uploadDocumentThunk.pending, (state) => { state.error = null; })
       .addCase(uploadDocumentThunk.fulfilled, (state, action) => { if (!state.documents[action.payload.projectId]) state.documents[action.payload.projectId] = []; state.documents[action.payload.projectId].push(action.payload.data); })
+      .addCase(uploadDocumentThunk.rejected, (state, action) => { state.error = (action.payload as string) || 'Upload failed'; })
       .addCase(deleteDocumentThunk.fulfilled, (state, action) => { const arr = state.documents[action.payload.projectId]; if (arr) state.documents[action.payload.projectId] = arr.filter(d => d.id !== action.payload.docId); });
   },
 });
 
-export const { setUploadProgress, clearUploadProgress } = documentsSlice.actions;
+export const { setUploadProgress, clearUploadProgress, clearDocumentsError } = documentsSlice.actions;
 export default documentsSlice.reducer;

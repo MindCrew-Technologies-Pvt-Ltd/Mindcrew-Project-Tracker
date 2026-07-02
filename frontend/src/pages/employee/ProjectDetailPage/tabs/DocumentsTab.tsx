@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Chip, Typography, Divider } from '@mui/material';
+import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Chip, Typography, Divider, Alert } from '@mui/material';
 import { InsertDriveFile as InsertDriveFileIcon, Download as DownloadIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
-import { fetchDocumentsThunk, uploadDocumentThunk, deleteDocumentThunk } from '../../../../store/slices/documentsSlice';
+import { fetchDocumentsThunk, uploadDocumentThunk, deleteDocumentThunk, clearDocumentsError } from '../../../../store/slices/documentsSlice';
 import DocumentUploader from '../../../../components/common/DocumentUploader';
 import EmptyState from '../../../../components/common/EmptyState';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
@@ -17,7 +17,7 @@ interface Props { project: Project; canEdit: boolean; }
 
 const DocumentsTab = ({ project, canEdit }: Props) => {
   const dispatch = useAppDispatch();
-  const { documents, uploadProgress, loading } = useAppSelector((s) => s.documents);
+  const { documents, uploadProgress, loading, error } = useAppSelector((s) => s.documents);
   const docs = documents[project.id] || [];
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -41,6 +41,7 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
 
   return (
     <Box>
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch(clearDocumentsError())}>{error}</Alert>}
       {canEdit && <Box sx={{ mb: 3, maxWidth: 480 }}><DocumentUploader onUpload={handleUpload} uploading={uploading} progress={Object.values(uploadProgress)[0]} /></Box>}
       {docs.length === 0 ? (
         <EmptyState title="No documents yet" description="Upload project documents to keep everything in one place." />

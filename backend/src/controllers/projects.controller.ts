@@ -117,6 +117,19 @@ export const archiveProject: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// Active users that can be assigned to a project team (any authenticated user
+// may read this minimal list so a project owner can build their team).
+export const getAssignableUsers: RequestHandler = async (_req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' },
+    });
+    success(res, users);
+  } catch (err) { next(err); }
+};
+
 export const addTeamMember: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);
@@ -125,7 +138,11 @@ export const addTeamMember: RequestHandler = async (req, res, next) => {
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return next(new AppError('Project not found', 404));
     if (req.user?.role !== 'ADMIN' && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
+    if (userId === project.ownerId) { error(res, 'The project owner is already on the team', 400); return; }
+    const existing = await prisma.projectMember.findFirst({ where: { projectId: id, userId } });
+    if (existing) { error(res, 'This user is already a team member', 400); return; }
     const member = await prisma.projectMember.create({ data: { projectId: id, userId, role: role ?? 'MEMBER' }, include: { user: { select: { id: true, name: true, email: true } } } });
+    await logActivity({ userId: req.user!.id, action: 'ADD_MEMBER', module: 'PROJECT', description: `Added ${member.user.name} to "${project.name}"` });
     success(res, member, 'Member added', 201);
   } catch (err) { next(err); }
 };

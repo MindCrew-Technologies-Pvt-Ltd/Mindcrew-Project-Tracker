@@ -11,10 +11,20 @@ import PageHeader from '../../components/common/PageHeader';
 import { ROUTES } from '../../constants/routes';
 import { CreateWeeklyUpdatePayload } from '../../types/weeklyUpdate.types';
 
-const currentWeek = () => {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  return Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7);
+// ISO-8601 week number + week-year for any given date.
+const isoWeek = (date: Date): { week: number; year: number } => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0..Sun=6
+  d.setUTCDate(d.getUTCDate() - dayNum + 3); // nearest Thursday
+  const firstThursday = d.getTime();
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = 1 + Math.round(((firstThursday - yearStart.getTime()) / 86400000 - 3 + ((yearStart.getUTCDay() + 6) % 7)) / 7);
+  return { week, year: d.getUTCFullYear() };
+};
+
+const todayISO = () => {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 };
 
 const WeeklyUpdateNewPage = () => {
@@ -24,18 +34,29 @@ const WeeklyUpdateNewPage = () => {
   const { loading, error } = useAppSelector((s) => s.weeklyUpdates);
   const [taskInput, setTaskInput] = useState('');
   const [plannedInput, setPlannedInput] = useState('');
+  const [weekDate, setWeekDate] = useState(todayISO());
 
+  const initial = isoWeek(new Date());
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CreateWeeklyUpdatePayload>({
     resolver: yupResolver(weeklyUpdateSchema) as any,
     defaultValues: {
-      weekNumber: currentWeek(),
-      year: new Date().getFullYear(),
+      weekNumber: initial.week,
+      year: initial.year,
       completionPercentage: 0,
       healthStatus: 'ON_TRACK',
       completedTasks: [],
       plannedTasks: [],
     },
   });
+
+  // Pick any day → derive the ISO week number + year for that week.
+  const handleWeekDateChange = (value: string) => {
+    setWeekDate(value);
+    if (!value) return;
+    const { week, year } = isoWeek(new Date(value));
+    setValue('weekNumber', week, { shouldValidate: true });
+    setValue('year', year, { shouldValidate: true });
+  };
 
   const completion = watch('completionPercentage');
   const completedTasks = watch('completedTasks') || [];
@@ -63,8 +84,16 @@ const WeeklyUpdateNewPage = () => {
       <Card><CardContent>
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}><TextField label="Week Number" fullWidth type="number" inputProps={{ min: 1, max: 53 }} error={!!errors.weekNumber} helperText={errors.weekNumber?.message} {...register('weekNumber', { valueAsNumber: true })} /></Grid>
-            <Grid item xs={12} sm={6}><TextField label="Year" fullWidth type="number" inputProps={{ min: 2020 }} error={!!errors.year} helperText={errors.year?.message} {...register('year', { valueAsNumber: true })} /></Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Select Week (pick any day in the week)" fullWidth type="date"
+                InputLabelProps={{ shrink: true }}
+                value={weekDate} onChange={(e) => handleWeekDateChange(e.target.value)}
+                helperText="Opens a calendar — the week number & year are set automatically"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}><TextField label="Week Number" fullWidth type="number" InputProps={{ readOnly: true }} error={!!errors.weekNumber} helperText={errors.weekNumber?.message} {...register('weekNumber', { valueAsNumber: true })} /></Grid>
+            <Grid item xs={12} sm={6}><TextField label="Year" fullWidth type="number" InputProps={{ readOnly: true }} error={!!errors.year} helperText={errors.year?.message} {...register('year', { valueAsNumber: true })} /></Grid>
 
             <Grid item xs={12}><TextField label="Progress Summary" fullWidth multiline rows={4} placeholder="Summarize this week's progress..." error={!!errors.progressSummary} helperText={errors.progressSummary?.message} {...register('progressSummary')} /></Grid>
 

@@ -4,6 +4,7 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 import AppLayout from '../components/layout/AppLayout';
 import { ROLES } from '../constants/roles';
 
+import LandingPage from '../pages/auth/LandingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import AdminLoginPage from '../pages/auth/AdminLoginPage';
 import SignupPage from '../pages/auth/SignupPage';
@@ -33,6 +34,8 @@ import ActivityLogsPage from '../pages/admin/ActivityLogsPage';
 
 const AppRouter = () => (
   <Routes>
+    <Route path="/" element={<LandingPage />} />
+
     <Route element={<AuthLayout />}>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -70,8 +73,7 @@ const AppRouter = () => (
       </Route>
     </Route>
 
-    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
 

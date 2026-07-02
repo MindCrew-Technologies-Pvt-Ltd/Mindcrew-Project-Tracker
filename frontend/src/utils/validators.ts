@@ -18,7 +18,8 @@ const optionalPhone = yup.string()
   .test('phone-format', 'Enter a valid phone with country code, e.g. +91 9876543210', (value) => {
     if (!value) return true; // optional — empty is fine
     if (!value.trim().startsWith('+')) return false; // must include country code
-    return value.replace(/\D/g, '').length >= 10; // at least 10 digits
+    const digits = value.replace(/\D/g, '').length;
+    return digits >= 10 && digits <= 15; // between 10 and 15 digits (E.164 max)
   })
   .optional();
 
