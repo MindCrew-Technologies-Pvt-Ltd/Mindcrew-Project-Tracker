@@ -1,48 +1,47 @@
 import { useEffect, useState } from 'react';
-import { Box, TextField, MenuItem, Select, FormControl, InputLabel, Button, Chip } from '@mui/material';
-import { ColDef } from 'ag-grid-community';
+import { Box, Card, Typography, TextField, MenuItem, Select, FormControl, InputLabel, Button } from '@mui/material';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchActivityLogsThunk } from '../../store/slices/activityLogsSlice';
 import PageHeader from '../../components/common/PageHeader';
-import DataTable from '../../components/data-display/DataTable';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import EmptyState from '../../components/common/EmptyState';
 import { formatDateTime } from '../../utils/formatters';
 
 const MODULES = ['AUTH', 'PROJECT', 'WEEKLY_UPDATE', 'DOCUMENT', 'EDIT_REQUEST', 'USER'];
+
+const cellSx = { py: 1.75, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', verticalAlign: 'top' } as const;
+const headSx = { py: 1.75, px: 3, textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', borderBottom: '1px solid #E9EBF2' } as const;
+
+const ActionPill = ({ action }: { action: string }) => (
+  <Box sx={{ display: 'inline-flex', px: 1.25, py: 0.4, borderRadius: 2, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', bgcolor: '#EEF0FF', color: '#4338CA' }}>
+    {action}
+  </Box>
+);
 
 const ActivityLogsPage = () => {
   const dispatch = useAppDispatch();
   const { logs, pagination, loading } = useAppSelector((s) => s.activityLogs);
   const [module, setModule] = useState('');
-  const [userId, setUserId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
-    dispatch(fetchActivityLogsThunk({ module: module || undefined, userId: userId || undefined, startDate: startDate || undefined, endDate: endDate || undefined, pageSize: 50 }));
-  }, [module, userId, startDate, endDate, dispatch]);
+    dispatch(fetchActivityLogsThunk({ module: module || undefined, startDate: startDate || undefined, endDate: endDate || undefined, pageSize: 50 }));
+  }, [module, startDate, endDate, dispatch]);
 
-  const colDefs: ColDef[] = [
-    { headerName: 'User', field: 'user', flex: 1.5, valueFormatter: (p: any) => p.value?.name },
-    { headerName: 'Action', field: 'action', flex: 1, cellRenderer: (p: any) => <Chip label={p.value} size="small" variant="outlined" /> },
-    { headerName: 'Module', field: 'module', flex: 1 },
-    { headerName: 'Description', field: 'description', flex: 3 },
-    { headerName: 'IP Address', field: 'ipAddress', flex: 1 },
-    { headerName: 'Date', field: 'createdAt', flex: 1.5, valueFormatter: (p: any) => formatDateTime(p.value) },
-  ];
-
-  const handleReset = () => { setModule(''); setUserId(''); setStartDate(''); setEndDate(''); };
+  const handleReset = () => { setModule(''); setStartDate(''); setEndDate(''); };
 
   return (
     <Box>
       <PageHeader title="Activity Logs" subtitle={pagination.total + ' records'} />
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2.5, flexWrap: 'wrap', alignItems: 'center' }}>
         <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel>Module</InputLabel>
           <Select value={module} label="Module" onChange={(e) => setModule(e.target.value)}>
             <MenuItem value="">All</MenuItem>
-            {MODULES.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+            {MODULES.map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
           </Select>
         </FormControl>
         <TextField label="Start Date" type="date" size="small" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -50,7 +49,38 @@ const ActivityLogsPage = () => {
         <Button variant="outlined" size="small" onClick={handleReset}>Reset</Button>
       </Box>
 
-      <DataTable rowData={logs} columnDefs={colDefs} loading={loading} height={600} pagination={true} pageSize={50} />
+      <Card sx={{ overflowX: 'auto', p: 0 }}>
+        {loading ? (
+          <Box sx={{ py: 6 }}><LoadingSpinner /></Box>
+        ) : logs.length === 0 ? (
+          <Box sx={{ py: 6 }}><EmptyState title="No activity yet" /></Box>
+        ) : (
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
+            <Box component="thead">
+              <Box component="tr">
+                <Box component="th" sx={headSx}>User</Box>
+                <Box component="th" sx={headSx}>Action</Box>
+                <Box component="th" sx={headSx}>Module</Box>
+                <Box component="th" sx={headSx}>Description</Box>
+                <Box component="th" sx={headSx}>Date</Box>
+              </Box>
+            </Box>
+            <Box component="tbody">
+              {logs.map((log: any) => (
+                <Box component="tr" key={log.id} sx={{ transition: 'background 0.15s ease', '&:hover': { bgcolor: '#F7F8FD' }, '&:last-of-type td': { borderBottom: 'none' } }}>
+                  <Box component="td" sx={{ ...cellSx, whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary' }}>{log.user?.name || '—'}</Typography>
+                  </Box>
+                  <Box component="td" sx={{ ...cellSx, whiteSpace: 'nowrap' }}><ActionPill action={log.action} /></Box>
+                  <Box component="td" sx={{ ...cellSx, whiteSpace: 'nowrap' }}>{log.module}</Box>
+                  <Box component="td" sx={{ ...cellSx, minWidth: 260, color: 'text.primary' }}>{log.description}</Box>
+                  <Box component="td" sx={{ ...cellSx, whiteSpace: 'nowrap' }}>{formatDateTime(log.createdAt)}</Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Card>
     </Box>
   );
 };

@@ -7,6 +7,7 @@ const usersService = {
   updateUser: (id: string, payload: UpdateUserPayload) => axiosInstance.put(`/admin/users/${id}`, payload),
   deactivateUser: (id: string) => axiosInstance.put(`/admin/users/${id}/deactivate`),
   resetUserPassword: (id: string, newPassword: string) => axiosInstance.put(`/admin/users/${id}/reset-password`, { newPassword }),
+  deleteUser: (id: string) => axiosInstance.delete(`/admin/users/${id}`),
 };
 
 export default usersService;

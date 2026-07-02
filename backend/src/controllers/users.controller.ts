@@ -68,6 +68,20 @@ export const deactivateUser: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const deleteUser: RequestHandler = async (req, res, next) => {
+  try {
+    const id = sp(req.params.id);
+    if (id === req.user!.id) { error(res, 'You cannot delete your own account', 400); return; }
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true } });
+    if (!user) return next(new AppError('User not found', 404));
+    const owned = await prisma.project.count({ where: { ownerId: id } });
+    if (owned > 0) { error(res, `This user owns ${owned} project(s). Reassign or delete those projects first.`, 400); return; }
+    await prisma.user.delete({ where: { id } });
+    await logActivity({ userId: req.user!.id, action: 'DELETE', module: 'USER', description: `Deleted user "${user.name}"` });
+    success(res, null, 'User deleted');
+  } catch (err) { next(err); }
+};
+
 export const resetUserPassword: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);

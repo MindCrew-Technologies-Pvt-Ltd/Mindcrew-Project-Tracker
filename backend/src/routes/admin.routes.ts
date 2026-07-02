@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
-import { getUsers, getUser, updateUser, deactivateUser, resetUserPassword } from '../controllers/users.controller';
+import { getUsers, getUser, updateUser, deactivateUser, resetUserPassword, deleteUser } from '../controllers/users.controller';
 import { getEditRequests, getEditRequest, approveEditRequest, rejectEditRequest } from '../controllers/editRequests.controller';
 import { generateReport, exportReport } from '../controllers/reports.controller';
 import { getActivityLogs } from '../controllers/activityLogs.controller';
@@ -15,6 +15,7 @@ router.get('/users/:id', getUser);
 router.put('/users/:id', validate(updateUserSchema), updateUser);
 router.put('/users/:id/deactivate', deactivateUser);
 router.put('/users/:id/reset-password', resetUserPassword);
+router.delete('/users/:id', deleteUser);
 
 router.get('/edit-requests', getEditRequests);
 router.get('/edit-requests/:id', getEditRequest);

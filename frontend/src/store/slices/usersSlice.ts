@@ -25,6 +25,10 @@ export const resetUserPasswordThunk = createAsyncThunk('users/resetPassword', as
   try { return (await usersService.resetUserPassword(id, newPassword)).data; } catch (err: any) { return rejectWithValue(err.response?.data?.message || 'Failed'); }
 });
 
+export const deleteUserThunk = createAsyncThunk('users/delete', async (id: string, { rejectWithValue }) => {
+  try { await usersService.deleteUser(id); return id; } catch (err: any) { return rejectWithValue(err.response?.data?.message || 'Failed to delete user'); }
+});
+
 const usersSlice = createSlice({
   name: 'users',
   initialState,
@@ -36,7 +40,9 @@ const usersSlice = createSlice({
       .addCase(fetchUsersThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
       .addCase(fetchUserByIdThunk.fulfilled, (state, action) => { state.currentUser = action.payload; })
       .addCase(updateUserThunk.fulfilled, (state, action) => { state.currentUser = action.payload; const idx = state.list.findIndex(u => u.id === action.payload.id); if (idx !== -1) state.list[idx] = action.payload; })
-      .addCase(deactivateUserThunk.fulfilled, (state, action) => { const idx = state.list.findIndex(u => u.id === action.payload.id); if (idx !== -1) state.list[idx] = action.payload; });
+      .addCase(deactivateUserThunk.fulfilled, (state, action) => { const idx = state.list.findIndex(u => u.id === action.payload.id); if (idx !== -1) state.list[idx] = action.payload; })
+      .addCase(deleteUserThunk.fulfilled, (state, action) => { state.list = state.list.filter(u => u.id !== action.payload); state.pagination.total = Math.max(0, state.pagination.total - 1); })
+      .addCase(deleteUserThunk.rejected, (state, action) => { state.error = action.payload as string; });
   },
 });
 

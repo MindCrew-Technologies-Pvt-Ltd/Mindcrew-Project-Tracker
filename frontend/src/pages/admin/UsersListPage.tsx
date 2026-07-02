@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Box, Card, Avatar, Typography, MenuItem, Menu, IconButton } from '@mui/material';
-import { MoreVert as MoreVertIcon } from '@mui/icons-material';
+import { Box, Card, Avatar, Typography, IconButton, Tooltip, Snackbar, Alert } from '@mui/material';
+import { Visibility as ViewIcon, DeleteOutline as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { fetchUsersThunk, deactivateUserThunk, resetUserPasswordThunk } from '../../store/slices/usersSlice';
+import { fetchUsersThunk, deleteUserThunk } from '../../store/slices/usersSlice';
 import PageHeader from '../../components/common/PageHeader';
 import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -41,11 +41,17 @@ const UsersListPage = () => {
   const { list, loading } = useAppSelector((s) => s.users);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
-  const [deactivateId, setDeactivateId] = useState<string | null>(null);
-  const [resetId, setResetId] = useState<string | null>(null);
-  const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; userId: string } | null>(null);
+  const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => { dispatch(fetchUsersThunk({ search: debouncedSearch })); }, [debouncedSearch, dispatch]);
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    const result = await dispatch(deleteUserThunk(toDelete.id));
+    if (deleteUserThunk.rejected.match(result)) setErrorMsg(result.payload as string);
+    setToDelete(null);
+  };
 
   return (
     <Box>
@@ -67,17 +73,16 @@ const UsersListPage = () => {
                 <Box component="th" sx={headSx}>Role</Box>
                 <Box component="th" sx={headSx}>Status</Box>
                 <Box component="th" sx={headSx}>Joined</Box>
-                <Box component="th" sx={{ ...headSx, width: 56 }} />
+                <Box component="th" sx={{ ...headSx, textAlign: 'right' }}>Actions</Box>
               </Box>
             </Box>
             <Box component="tbody">
               {list.map((u) => (
                 <Box
                   component="tr" key={u.id}
-                  onClick={() => navigate(ROUTES.ADMIN_USER_DETAIL(u.id))}
-                  sx={{ cursor: 'pointer', transition: 'background 0.15s ease', '&:hover': { bgcolor: '#F7F8FD' }, '&:last-of-type td': { borderBottom: 'none' } }}
+                  sx={{ transition: 'background 0.15s ease', '&:hover': { bgcolor: '#F7F8FD' }, '&:last-of-type td': { borderBottom: 'none' } }}
                 >
-                  <Box component="td" sx={{ ...cellSx, whiteSpace: 'normal' }}>
+                  <Box component="td" sx={{ ...cellSx, whiteSpace: 'normal', cursor: 'pointer' }} onClick={() => navigate(ROUTES.ADMIN_USER_DETAIL(u.id))}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Avatar sx={{ width: 40, height: 40, fontSize: 15, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>
                         {u.name?.charAt(0).toUpperCase()}
@@ -94,9 +99,18 @@ const UsersListPage = () => {
                   <Box component="td" sx={cellSx}><StatusPill active={u.isActive} /></Box>
                   <Box component="td" sx={cellSx}>{formatDate(u.createdAt)}</Box>
                   <Box component="td" sx={{ ...cellSx, textAlign: 'right', pr: 2 }}>
-                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); setMenuAnchor({ el: e.currentTarget, userId: u.id }); }}>
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
+                      <Tooltip title="View profile" arrow>
+                        <IconButton size="small" sx={{ color: '#4F46E5' }} onClick={() => navigate(ROUTES.ADMIN_USER_DETAIL(u.id))}>
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete user" arrow>
+                        <IconButton size="small" sx={{ color: '#DC2626' }} onClick={() => setToDelete({ id: u.id, name: u.name })}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 </Box>
               ))}
@@ -105,29 +119,18 @@ const UsersListPage = () => {
         )}
       </Card>
 
-      <Menu anchorEl={menuAnchor?.el} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
-        <MenuItem onClick={() => { navigate(ROUTES.ADMIN_USER_DETAIL(menuAnchor!.userId)); setMenuAnchor(null); }}>View Profile</MenuItem>
-        <MenuItem onClick={() => { setResetId(menuAnchor!.userId); setMenuAnchor(null); }}>Reset Password</MenuItem>
-        <MenuItem sx={{ color: 'error.main' }} onClick={() => { setDeactivateId(menuAnchor!.userId); setMenuAnchor(null); }}>Deactivate</MenuItem>
-      </Menu>
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Delete User"
+        message={`Permanently delete "${toDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
 
-      <ConfirmDialog
-        open={!!deactivateId}
-        title="Deactivate User"
-        message="This user will no longer be able to log in."
-        confirmLabel="Deactivate"
-        onConfirm={async () => { await dispatch(deactivateUserThunk(deactivateId!)); setDeactivateId(null); }}
-        onCancel={() => setDeactivateId(null)}
-      />
-      <ConfirmDialog
-        open={!!resetId}
-        title="Reset Password"
-        message="A password reset link will be sent to the user's email."
-        confirmLabel="Reset"
-        confirmColor="primary"
-        onConfirm={async () => { await dispatch(resetUserPasswordThunk({ id: resetId!, newPassword: 'Welcome@123' })); setResetId(null); }}
-        onCancel={() => setResetId(null)}
-      />
+      <Snackbar open={!!errorMsg} autoHideDuration={5000} onClose={() => setErrorMsg(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setErrorMsg(null)}>{errorMsg}</Alert>
+      </Snackbar>
     </Box>
   );
 };
