@@ -17,7 +17,7 @@ import { ProjectStatus } from '../../types/project.types';
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatDate } from '../../utils/formatters';
 
-const cellSx = { py: 2, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', whiteSpace: 'nowrap' } as const;
+const cellSx = { py: 2, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const;
 const headSx = { py: 1.75, px: 3, textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', borderBottom: '1px solid #E9EBF2' } as const;
 
 const AdminProjectsListPage = () => {
@@ -60,23 +60,23 @@ const AdminProjectsListPage = () => {
         ) : list.length === 0 ? (
           <Box sx={{ py: 6 }}><EmptyState title="No projects found" /></Box>
         ) : (
-          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: 820 }}>
             <Box component="thead">
               <Box component="tr">
-                <Box component="th" sx={headSx}>Project</Box>
-                <Box component="th" sx={headSx}>Owner</Box>
-                <Box component="th" sx={headSx}>Status</Box>
-                <Box component="th" sx={headSx}>Priority</Box>
-                <Box component="th" sx={headSx}>Timeline</Box>
-                <Box component="th" sx={{ ...headSx, textAlign: 'right' }}>Actions</Box>
+                <Box component="th" sx={{ ...headSx, width: '26%' }}>Project</Box>
+                <Box component="th" sx={{ ...headSx, width: '16%' }}>Owner</Box>
+                <Box component="th" sx={{ ...headSx, width: '14%' }}>Status</Box>
+                <Box component="th" sx={{ ...headSx, width: '12%' }}>Priority</Box>
+                <Box component="th" sx={{ ...headSx, width: '22%' }}>Timeline</Box>
+                <Box component="th" sx={{ ...headSx, width: '10%', textAlign: 'right' }}>Actions</Box>
               </Box>
             </Box>
             <Box component="tbody">
               {list.map((p) => (
                 <Box component="tr" key={p.id} sx={{ transition: 'background 0.15s ease', '&:hover': { bgcolor: '#F7F8FD' }, '&:last-of-type td': { borderBottom: 'none' } }}>
                   <Box component="td" sx={{ ...cellSx, whiteSpace: 'normal', cursor: 'pointer' }} onClick={() => navigate(ROUTES.ADMIN_PROJECT_DETAIL(p.id))}>
-                    <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{p.name}</Typography>
-                    <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{p.clientName || '—'}</Typography>
+                    <Typography noWrap sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{p.name}</Typography>
+                    <Typography noWrap sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{p.clientName || '—'}</Typography>
                   </Box>
                   <Box component="td" sx={cellSx}>{p.owner?.name || '—'}</Box>
                   <Box component="td" sx={cellSx}><ProjectStatusChip status={p.status} /></Box>

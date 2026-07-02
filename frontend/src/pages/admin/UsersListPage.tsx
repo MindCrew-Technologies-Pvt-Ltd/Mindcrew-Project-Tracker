@@ -14,7 +14,7 @@ import { ROUTES } from '../../constants/routes';
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatDate } from '../../utils/formatters';
 
-const cellSx = { py: 2, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', whiteSpace: 'nowrap' } as const;
+const cellSx = { py: 2, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const;
 const headSx = { py: 1.75, px: 3, textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', borderBottom: '1px solid #E9EBF2' } as const;
 const title = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
 
@@ -64,16 +64,16 @@ const UsersListPage = () => {
         ) : list.length === 0 ? (
           <Box sx={{ py: 6 }}><EmptyState title="No users found" /></Box>
         ) : (
-          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: 780 }}>
             <Box component="thead">
               <Box component="tr">
-                <Box component="th" sx={headSx}>User</Box>
-                <Box component="th" sx={headSx}>Department</Box>
-                <Box component="th" sx={headSx}>Designation</Box>
-                <Box component="th" sx={headSx}>Role</Box>
-                <Box component="th" sx={headSx}>Status</Box>
-                <Box component="th" sx={headSx}>Joined</Box>
-                <Box component="th" sx={{ ...headSx, textAlign: 'right' }}>Actions</Box>
+                <Box component="th" sx={{ ...headSx, width: '27%' }}>User</Box>
+                <Box component="th" sx={{ ...headSx, width: '14%' }}>Department</Box>
+                <Box component="th" sx={{ ...headSx, width: '15%' }}>Designation</Box>
+                <Box component="th" sx={{ ...headSx, width: '11%' }}>Role</Box>
+                <Box component="th" sx={{ ...headSx, width: '11%' }}>Status</Box>
+                <Box component="th" sx={{ ...headSx, width: '12%' }}>Joined</Box>
+                <Box component="th" sx={{ ...headSx, width: '10%', textAlign: 'right' }}>Actions</Box>
               </Box>
             </Box>
             <Box component="tbody">
@@ -87,9 +87,9 @@ const UsersListPage = () => {
                       <Avatar sx={{ width: 40, height: 40, fontSize: 15, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>
                         {u.name?.charAt(0).toUpperCase()}
                       </Avatar>
-                      <Box>
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{u.name}</Typography>
-                        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{u.email}</Typography>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography noWrap sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{u.name}</Typography>
+                        <Typography noWrap sx={{ fontSize: '0.8rem', color: 'text.secondary' }} title={u.email}>{u.email}</Typography>
                       </Box>
                     </Box>
                   </Box>
