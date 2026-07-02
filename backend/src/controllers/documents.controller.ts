@@ -1,6 +1,6 @@
 import { RequestHandler } from 'express';
 import prisma from '../config/prisma';
-import { upload } from '../config/cloudinary';
+import { saveFile, deleteFile } from '../config/storage';
 import { success, error } from '../utils/response';
 import { logActivity } from '../utils/activityLogger';
 import { AppError } from '../middleware/errorHandler';
@@ -26,9 +26,10 @@ export const uploadDocument: RequestHandler = async (req, res, next) => {
     const projectId = sp(req.params.projectId);
     await assertProjectAccess(projectId, req.user!);
     const { category, description } = req.body;
-    const result = await upload(req.file.buffer, 'project-docs', `${projectId}-${Date.now()}`);
+    const { filename } = saveFile(req.file.buffer, req.file.originalname);
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
     const doc = await prisma.document.create({
-      data: { projectId, uploadedById: req.user!.id, fileName: req.file.originalname, fileUrl: result.secure_url, fileType: req.file.mimetype, fileSize: req.file.size, category: (category as DocumentCategory) ?? 'OTHER', description },
+      data: { projectId, uploadedById: req.user!.id, fileName: req.file.originalname, fileUrl, fileType: req.file.mimetype, fileSize: req.file.size, category: (category as DocumentCategory) ?? 'OTHER', description },
       include: { uploadedBy: { select: { id: true, name: true, email: true } } },
     });
     await logActivity({ userId: req.user!.id, action: 'UPLOAD', module: 'DOCUMENT', description: `Uploaded ${req.file.originalname}` });
@@ -42,6 +43,7 @@ export const deleteDocument: RequestHandler = async (req, res, next) => {
     if (!doc) return next(new AppError('Document not found', 404));
     if (doc.uploadedById !== req.user!.id && req.user?.role !== 'ADMIN') return next(new AppError('Forbidden', 403));
     await prisma.document.delete({ where: { id: sp(req.params.id) } });
+    deleteFile(doc.fileUrl.split('/uploads/')[1] ?? '');
     success(res, null, 'Document deleted');
   } catch (err) { next(err); }
 };

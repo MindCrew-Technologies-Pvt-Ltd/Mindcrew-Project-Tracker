@@ -7,7 +7,8 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 
-import { CORS_ORIGIN, NODE_ENV } from './config/env';
+import { CORS_ORIGIN, NODE_ENV, UPLOAD_DIR } from './config/env';
+import { ensureUploadDir } from './config/storage';
 import { apiLimiter } from './middleware/rateLimiter';
 import { notFound, errorHandler } from './middleware/errorHandler';
 import swaggerSpec from './config/swagger';
@@ -21,13 +22,20 @@ import adminRoutes from './routes/admin.routes';
 
 const app = express();
 
-app.use(helmet());
+// Trust Railway's proxy so req.protocol reflects the original https scheme.
+app.set('trust proxy', 1);
+
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 app.use(compression() as express.RequestHandler);
 if (NODE_ENV === 'development') app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Serve uploaded documents from the mounted volume. Filenames are random UUIDs.
+ensureUploadDir();
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 app.use('/api', apiLimiter);
 
