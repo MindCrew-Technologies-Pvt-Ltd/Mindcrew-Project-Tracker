@@ -1,29 +1,42 @@
 import { useEffect, useState } from 'react';
-import { Box, Grid, Button, MenuItem, Select, FormControl, InputLabel, ToggleButtonGroup, ToggleButton, Pagination, Skeleton } from '@mui/material';
+import { Box, Grid, Button, MenuItem, Select, FormControl, InputLabel, ToggleButtonGroup, ToggleButton, Pagination, Skeleton, Snackbar, Alert } from '@mui/material';
 import { GridView as GridViewIcon, List as ListIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { fetchProjectsThunk, setFilters } from '../../store/slices/projectsSlice';
+import { fetchProjectsThunk, setFilters, deleteProjectThunk } from '../../store/slices/projectsSlice';
 import PageHeader from '../../components/common/PageHeader';
 import SearchBar from '../../components/common/SearchBar';
 import ProjectCard from '../../components/project/ProjectCard';
 import DataTable from '../../components/data-display/DataTable';
 import EmptyState from '../../components/common/EmptyState';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import ProjectStatusChip from '../../components/project/ProjectStatusChip';
 import PriorityChip from '../../components/project/PriorityChip';
+import { useAuth } from '../../hooks/useAuth';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ROUTES } from '../../constants/routes';
-import { ProjectStatus, ProjectPriority } from '../../types/project.types';
+import { ProjectStatus, ProjectPriority, Project } from '../../types/project.types';
 import { formatDate } from '../../utils/formatters';
 
 const ProjectsListPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const { list, filters, pagination, loading } = useAppSelector((s) => s.projects);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
+  const [toDelete, setToDelete] = useState<Project | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    const result = await dispatch(deleteProjectThunk(toDelete.id));
+    if (deleteProjectThunk.rejected.match(result)) setErrorMsg((result.payload as string) || 'Failed to delete project');
+    else dispatch(fetchProjectsThunk(filters));
+    setToDelete(null);
+  };
 
   useEffect(() => {
     dispatch(setFilters({ search: debouncedSearch, page: 1 }));
@@ -86,7 +99,7 @@ const ProjectsListPage = () => {
         <EmptyState title="No projects found" description="Try adjusting your filters or create your first project." action={<Button variant="contained" onClick={() => navigate(ROUTES.PROJECT_NEW)}>Create Project</Button>} />
       ) : view === 'grid' ? (
         <Grid container spacing={3}>
-          {list.map(p => <Grid item key={p.id} xs={12} sm={6} md={4}><ProjectCard project={p} /></Grid>)}
+          {list.map(p => <Grid item key={p.id} xs={12} sm={6} md={4}><ProjectCard project={p} canDelete={isAdmin || p.owner?.id === user?.id} onDelete={setToDelete} /></Grid>)}
         </Grid>
       ) : (
         <DataTable rowData={list} columnDefs={colDefs} onRowClicked={(p) => navigate(ROUTES.PROJECT_DETAIL(p.id))} />
@@ -97,6 +110,19 @@ const ProjectsListPage = () => {
           <Pagination count={pagination.totalPages} page={pagination.page} onChange={(_, p) => dispatch(setFilters({ page: p }))} color="primary" />
         </Box>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Delete Project"
+        message={`Permanently delete "${toDelete?.name}" and all its data? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
+
+      <Snackbar open={!!errorMsg} autoHideDuration={5000} onClose={() => setErrorMsg(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setErrorMsg(null)}>{errorMsg}</Alert>
+      </Snackbar>
     </Box>
   );
 };

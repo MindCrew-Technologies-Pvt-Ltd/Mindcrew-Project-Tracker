@@ -100,6 +100,8 @@ export const deleteProject: RequestHandler = async (req, res, next) => {
     const id = sp(req.params.id);
     const existing = await prisma.project.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Project not found', 404));
+    // An admin, or the project's own owner, may delete it.
+    if (req.user?.role !== 'ADMIN' && existing.ownerId !== req.user!.id) return next(new AppError('You can only delete your own projects', 403));
     await prisma.project.delete({ where: { id } });
     await logActivity({ userId: req.user!.id, action: 'DELETE', module: 'PROJECT', description: `Deleted project "${existing.name}"` });
     success(res, null, 'Project deleted');

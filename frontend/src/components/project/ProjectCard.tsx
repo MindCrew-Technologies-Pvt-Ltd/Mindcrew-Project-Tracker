@@ -1,5 +1,5 @@
-import { Card, CardContent, CardActions, Typography, Box, Chip, Button } from '@mui/material';
-import { CalendarToday as CalendarTodayIcon, Person as PersonIcon } from '@mui/icons-material';
+import { Card, CardContent, CardActions, Typography, Box, Chip, Button, IconButton, Tooltip } from '@mui/material';
+import { CalendarToday as CalendarTodayIcon, Person as PersonIcon, Visibility as ViewIcon, DeleteOutline as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Project } from '../../types/project.types';
 import ProjectStatusChip from './ProjectStatusChip';
@@ -7,9 +7,9 @@ import PriorityChip from './PriorityChip';
 import { formatDate, truncate } from '../../utils/formatters';
 import { ROUTES } from '../../constants/routes';
 
-interface Props { project: Project; }
+interface Props { project: Project; canDelete?: boolean; onDelete?: (project: Project) => void; }
 
-const ProjectCard = ({ project }: Props) => {
+const ProjectCard = ({ project, canDelete, onDelete }: Props) => {
   const navigate = useNavigate();
 
   return (
@@ -33,7 +33,14 @@ const ProjectCard = ({ project }: Props) => {
         </Box>
       </CardContent>
       <CardActions sx={{ px: 2, pb: 2 }}>
-        <Button size="small" onClick={(e) => { e.stopPropagation(); navigate(ROUTES.PROJECT_DETAIL(project.id)); }}>View Details</Button>
+        <Button size="small" startIcon={<ViewIcon fontSize="small" />} onClick={(e) => { e.stopPropagation(); navigate(ROUTES.PROJECT_DETAIL(project.id)); }}>View Details</Button>
+        {canDelete && (
+          <Tooltip title="Delete project" arrow>
+            <IconButton size="small" sx={{ ml: 'auto', color: '#DC2626' }} onClick={(e) => { e.stopPropagation(); onDelete?.(project); }}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
       </CardActions>
     </Card>
   );

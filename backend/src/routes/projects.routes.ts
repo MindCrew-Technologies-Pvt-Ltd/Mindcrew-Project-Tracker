@@ -11,7 +11,7 @@ router.get('/lookup/users', authenticate, getAssignableUsers);
 router.post('/', authenticate, validate(createProjectSchema), createProject);
 router.get('/:id', authenticate, getProject);
 router.put('/:id', authenticate, validate(updateProjectSchema), updateProject);
-router.delete('/:id', authenticate, requireAdmin, deleteProject);
+router.delete('/:id', authenticate, deleteProject);
 router.put('/:id/archive', authenticate, requireAdmin, archiveProject);
 router.post('/:id/team', authenticate, addTeamMember);
 router.delete('/:id/team/:userId', authenticate, removeTeamMember);
