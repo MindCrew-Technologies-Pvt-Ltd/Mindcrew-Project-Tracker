@@ -1,19 +1,39 @@
 import { useEffect, useState } from 'react';
-import { Box, Chip, Avatar, MenuItem, Menu, IconButton } from '@mui/material';
+import { Box, Card, Avatar, Typography, MenuItem, Menu, IconButton } from '@mui/material';
 import { MoreVert as MoreVertIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { ColDef } from 'ag-grid-community';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchUsersThunk, deactivateUserThunk, resetUserPasswordThunk } from '../../store/slices/usersSlice';
 import PageHeader from '../../components/common/PageHeader';
-import DataTable from '../../components/data-display/DataTable';
 import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import EmptyState from '../../components/common/EmptyState';
 import { ROUTES } from '../../constants/routes';
-import { User } from '../../types/user.types';
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatDate } from '../../utils/formatters';
+
+const cellSx = { py: 2, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', whiteSpace: 'nowrap' } as const;
+const headSx = { py: 1.75, px: 3, textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', borderBottom: '1px solid #E9EBF2' } as const;
+const title = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
+
+const RolePill = ({ role }: { role: string }) => (
+  <Box sx={{
+    display: 'inline-flex', alignItems: 'center', px: 1.25, py: 0.5, borderRadius: 2, fontSize: '0.78rem', fontWeight: 600,
+    ...(role === 'ADMIN' ? { bgcolor: '#F3EEFE', color: '#6D28D9' } : { bgcolor: '#EEF0FF', color: '#4338CA' }),
+  }}>{title(role)}</Box>
+);
+
+const StatusPill = ({ active }: { active: boolean }) => (
+  <Box sx={{
+    display: 'inline-flex', alignItems: 'center', gap: 0.75, px: 1.25, py: 0.5, borderRadius: 2, fontSize: '0.78rem', fontWeight: 600,
+    ...(active ? { bgcolor: '#E9F9EF', color: '#15803D' } : { bgcolor: '#FDECEC', color: '#B91C1C' }),
+  }}>
+    <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: active ? '#22C55E' : '#EF4444' }} />
+    {active ? 'Active' : 'Inactive'}
+  </Box>
+);
 
 const UsersListPage = () => {
   const dispatch = useAppDispatch();
@@ -27,47 +47,63 @@ const UsersListPage = () => {
 
   useEffect(() => { dispatch(fetchUsersThunk({ search: debouncedSearch })); }, [debouncedSearch, dispatch]);
 
-  const title = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
-
-  const colDefs: ColDef[] = [
-    { headerName: 'Name', field: 'name', flex: 1.4, minWidth: 180, cellRenderer: (p: any) => (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 32, height: 32, fontSize: 13.5, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>{p.value?.charAt(0)}</Avatar>
-        <Box sx={{ fontWeight: 600, color: '#1E293B' }}>{p.value}</Box>
-      </Box>
-    )},
-    { headerName: 'Email', field: 'email', flex: 1.6, minWidth: 200 },
-    { headerName: 'Department', field: 'department', flex: 1, minWidth: 120, valueFormatter: (p: any) => p.value || '—' },
-    { headerName: 'Designation', field: 'designation', flex: 1, minWidth: 130, valueFormatter: (p: any) => p.value || '—' },
-    { headerName: 'Role', field: 'role', width: 120, minWidth: 110, cellRenderer: (p: any) => (
-      <Chip label={title(p.value)} size="small" sx={p.value === 'ADMIN'
-        ? { bgcolor: '#7C3AED', color: '#fff', fontWeight: 600, px: 0.5 }
-        : { bgcolor: '#EEF0FF', color: '#4338CA', fontWeight: 600, px: 0.5 }} />
-    )},
-    { headerName: 'Status', field: 'isActive', width: 120, minWidth: 110, cellRenderer: (p: any) => (
-      <Chip label={p.value ? 'Active' : 'Inactive'} size="small" sx={p.value
-        ? { bgcolor: '#E9F9EF', color: '#15803D', fontWeight: 600, px: 0.5 }
-        : { bgcolor: '#FDECEC', color: '#B91C1C', fontWeight: 600, px: 0.5 }} />
-    )},
-    { headerName: 'Joined', field: 'createdAt', width: 120, minWidth: 110, valueFormatter: (p: any) => formatDate(p.value) },
-    { headerName: '', field: 'id', width: 64, maxWidth: 64, pinned: 'right', sortable: false, filter: false, resizable: false, cellRenderer: (p: any) => (
-      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setMenuAnchor({ el: e.currentTarget, userId: p.value }); }}>
-        <MoreVertIcon fontSize="small" />
-      </IconButton>
-    )},
-  ];
-
   return (
     <Box>
       <PageHeader title="Users" subtitle={list.length + ' users'} />
-      <Box sx={{ mb: 2 }}><SearchBar value={search} onChange={setSearch} placeholder="Search by name or email..." /></Box>
+      <Box sx={{ mb: 2.5, maxWidth: 420 }}><SearchBar value={search} onChange={setSearch} placeholder="Search by name or email..." /></Box>
 
-      <DataTable
-        rowData={list}
-        columnDefs={colDefs}
-        loading={loading}
-        onRowClicked={(u: User) => navigate(ROUTES.ADMIN_USER_DETAIL(u.id))}
-      />
+      <Card sx={{ overflowX: 'auto', p: 0 }}>
+        {loading ? (
+          <Box sx={{ py: 6 }}><LoadingSpinner /></Box>
+        ) : list.length === 0 ? (
+          <Box sx={{ py: 6 }}><EmptyState title="No users found" /></Box>
+        ) : (
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
+            <Box component="thead">
+              <Box component="tr">
+                <Box component="th" sx={headSx}>User</Box>
+                <Box component="th" sx={headSx}>Department</Box>
+                <Box component="th" sx={headSx}>Designation</Box>
+                <Box component="th" sx={headSx}>Role</Box>
+                <Box component="th" sx={headSx}>Status</Box>
+                <Box component="th" sx={headSx}>Joined</Box>
+                <Box component="th" sx={{ ...headSx, width: 56 }} />
+              </Box>
+            </Box>
+            <Box component="tbody">
+              {list.map((u) => (
+                <Box
+                  component="tr" key={u.id}
+                  onClick={() => navigate(ROUTES.ADMIN_USER_DETAIL(u.id))}
+                  sx={{ cursor: 'pointer', transition: 'background 0.15s ease', '&:hover': { bgcolor: '#F7F8FD' }, '&:last-of-type td': { borderBottom: 'none' } }}
+                >
+                  <Box component="td" sx={{ ...cellSx, whiteSpace: 'normal' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 40, height: 40, fontSize: 15, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>
+                        {u.name?.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{u.name}</Typography>
+                        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{u.email}</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                  <Box component="td" sx={cellSx}>{u.department || '—'}</Box>
+                  <Box component="td" sx={cellSx}>{u.designation || '—'}</Box>
+                  <Box component="td" sx={cellSx}><RolePill role={u.role} /></Box>
+                  <Box component="td" sx={cellSx}><StatusPill active={u.isActive} /></Box>
+                  <Box component="td" sx={cellSx}>{formatDate(u.createdAt)}</Box>
+                  <Box component="td" sx={{ ...cellSx, textAlign: 'right', pr: 2 }}>
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); setMenuAnchor({ el: e.currentTarget, userId: u.id }); }}>
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Card>
 
       <Menu anchorEl={menuAnchor?.el} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
         <MenuItem onClick={() => { navigate(ROUTES.ADMIN_USER_DETAIL(menuAnchor!.userId)); setMenuAnchor(null); }}>View Profile</MenuItem>
