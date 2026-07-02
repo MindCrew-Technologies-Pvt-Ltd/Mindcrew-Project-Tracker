@@ -4,8 +4,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { ROUTES } from '../../constants/routes';
 
-const NAVY = '#0A2947';
-const SAND = '#F3E4C9';
+const NAVY = '#0F1729';
+const SAND = '#4F46E5';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ const LandingPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: `linear-gradient(135deg, ${NAVY} 0%, #123a63 100%)`,
+        background: `linear-gradient(135deg, ${NAVY} 0%, #312E81 100%)`,
         p: 2,
       }}
     >
@@ -32,7 +32,7 @@ const LandingPage = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <FolderIcon sx={{ color: NAVY, fontSize: 34 }} />
+          <FolderIcon sx={{ color: '#FFFFFF', fontSize: 34 }} />
         </Box>
         <Typography variant="h4" fontWeight={700} gutterBottom>ProjectTracker</Typography>
         <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 5 }}>
@@ -43,7 +43,7 @@ const LandingPage = () => {
           <Button
             fullWidth size="large" variant="contained" startIcon={<LoginIcon />}
             onClick={() => navigate(ROUTES.LOGIN)}
-            sx={{ py: 1.4, bgcolor: SAND, color: NAVY, fontWeight: 600, '&:hover': { bgcolor: '#EAD6B0' } }}
+            sx={{ py: 1.4, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#FFFFFF', fontWeight: 600, boxShadow: '0 6px 20px rgba(79,70,229,0.4)', '&:hover': { background: '#4338CA' } }}
           >
             Employee Sign In
           </Button>

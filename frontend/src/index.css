@@ -1,0 +1,34 @@
+/* Modern AG Grid (Quartz) theming to match the app palette */
+.ag-theme-quartz {
+  --ag-font-family: "Inter", "Roboto", sans-serif;
+  --ag-font-size: 13.5px;
+  --ag-foreground-color: #1e293b;
+  --ag-secondary-foreground-color: #64748b;
+  --ag-background-color: #ffffff;
+  --ag-header-background-color: #f8f9fe;
+  --ag-header-foreground-color: #64748b;
+  --ag-header-column-separator-display: none;
+  --ag-border-color: #e9ebf2;
+  --ag-row-border-color: #eef0f5;
+  --ag-row-hover-color: #f5f6fb;
+  --ag-selected-row-background-color: #eef0ff;
+  --ag-accent-color: #4f46e5;
+  --ag-input-focus-border-color: #4f46e5;
+  --ag-border-radius: 12px;
+  --ag-wrapper-border-radius: 14px;
+  --ag-header-height: 46px;
+  --ag-row-height: 54px;
+  --ag-cell-horizontal-padding: 18px;
+}
+
+.ag-theme-quartz .ag-header-cell-text {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+.ag-theme-quartz .ag-root-wrapper {
+  border-radius: 14px;
+  overflow: hidden;
+}

@@ -17,7 +17,7 @@ function DataTable<T>({ rowData, columnDefs, loading, height = 500, onRowClicked
   if (loading) return <LoadingSpinner />;
 
   return (
-    <Box className="ag-theme-material" sx={{ height, width: '100%' }}>
+    <Box className="ag-theme-quartz" sx={{ height, width: '100%' }}>
       <AgGridReact
         rowData={rowData}
         columnDefs={columnDefs}

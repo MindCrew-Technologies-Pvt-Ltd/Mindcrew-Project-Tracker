@@ -24,7 +24,7 @@ const OverviewTab = ({ project }: Props) => (
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" mb={1}>Tags</Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {project.tags.map(t => <Chip key={t} label={t} size="small" sx={{ bgcolor: '#EAF1F8', color: '#0A2947', fontWeight: 500 }} />)}
+              {project.tags.map(t => <Chip key={t} label={t} size="small" sx={{ bgcolor: '#EEF0FF', color: '#4338CA', fontWeight: 600 }} />)}
             </Box>
           </>}
         </CardContent>

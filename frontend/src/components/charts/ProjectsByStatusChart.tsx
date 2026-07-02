@@ -2,19 +2,19 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { Box, Typography } from '@mui/material';
 
 const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: '#4D7C5A',
-  COMPLETED: '#0A2947',
-  ON_HOLD: '#C4934D',
-  DRAFT: '#355F86',
+  ACTIVE: '#16A34A',
+  COMPLETED: '#4F46E5',
+  ON_HOLD: '#F59E0B',
+  DRAFT: '#0EA5E9',
   CANCELLED: '#B54747',
-  ARCHIVED: '#D3D4C0',
+  ARCHIVED: '#94A3B8',
 };
-const FALLBACK_COLORS = ['#0A2947', '#8B5E3C', '#C4934D', '#4D7C5A', '#D3D4C0', '#355F86'];
+const FALLBACK_COLORS = ['#4F46E5', '#7C3AED', '#F59E0B', '#16A34A', '#94A3B8', '#0EA5E9'];
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <Box sx={{ background: '#fff', border: '1px solid #E7E8DD', borderRadius: '10px', p: 1.5, boxShadow: '0 4px 16px rgba(10,41,71,0.12)' }}>
+    <Box sx={{ background: '#fff', border: '1px solid #E9EBF2', borderRadius: '10px', p: 1.5, boxShadow: '0 4px 16px rgba(10,41,71,0.12)' }}>
       <Typography variant="caption" fontWeight={600} color="text.primary">{payload[0].name}</Typography>
       <Typography variant="body2" color="text.secondary">{payload[0].value} projects</Typography>
     </Box>

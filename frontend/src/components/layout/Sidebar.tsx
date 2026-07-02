@@ -11,8 +11,8 @@ import { useAuth } from '../../hooks/useAuth';
 export const DRAWER_WIDTH = 248;
 export const DRAWER_WIDTH_COLLAPSED = 64;
 
-const NAVY = '#0A2947';
-const SAND = '#F3E4C9';
+const NAVY = '#0F1729';
+const SAND = '#4F46E5';
 
 const employeeNav = [
   { label: 'Dashboard', icon: <DashboardIcon fontSize="small" />, to: ROUTES.DASHBOARD },
@@ -55,11 +55,12 @@ const navItemSx = (collapsed: boolean) => ({
     transform: collapsed ? 'scale(1.05)' : 'translateX(2px)',
   },
   '&.active': {
-    background: SAND,
-    color: NAVY,
+    background: `linear-gradient(135deg, ${SAND} 0%, #6366F1 100%)`,
+    color: '#FFFFFF',
     fontWeight: 600,
-    '& .MuiListItemIcon-root': { color: NAVY },
-    '&:hover': { background: '#EAD6B0', transform: collapsed ? 'scale(1.05)' : 'translateX(2px)' },
+    boxShadow: '0 4px 12px rgba(79,70,229,0.4)',
+    '& .MuiListItemIcon-root': { color: '#FFFFFF' },
+    '&:hover': { background: '#4338CA', transform: collapsed ? 'scale(1.05)' : 'translateX(2px)' },
   },
   '&:active': { transform: 'scale(0.97)' },
 });
@@ -114,7 +115,7 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
               width: 32, height: 32, borderRadius: '8px', background: SAND, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <FolderIcon sx={{ color: NAVY, fontSize: 17 }} />
+              <FolderIcon sx={{ color: '#FFFFFF', fontSize: 17 }} />
             </Box>
             <Box sx={{ overflow: 'hidden' }}>
               <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#FFFFFF', lineHeight: 1.1, whiteSpace: 'nowrap' }}>
@@ -132,7 +133,7 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
             width: 32, height: 32, borderRadius: '8px', background: SAND,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <FolderIcon sx={{ color: NAVY, fontSize: 17 }} />
+            <FolderIcon sx={{ color: '#FFFFFF', fontSize: 17 }} />
           </Box>
         )}
 
@@ -205,7 +206,7 @@ const Sidebar = ({ mobileOpen, onClose, collapsed, onToggleCollapse }: Props) =>
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, border: 'none', background: '#0A2947' },
+          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, border: 'none', background: '#0F1729' },
         }}
       >
         <SidebarContent onClose={onClose} collapsed={false} onToggleCollapse={() => {}} />
@@ -222,7 +223,7 @@ const Sidebar = ({ mobileOpen, onClose, collapsed, onToggleCollapse }: Props) =>
           '& .MuiDrawer-paper': {
             width,
             border: 'none',
-            background: '#0A2947',
+            background: '#0F1729',
             boxShadow: '2px 0 12px rgba(10,41,71,0.12)',
             overflowX: 'hidden',
             transition: 'width 0.25s ease',

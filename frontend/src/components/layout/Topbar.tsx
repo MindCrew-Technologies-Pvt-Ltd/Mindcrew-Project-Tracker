@@ -60,11 +60,10 @@ const Topbar = ({ onMenuClick, sidebarWidth = 248 }: Props) => {
             <Avatar
               sx={{
                 width: 34, height: 34,
-                bgcolor: '#0A2947',
-                fontSize: 13, fontWeight: 700,
-                border: '2px solid #F3E4C9',
+                background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)',
+                fontSize: 13, fontWeight: 700, color: '#fff',
                 transition: 'all 0.2s ease',
-                '&:hover': { transform: 'scale(1.05)', boxShadow: '0 2px 8px rgba(10,41,71,0.25)' },
+                '&:hover': { transform: 'scale(1.05)', boxShadow: '0 2px 10px rgba(79,70,229,0.4)' },
               }}
             >
               {initials}

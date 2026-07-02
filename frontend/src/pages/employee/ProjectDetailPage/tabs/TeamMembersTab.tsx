@@ -76,7 +76,7 @@ const TeamMembersTab = ({ project, canEdit, onChanged }: Props) => {
           <ListItem key={m.memberId}>
             <ListItemAvatar><Avatar>{m.name?.charAt(0).toUpperCase()}</Avatar></ListItemAvatar>
             <ListItemText
-              primary={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography variant="body1">{m.name}</Typography><Chip label={m.role} size="small" sx={{ bgcolor: '#EAF1F8', color: '#0A2947' }} /></Box>}
+              primary={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography variant="body1">{m.name}</Typography><Chip label={m.role} size="small" sx={{ bgcolor: '#EEF0FF', color: '#4338CA' }} /></Box>}
               secondary={m.email}
             />
             {canEdit && (

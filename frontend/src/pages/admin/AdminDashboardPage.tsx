@@ -113,22 +113,22 @@ const AdminDashboardPage = () => {
 
       <Grid container spacing={2.5} mb={3}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Total Users" value={totalUsers} icon={<PeopleIcon />} bg="#EDF3F8" iconColor="#0A2947" />
+          <StatCard label="Total Users" value={totalUsers} icon={<PeopleIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Total Projects" value={totalProj} icon={<FolderIcon />} bg="#EDF3F8" iconColor="#0A2947" />
+          <StatCard label="Total Projects" value={totalProj} icon={<FolderIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Active Projects" value={activeProj} icon={<PlayCircleIcon />} bg="#EEF4EE" iconColor="#4D7C5A" />
+          <StatCard label="Active Projects" value={activeProj} icon={<PlayCircleIcon />} bg="#E9F9EF" iconColor="#16A34A" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Pending Edit Requests" value={pendingReq} icon={<EditNoteIcon />} bg="#F6EFEA" iconColor="#8B5E3C" />
+          <StatCard label="Pending Edit Requests" value={pendingReq} icon={<EditNoteIcon />} bg="#EDE9FE" iconColor="#7C3AED" />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard label="Completed Projects" value={completedProj} icon={<CheckCircleIcon />} bg="#F3E4C9" iconColor="#0A2947" />
+          <StatCard label="Completed Projects" value={completedProj} icon={<CheckCircleIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <StatCard label="On Hold" value={onHold} icon={<PauseCircleIcon />} bg="#FDF8F0" iconColor="#C4934D" />
+          <StatCard label="On Hold" value={onHold} icon={<PauseCircleIcon />} bg="#FEF3E2" iconColor="#F59E0B" />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
           <StatCard label="Delayed Projects" value={delayed} icon={<WarningIcon />} bg="#FDF0EE" iconColor="#C66A4B" />
