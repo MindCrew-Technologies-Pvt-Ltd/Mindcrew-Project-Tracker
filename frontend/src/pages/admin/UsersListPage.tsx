@@ -30,26 +30,26 @@ const UsersListPage = () => {
   const title = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
 
   const colDefs: ColDef[] = [
-    { headerName: 'Name', field: 'name', flex: 1.6, minWidth: 210, cellRenderer: (p: any) => (
+    { headerName: 'Name', field: 'name', flex: 1.4, minWidth: 180, cellRenderer: (p: any) => (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 34, height: 34, fontSize: 14, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>{p.value?.charAt(0)}</Avatar>
+        <Avatar sx={{ width: 32, height: 32, fontSize: 13.5, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>{p.value?.charAt(0)}</Avatar>
         <Box sx={{ fontWeight: 600, color: '#1E293B' }}>{p.value}</Box>
       </Box>
     )},
-    { headerName: 'Email', field: 'email', flex: 2, minWidth: 230 },
-    { headerName: 'Department', field: 'department', flex: 1.2, minWidth: 140, valueFormatter: (p: any) => p.value || '—' },
-    { headerName: 'Designation', field: 'designation', flex: 1.3, minWidth: 150, valueFormatter: (p: any) => p.value || '—' },
-    { headerName: 'Role', field: 'role', minWidth: 130, cellRenderer: (p: any) => (
+    { headerName: 'Email', field: 'email', flex: 1.6, minWidth: 200 },
+    { headerName: 'Department', field: 'department', flex: 1, minWidth: 120, valueFormatter: (p: any) => p.value || '—' },
+    { headerName: 'Designation', field: 'designation', flex: 1, minWidth: 130, valueFormatter: (p: any) => p.value || '—' },
+    { headerName: 'Role', field: 'role', width: 120, minWidth: 110, cellRenderer: (p: any) => (
       <Chip label={title(p.value)} size="small" sx={p.value === 'ADMIN'
         ? { bgcolor: '#7C3AED', color: '#fff', fontWeight: 600, px: 0.5 }
         : { bgcolor: '#EEF0FF', color: '#4338CA', fontWeight: 600, px: 0.5 }} />
     )},
-    { headerName: 'Status', field: 'isActive', minWidth: 120, cellRenderer: (p: any) => (
+    { headerName: 'Status', field: 'isActive', width: 120, minWidth: 110, cellRenderer: (p: any) => (
       <Chip label={p.value ? 'Active' : 'Inactive'} size="small" sx={p.value
         ? { bgcolor: '#E9F9EF', color: '#15803D', fontWeight: 600, px: 0.5 }
         : { bgcolor: '#FDECEC', color: '#B91C1C', fontWeight: 600, px: 0.5 }} />
     )},
-    { headerName: 'Joined', field: 'createdAt', minWidth: 130, valueFormatter: (p: any) => formatDate(p.value) },
+    { headerName: 'Joined', field: 'createdAt', width: 120, minWidth: 110, valueFormatter: (p: any) => formatDate(p.value) },
     { headerName: '', field: 'id', width: 64, maxWidth: 64, pinned: 'right', sortable: false, filter: false, resizable: false, cellRenderer: (p: any) => (
       <IconButton size="small" onClick={(e) => { e.stopPropagation(); setMenuAnchor({ el: e.currentTarget, userId: p.value }); }}>
         <MoreVertIcon fontSize="small" />

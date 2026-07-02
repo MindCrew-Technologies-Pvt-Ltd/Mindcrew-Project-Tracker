@@ -16,9 +16,9 @@
   --ag-input-focus-border-color: #4f46e5;
   --ag-border-radius: 12px;
   --ag-wrapper-border-radius: 16px;
-  --ag-header-height: 56px;
-  --ag-row-height: 68px;
-  --ag-cell-horizontal-padding: 28px;
+  --ag-header-height: 54px;
+  --ag-row-height: 64px;
+  --ag-cell-horizontal-padding: 18px;
 }
 
 .ag-theme-quartz .ag-header-cell-text {
