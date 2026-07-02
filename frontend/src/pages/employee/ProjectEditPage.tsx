@@ -64,7 +64,7 @@ const ProjectEditPage = () => {
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth><InputLabel>Status</InputLabel>
                       <Controller name="status" control={control} render={({ field }) => (
-                        <Select {...field} label="Status">
+                        <Select value={field.value || ''} onChange={field.onChange} onBlur={field.onBlur} label="Status">
                           {(['DRAFT','ACTIVE','ON_HOLD','COMPLETED','CANCELLED','ARCHIVED'] as ProjectStatus[]).map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
                         </Select>
                       )} />
@@ -73,7 +73,7 @@ const ProjectEditPage = () => {
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth><InputLabel>Priority</InputLabel>
                       <Controller name="priority" control={control} render={({ field }) => (
-                        <Select {...field} label="Priority">
+                        <Select value={field.value || ''} onChange={field.onChange} onBlur={field.onBlur} label="Priority">
                           {(['LOW','MEDIUM','HIGH','CRITICAL'] as ProjectPriority[]).map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
                         </Select>
                       )} />
