@@ -2,10 +2,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Grid, TextField, Button, Card, CardContent, Alert, CircularProgress, Slider, Typography, MenuItem, Chip } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAuth } from '../../hooks/useAuth';
 import { createWeeklyUpdateThunk } from '../../store/slices/weeklyUpdatesSlice';
+import { fetchProjectByIdThunk } from '../../store/slices/projectsSlice';
 import { weeklyUpdateSchema } from '../../utils/validators';
 import PageHeader from '../../components/common/PageHeader';
 import { ROUTES } from '../../constants/routes';
@@ -31,10 +33,21 @@ const WeeklyUpdateNewPage = () => {
   const { id: projectId } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const { loading, error } = useAppSelector((s) => s.weeklyUpdates);
+  const { currentProject: project, loading: projectLoading } = useAppSelector((s) => s.projects);
   const [taskInput, setTaskInput] = useState('');
   const [plannedInput, setPlannedInput] = useState('');
   const [weekDate, setWeekDate] = useState(todayISO());
+
+  useEffect(() => { if (projectId) dispatch(fetchProjectByIdThunk(projectId)); }, [projectId, dispatch]);
+
+  // Only the owner, a team member, or an admin may post updates — mirrors the
+  // backend guard so a direct URL can't reach the form.
+  const projectReady = project?.id === projectId;
+  const canContribute = isAdmin
+    || project?.owner?.id === user?.id
+    || (project?.teamMembers?.some((m: any) => m.user?.id === user?.id) ?? false);
 
   const initial = isoWeek(new Date());
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CreateWeeklyUpdatePayload>({
@@ -76,6 +89,20 @@ const WeeklyUpdateNewPage = () => {
     const result = await dispatch(createWeeklyUpdateThunk({ projectId, payload: data }));
     if (createWeeklyUpdateThunk.fulfilled.match(result)) navigate(ROUTES.PROJECT_DETAIL(projectId));
   };
+
+  if (projectLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
+  if (!projectReady) return <Alert severity="error">Project not found</Alert>;
+  if (!canContribute) {
+    return (
+      <Box>
+        <PageHeader title="Add Weekly Update" breadcrumbs={[{ label: 'Projects', href: ROUTES.PROJECTS }, { label: project?.name || 'Project', href: ROUTES.PROJECT_DETAIL(projectId || '') }, { label: 'Add Update' }]} />
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Only the project owner or its team members can add weekly updates to this project.
+        </Alert>
+        <Button variant="outlined" onClick={() => navigate(ROUTES.PROJECT_DETAIL(projectId || ''))}>Back to project</Button>
+      </Box>
+    );
+  }
 
   return (
     <Box>

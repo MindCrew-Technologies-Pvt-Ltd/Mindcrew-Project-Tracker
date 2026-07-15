@@ -24,11 +24,13 @@ const WeeklyUpdatesTab = ({ project, canEdit }: Props) => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button variant="contained" onClick={() => navigate(ROUTES.WEEKLY_UPDATE_NEW(project.id))}>+ Add Update</Button>
-      </Box>
+      {canEdit && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <Button variant="contained" onClick={() => navigate(ROUTES.WEEKLY_UPDATE_NEW(project.id))}>+ Add Update</Button>
+        </Box>
+      )}
       {projectUpdates.length === 0 ? (
-        <EmptyState title="No weekly updates yet" description="Add your first weekly progress update." />
+        <EmptyState title="No weekly updates yet" description={canEdit ? 'Add your first weekly progress update.' : 'Updates posted by the project team will appear here.'} />
       ) : (
         projectUpdates.map(u => (
           <WeeklyUpdateCard

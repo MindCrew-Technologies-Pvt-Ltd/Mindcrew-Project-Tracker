@@ -79,7 +79,7 @@ const ProjectDetailPage = () => {
             )}
             <Button variant="outlined" onClick={(e) => setAnchorEl(e.currentTarget)}><MoreVertIcon /></Button>
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-              <MenuItem onClick={() => navigate(ROUTES.WEEKLY_UPDATE_NEW(project.id))}>Add Weekly Update</MenuItem>
+              {canContribute && <MenuItem onClick={() => navigate(ROUTES.WEEKLY_UPDATE_NEW(project.id))}>Add Weekly Update</MenuItem>}
               {!isOwner && !isAdmin && <MenuItem onClick={() => { setTab(4); setAnchorEl(null); }}>Request Edit Access</MenuItem>}
               {(isAdmin || isOwner) && [
                 <Divider key="d" />,
