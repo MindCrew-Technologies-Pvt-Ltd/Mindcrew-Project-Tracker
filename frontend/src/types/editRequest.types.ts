@@ -1,5 +1,5 @@
 
-export type EditRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type EditRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
 
 export interface EditRequest {
   id: string;

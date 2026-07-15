@@ -169,6 +169,10 @@ export const requestEditAccess: RequestHandler = async (req, res, next) => {
     if (project.ownerId === req.user!.id) { error(res, 'You already own this project', 400); return; }
     const pending = await prisma.editRequest.findFirst({ where: { projectId: id, requestedById: req.user!.id, status: 'PENDING' } });
     if (pending) { error(res, 'You already have a pending request', 409); return; }
+    // Requesting is one-time: with access already granted there is nothing to ask for.
+    // (A REJECTED or REVOKED user may request again.)
+    const approved = await prisma.editRequest.findFirst({ where: { projectId: id, requestedById: req.user!.id, status: 'APPROVED' } });
+    if (approved) { error(res, 'You already have edit access to this project', 409); return; }
     const { reason, comments } = req.body;
     const editRequest = await prisma.editRequest.create({ data: { projectId: id, requestedById: req.user!.id, reason, comments } });
     const requester = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { name: true } });

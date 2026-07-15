@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getEditRequests, approveEditRequest, rejectEditRequest } from '../controllers/editRequests.controller';
+import { getEditRequests, approveEditRequest, rejectEditRequest, revokeEditRequest } from '../controllers/editRequests.controller';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -11,5 +11,6 @@ const router = Router();
 router.get('/', authenticate, getEditRequests);
 router.put('/:id/approve', authenticate, approveEditRequest);
 router.put('/:id/reject', authenticate, rejectEditRequest);
+router.put('/:id/revoke', authenticate, revokeEditRequest);
 
 export default router;

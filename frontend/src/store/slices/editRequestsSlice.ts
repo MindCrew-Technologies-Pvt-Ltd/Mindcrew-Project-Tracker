@@ -17,6 +17,10 @@ export const rejectEditRequestThunk = createAsyncThunk('editRequests/reject', as
   try { return (await editRequestsService.rejectEditRequest(id, reason)).data.data; } catch (err: any) { return rejectWithValue(err.response?.data?.message || 'Failed'); }
 });
 
+export const revokeEditRequestThunk = createAsyncThunk('editRequests/revoke', async (id: string, { rejectWithValue }) => {
+  try { return (await editRequestsService.revokeEditRequest(id)).data.data; } catch (err: any) { return rejectWithValue(err.response?.data?.message || 'Failed'); }
+});
+
 const editRequestsSlice = createSlice({
   name: 'editRequests',
   initialState,
@@ -27,7 +31,8 @@ const editRequestsSlice = createSlice({
       .addCase(fetchEditRequestsThunk.fulfilled, (state, action) => { state.loading = false; state.requests = action.payload.data; state.pagination = { total: action.payload.total, page: action.payload.page, pageSize: action.payload.pageSize, totalPages: action.payload.totalPages }; })
       .addCase(fetchEditRequestsThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
       .addCase(approveEditRequestThunk.fulfilled, (state, action) => { const idx = state.requests.findIndex(r => r.id === action.payload.id); if (idx !== -1) state.requests[idx] = action.payload; })
-      .addCase(rejectEditRequestThunk.fulfilled, (state, action) => { const idx = state.requests.findIndex(r => r.id === action.payload.id); if (idx !== -1) state.requests[idx] = action.payload; });
+      .addCase(rejectEditRequestThunk.fulfilled, (state, action) => { const idx = state.requests.findIndex(r => r.id === action.payload.id); if (idx !== -1) state.requests[idx] = action.payload; })
+      .addCase(revokeEditRequestThunk.fulfilled, (state, action) => { const idx = state.requests.findIndex(r => r.id === action.payload.id); if (idx !== -1) state.requests[idx] = action.payload; });
   },
 });
 

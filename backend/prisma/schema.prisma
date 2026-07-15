@@ -54,6 +54,7 @@ enum EditRequestStatus {
   PENDING
   APPROVED
   REJECTED
+  REVOKED
 }
 
 model User {

@@ -67,6 +67,18 @@ export const approveEditRequest: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const revokeEditRequest: RequestHandler = async (req, res, next) => {
+  try {
+    const id = sp(req.params.id);
+    const existing = await assertCanReview(id, req.user!);
+    if (existing.status !== 'APPROVED') { error(res, 'Only approved requests can be revoked', 400); return; }
+    const updated = await prisma.editRequest.update({ where: { id }, data: { status: 'REVOKED', reviewedById: req.user!.id } });
+    await createNotification({ userId: existing.requestedById, title: 'Edit Access Revoked', message: `Your edit access to "${existing.project.name}" has been revoked.`, type: 'EDIT_REQUEST_UPDATE', relatedId: id });
+    await logActivity({ userId: req.user!.id, action: 'REVOKE', module: 'EDIT_REQUEST', description: `Revoked edit access for request ${id}` });
+    success(res, updated);
+  } catch (err) { next(err); }
+};
+
 export const rejectEditRequest: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);
