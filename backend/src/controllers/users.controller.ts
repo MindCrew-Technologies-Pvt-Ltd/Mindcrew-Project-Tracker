@@ -85,12 +85,13 @@ export const deleteUser: RequestHandler = async (req, res, next) => {
 export const resetUserPassword: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);
-    const { newPassword } = req.body;
-    if (!newPassword || newPassword.length < 8) { error(res, 'New password must be at least 8 characters', 400); return; }
+    const { newPassword } = req.body; // complexity enforced by adminResetPasswordSchema on the route
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) return next(new AppError('User not found', 404));
     await prisma.user.update({ where: { id }, data: { passwordHash: await hashPassword(newPassword) } });
-    await sendEmail(existing.email, 'Your password has been reset', `<p>Hi ${existing.name}, an admin reset your password. New password: <strong>${newPassword}</strong>. Please change it immediately.</p>`);
+    // Never put the password itself in the email — it would sit in the user's
+    // inbox and the mail provider's logs in plaintext. The admin shares it out-of-band.
+    await sendEmail(existing.email, 'Your password has been reset', `<p>Hi ${existing.name}, an administrator has reset your account password. Please get your new password from your administrator and change it after your first login.</p>`);
     await logActivity({ userId: req.user!.id, action: 'RESET_PASSWORD', module: 'USER', description: `Reset password for user ${id}` });
     success(res, null, 'Password reset and email sent');
   } catch (err) { next(err); }

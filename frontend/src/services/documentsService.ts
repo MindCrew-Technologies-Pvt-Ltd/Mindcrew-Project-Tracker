@@ -7,6 +7,9 @@ const documentsService = {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (e) => { if (onProgress && e.total) onProgress(Math.round((e.loaded * 100) / e.total)); },
     }),
+  // Files are no longer public — download through the authenticated endpoint.
+  downloadDocument: (docId: string) =>
+    axiosInstance.get(`/documents/${docId}/download`, { responseType: 'blob' }),
   deleteDocument: (_projectId: string, docId: string) => axiosInstance.delete(`/documents/${docId}`),
 };
 

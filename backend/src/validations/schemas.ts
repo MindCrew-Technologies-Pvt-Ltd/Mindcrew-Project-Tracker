@@ -123,6 +123,11 @@ export const createEditRequestSchema = Joi.object({
 
 // ---- Admin: update user (mirrors no dedicated frontend form; kept permissive) ----
 
+// Admin reset of a user's password — same complexity rule as signup/change.
+export const adminResetPasswordSchema = Joi.object({
+  newPassword: password,
+});
+
 export const updateUserSchema = Joi.object({
   name: Joi.string().optional(), phone: Joi.string().allow('').optional(),
   department: Joi.string().allow('').optional(), designation: Joi.string().allow('').optional(),

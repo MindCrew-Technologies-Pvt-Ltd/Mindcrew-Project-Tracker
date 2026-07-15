@@ -38,8 +38,11 @@ function toCsv(data: unknown[]): string {
   const headers = Object.keys(data[0] as object);
   const rows = data.map((row) => headers.map((h) => {
     const v = (row as Record<string, unknown>)[h];
-    const s = v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
-    return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+    let s = v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+    // Neutralize spreadsheet formula injection: a user-supplied value starting
+    // with = + - @ would execute as a formula when the CSV is opened in Excel.
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
   }).join(','));
   return [headers.join(','), ...rows].join('\n');
 }

@@ -27,6 +27,7 @@ export const getWeeklyUpdate: RequestHandler = async (req, res, next) => {
     const id = sp(req.params.id);
     const update = await prisma.weeklyUpdate.findUnique({ where: { id }, include: { author: { select: { id: true, name: true, email: true } } } });
     if (!update) return next(new AppError('Weekly update not found', 404));
+    await assertProjectAccess(update.projectId, req.user!);
     success(res, update);
   } catch (err) { next(err); }
 };

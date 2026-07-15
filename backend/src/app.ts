@@ -7,7 +7,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 
-import { CORS_ORIGIN, NODE_ENV, UPLOAD_DIR } from './config/env';
+import { CORS_ORIGIN, NODE_ENV } from './config/env';
 import { ensureUploadDir } from './config/storage';
 import { apiLimiter } from './middleware/rateLimiter';
 import { notFound, errorHandler } from './middleware/errorHandler';
@@ -33,9 +33,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Serve uploaded documents from the mounted volume. Filenames are random UUIDs.
+// Documents live on the mounted volume but are NOT served publicly — downloads
+// go through the authenticated GET /api/documents/:id/download endpoint, which
+// checks project access before streaming the file.
 ensureUploadDir();
-app.use('/uploads', express.static(UPLOAD_DIR));
 
 app.use('/api', apiLimiter);
 

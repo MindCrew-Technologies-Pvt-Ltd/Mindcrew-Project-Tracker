@@ -19,13 +19,15 @@ function DataTable<T>({ rowData, columnDefs, loading, height = 500, onRowClicked
   return (
     <Box className="ag-theme-quartz" sx={{ height, width: '100%' }}>
       <AgGridReact
+        // The app styles the grid with the imported ag-theme-quartz CSS; opt out
+        // of the v33+ Theming API so that CSS keeps applying.
+        theme="legacy"
         rowData={rowData}
         columnDefs={columnDefs}
         pagination={pagination}
         paginationPageSize={pageSize}
         onRowClicked={(e) => onRowClicked?.(e.data)}
         defaultColDef={{ sortable: true, filter: true, resizable: true, flex: 1 }}
-        suppressRowClickSelection
         rowStyle={{ cursor: onRowClicked ? 'pointer' : 'default' }}
       />
     </Box>

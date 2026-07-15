@@ -1,5 +1,8 @@
 import { RequestHandler } from 'express';
+import fs from 'fs';
+import path from 'path';
 import prisma from '../config/prisma';
+import { UPLOAD_DIR } from '../config/env';
 import { saveFile, deleteFile } from '../config/storage';
 import { success, error } from '../utils/response';
 import { logActivity } from '../utils/activityLogger';
@@ -34,6 +37,20 @@ export const uploadDocument: RequestHandler = async (req, res, next) => {
     });
     await logActivity({ userId: req.user!.id, action: 'UPLOAD', module: 'DOCUMENT', description: `Uploaded ${req.file.originalname}` });
     success(res, doc, 'Document uploaded', 201);
+  } catch (err) { next(err); }
+};
+
+// Authenticated download: files are no longer served publicly from /uploads —
+// access requires being the project's owner, a team member, or an admin.
+export const downloadDocument: RequestHandler = async (req, res, next) => {
+  try {
+    const doc = await prisma.document.findUnique({ where: { id: sp(req.params.id) } });
+    if (!doc) return next(new AppError('Document not found', 404));
+    await assertProjectAccess(doc.projectId, req.user!);
+    const stored = path.basename(doc.fileUrl.split('/uploads/')[1] ?? '');
+    const filePath = stored ? path.join(UPLOAD_DIR, stored) : '';
+    if (!stored || !fs.existsSync(filePath)) return next(new AppError('Document file missing', 404));
+    res.download(filePath, doc.fileName);
   } catch (err) { next(err); }
 };
 

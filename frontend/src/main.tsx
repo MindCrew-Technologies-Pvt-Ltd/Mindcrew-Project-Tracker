@@ -19,6 +19,11 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+
+// AG Grid v33+ ships as modules — without this registration every grid throws
+// at runtime ("No AG Grid modules are registered").
+ModuleRegistry.registerModules([AllCommunityModule]);
 import './index.css';
 import { store } from './store';
 import theme from './theme';

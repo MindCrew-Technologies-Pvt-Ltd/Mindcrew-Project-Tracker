@@ -15,12 +15,15 @@ The backend `validate()` middleware runs Joi with `stripUnknown: true`
 
 ## Rules (kept identical on both sides)
 
-### Password (signup, reset, change)
+### Password (signup, reset, change, admin reset)
 - Minimum 8 characters
 - At least one capital letter
 - At least one number
 - At least one special symbol
 - (Login only checks presence, no complexity.)
+- The admin reset endpoint (`PUT /admin/users/:id/reset-password`) enforces the
+  same rule via `adminResetPasswordSchema`, and the new password is **never
+  emailed** — the admin shares it out-of-band.
 
 ### Phone (optional everywhere)
 - Optional — may be blank

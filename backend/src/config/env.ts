@@ -17,8 +17,24 @@ function getEnvNumber(key: string, defaultValue: number): number {
 
 export const PORT = getEnvNumber('PORT', 5000);
 export const NODE_ENV = getEnv('NODE_ENV', 'development');
-export const JWT_SECRET = getEnv('JWT_SECRET', 'dev-jwt-secret-change-me');
-export const JWT_REFRESH_SECRET = getEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-me');
+
+// JWT secrets: dev falls back to a local-only default, but production MUST set
+// real secrets — otherwise tokens would be signed with a publicly known string
+// and anyone could forge an admin session. Fail the boot instead.
+function getSecret(key: string, devDefault: string): string {
+  const value = process.env[key];
+  if (value) return value;
+  if (process.env['NODE_ENV'] === 'production') {
+    throw new Error(
+      `${key} is not set. Refusing to start in production with the built-in ` +
+        `development secret — set ${key} in the environment (Railway → Backend service → Variables).`
+    );
+  }
+  return devDefault;
+}
+
+export const JWT_SECRET = getSecret('JWT_SECRET', 'dev-jwt-secret-change-me');
+export const JWT_REFRESH_SECRET = getSecret('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-me');
 export const JWT_EXPIRES_IN = getEnv('JWT_EXPIRES_IN', '15m');
 export const JWT_REFRESH_EXPIRES_IN = getEnv('JWT_REFRESH_EXPIRES_IN', '7d');
 export const CORS_ORIGIN = getEnv('CORS_ORIGIN', 'http://localhost:5173');

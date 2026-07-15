@@ -4,6 +4,8 @@ import { InsertDriveFile as InsertDriveFileIcon, Download as DownloadIcon, Delet
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { fetchDocumentsThunk, uploadDocumentThunk, deleteDocumentThunk, clearDocumentsError } from '../../../../store/slices/documentsSlice';
+import documentsService from '../../../../services/documentsService';
+import { downloadBlob } from '../../../../utils/exportHelpers';
 import DocumentUploader from '../../../../components/common/DocumentUploader';
 import EmptyState from '../../../../components/common/EmptyState';
 import LoadingSpinner from '../../../../components/common/LoadingSpinner';
@@ -33,6 +35,15 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
     setUploading(false);
   };
 
+  const handleDownload = async (docId: string, fileName: string) => {
+    try {
+      const res = await documentsService.downloadDocument(docId);
+      downloadBlob(res.data, fileName);
+    } catch {
+      // interceptor surfaces auth errors; nothing extra to do here
+    }
+  };
+
   const handleDelete = async () => {
     if (deleteId) { await dispatch(deleteDocumentThunk({ projectId: project.id, docId: deleteId })); setDeleteId(null); }
   };
@@ -57,7 +68,7 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
                   secondary={<><Chip label={DOCUMENT_CATEGORY_LABELS[doc.category]} size="small" sx={{ mr: 1 }} /><Typography variant="caption" color="text.secondary">by {doc.uploadedBy?.name} · {formatDate(doc.createdAt)}</Typography></>}
                 />
                 <ListItemSecondaryAction>
-                  <IconButton href={doc.fileUrl} target="_blank" rel="noopener"><DownloadIcon /></IconButton>
+                  <IconButton aria-label="Download document" onClick={() => handleDownload(doc.id, doc.fileName)}><DownloadIcon /></IconButton>
                   {canEdit && <IconButton onClick={() => setDeleteId(doc.id)} color="error"><DeleteIcon /></IconButton>}
                 </ListItemSecondaryAction>
               </ListItem>
