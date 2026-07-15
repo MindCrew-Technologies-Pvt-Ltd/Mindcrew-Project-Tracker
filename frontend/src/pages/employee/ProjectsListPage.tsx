@@ -19,7 +19,12 @@ import { ROUTES } from '../../constants/routes';
 import { ProjectStatus, ProjectPriority, Project } from '../../types/project.types';
 import { formatDate } from '../../utils/formatters';
 
-const ProjectsListPage = () => {
+interface Props {
+  /** When true the page is "My Projects" — locked to the user's own/team projects. */
+  scopeMine?: boolean;
+}
+
+const ProjectsListPage = ({ scopeMine = false }: Props) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
@@ -29,6 +34,11 @@ const ProjectsListPage = () => {
   const debouncedSearch = useDebounce(search);
   const [toDelete, setToDelete] = useState<Project | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // The page's scope is fixed by the route (My Projects vs All Projects).
+  useEffect(() => {
+    dispatch(setFilters({ scope: scopeMine ? 'mine' : undefined, page: 1 }));
+  }, [scopeMine, dispatch]);
 
   const handleDelete = async () => {
     if (!toDelete) return;
@@ -59,7 +69,7 @@ const ProjectsListPage = () => {
   return (
     <Box>
       <PageHeader
-        title="Projects"
+        title={scopeMine ? 'My Projects' : 'All Projects'}
         subtitle={pagination.total + ' projects'}
         action={<Button variant="contained" onClick={() => navigate(ROUTES.PROJECT_NEW)}>+ New Project</Button>}
       />
@@ -83,16 +93,6 @@ const ProjectsListPage = () => {
           </Select>
         </FormControl>
 
-        <ToggleButtonGroup
-          value={filters.scope === 'mine' ? 'mine' : 'all'}
-          exclusive
-          size="small"
-          onChange={(_, v) => v && dispatch(setFilters({ scope: v === 'mine' ? 'mine' : undefined, page: 1 }))}
-        >
-          <ToggleButton value="all" sx={{ px: 1.75 }}>All Projects</ToggleButton>
-          <ToggleButton value="mine" sx={{ px: 1.75 }}>My Projects</ToggleButton>
-        </ToggleButtonGroup>
-
         <Box sx={{ ml: 'auto' }}>
           <ToggleButtonGroup value={view} exclusive onChange={(_, v) => v && setView(v)} size="small">
             <ToggleButton value="grid"><GridViewIcon fontSize="small" /></ToggleButton>
@@ -106,7 +106,7 @@ const ProjectsListPage = () => {
           {Array.from({ length: 6 }).map((_, i) => <Grid item key={i} xs={12} sm={6} md={4}><Skeleton variant="rectangular" height={220} sx={{ borderRadius: 2 }} /></Grid>)}
         </Grid>
       ) : list.length === 0 ? (
-        <EmptyState title="No projects found" description="Try adjusting your filters or create your first project." action={<Button variant="contained" onClick={() => navigate(ROUTES.PROJECT_NEW)}>Create Project</Button>} />
+        <EmptyState title="No projects found" description={scopeMine ? "You haven't created any projects yet, and you're not on any project team." : 'Try adjusting your filters or create the first project.'} action={<Button variant="contained" onClick={() => navigate(ROUTES.PROJECT_NEW)}>Create Project</Button>} />
       ) : view === 'grid' ? (
         <Grid container spacing={3}>
           {list.map(p => <Grid item key={p.id} xs={12} sm={6} md={4}><ProjectCard project={p} canDelete={isAdmin || p.owner?.id === user?.id} onDelete={setToDelete} /></Grid>)}

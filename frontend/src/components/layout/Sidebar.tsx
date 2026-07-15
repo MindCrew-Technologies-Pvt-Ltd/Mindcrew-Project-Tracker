@@ -1,7 +1,7 @@
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, Typography, Divider, Tooltip, IconButton } from '@mui/material';
 import { NavLink } from 'react-router-dom';
 import {
-  Dashboard as DashboardIcon, Folder as FolderIcon, People as PeopleIcon,
+  Dashboard as DashboardIcon, Folder as FolderIcon, FolderCopy as FolderCopyIcon, People as PeopleIcon,
   Assessment as AssessmentIcon, EditNote as EditNoteIcon,
   ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
@@ -15,8 +15,9 @@ const NAVY = '#0F1729';
 const SAND = '#4F46E5';
 
 const employeeNav = [
-  { label: 'Dashboard', icon: <DashboardIcon fontSize="small" />, to: ROUTES.DASHBOARD },
-  { label: 'Projects', icon: <FolderIcon fontSize="small" />, to: ROUTES.PROJECTS },
+  { label: 'My Dashboard', icon: <DashboardIcon fontSize="small" />, to: ROUTES.DASHBOARD },
+  { label: 'My Projects', icon: <FolderIcon fontSize="small" />, to: ROUTES.MY_PROJECTS },
+  { label: 'All Projects', icon: <FolderCopyIcon fontSize="small" />, to: ROUTES.PROJECTS },
 ];
 
 const adminNav = [
