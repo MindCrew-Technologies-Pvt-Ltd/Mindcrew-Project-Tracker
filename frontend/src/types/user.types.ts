@@ -11,6 +11,17 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  projectCount?: number;
+  ownedProjects?: OwnedProject[];
+}
+
+export interface OwnedProject {
+  id: string;
+  name: string;
+  clientName?: string;
+  status: string;
+  priority: string;
+  createdAt: string;
 }
 
 export interface UpdateUserPayload {

@@ -10,6 +10,9 @@ import { formatDate, formatDateTime } from '../../utils/formatters';
 import { useState } from 'react';
 import axiosInstance from '../../services/axiosInstance';
 import { ActivityLog } from '../../types/activityLog.types';
+import { ProjectStatus, ProjectPriority } from '../../types/project.types';
+import ProjectStatusChip from '../../components/project/ProjectStatusChip';
+import PriorityChip from '../../components/project/PriorityChip';
 
 const UserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,6 +75,45 @@ const UserDetailPage = () => {
         </Grid>
 
         <Grid item xs={12} md={8}>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                Projects ({user.ownedProjects?.length ?? 0})
+              </Typography>
+              {!user.ownedProjects?.length ? (
+                <Typography variant="body2" color="text.secondary">No projects created by this user</Typography>
+              ) : (
+                <List disablePadding>
+                  {user.ownedProjects.map((p, i) => (
+                    <Box key={p.id}>
+                      {i > 0 && <Divider />}
+                      <ListItem disablePadding sx={{ py: 1.25, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+                        <ListItemText
+                          sx={{ flex: '1 1 auto', minWidth: 0, my: 0 }}
+                          primary={
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              onClick={() => navigate(ROUTES.ADMIN_PROJECT_DETAIL(p.id))}
+                              sx={{ fontWeight: 600, color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                            >
+                              {p.name}
+                            </Typography>
+                          }
+                          secondary={`${p.clientName ? p.clientName + ' · ' : ''}Created ${formatDate(p.createdAt)}`}
+                        />
+                        <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+                          <ProjectStatusChip status={p.status as ProjectStatus} />
+                          <PriorityChip priority={p.priority as ProjectPriority} />
+                        </Box>
+                      </ListItem>
+                    </Box>
+                  ))}
+                </List>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={600} mb={2}>Recent Activity</Typography>

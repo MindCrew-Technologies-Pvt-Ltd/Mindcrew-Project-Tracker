@@ -21,10 +21,10 @@ export const getUsers: RequestHandler = async (req, res, next) => {
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive === 'true';
     const [items, total] = await Promise.all([
-      prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, role: true, isActive: true, createdAt: true, updatedAt: true } }),
+      prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, role: true, isActive: true, createdAt: true, updatedAt: true, _count: { select: { ownedProjects: true } } } }),
       prisma.user.count({ where }),
     ]);
-    paginated(res, items, total, page, pageSize);
+    paginated(res, items.map(({ _count, ...u }) => ({ ...u, projectCount: _count.ownedProjects })), total, page, pageSize);
   } catch (err) { next(err); }
 };
 
@@ -33,8 +33,11 @@ export const getUser: RequestHandler = async (req, res, next) => {
     const id = sp(req.params.id);
     const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, role: true, isActive: true, createdAt: true, updatedAt: true } });
     if (!user) return next(new AppError('User not found', 404));
-    const recentActivity = await prisma.activityLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 20 });
-    success(res, { ...user, recentActivity });
+    const [recentActivity, ownedProjects] = await Promise.all([
+      prisma.activityLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 20 }),
+      prisma.project.findMany({ where: { ownerId: id }, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, clientName: true, status: true, priority: true, createdAt: true } }),
+    ]);
+    success(res, { ...user, recentActivity, ownedProjects });
   } catch (err) { next(err); }
 };
 

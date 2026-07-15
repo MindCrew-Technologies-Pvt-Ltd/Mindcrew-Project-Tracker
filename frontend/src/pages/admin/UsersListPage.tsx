@@ -65,9 +65,17 @@ const UsersListPage = () => {
         </Box>
       ),
     },
-    { key: 'department', header: 'Department', width: '14%', sortable: true, render: (u) => u.department || '—' },
-    { key: 'designation', header: 'Designation', width: '15%', sortable: true, render: (u) => u.designation || '—' },
-    { key: 'role', header: 'Role', width: '11%', sortable: true, value: (u) => u.role, render: (u) => <RolePill role={u.role} /> },
+    { key: 'department', header: 'Department', width: '12%', sortable: true, render: (u) => u.department || '—' },
+    { key: 'designation', header: 'Designation', width: '13%', sortable: true, render: (u) => u.designation || '—' },
+    {
+      key: 'projectCount', header: 'Projects', width: '8%', sortable: true, value: (u) => u.projectCount ?? 0,
+      render: (u) => (
+        <Box sx={{ display: 'inline-flex', minWidth: 28, justifyContent: 'center', px: 1, py: 0.5, borderRadius: 2, fontSize: '0.78rem', fontWeight: 600, bgcolor: (u.projectCount ?? 0) > 0 ? '#EEF0FF' : '#F1F5F9', color: (u.projectCount ?? 0) > 0 ? '#4338CA' : '#64748B' }}>
+          {u.projectCount ?? 0}
+        </Box>
+      ),
+    },
+    { key: 'role', header: 'Role', width: '10%', sortable: true, value: (u) => u.role, render: (u) => <RolePill role={u.role} /> },
     { key: 'isActive', header: 'Status', width: '11%', sortable: true, value: (u) => String(u.isActive), render: (u) => <StatusPill active={u.isActive} /> },
     { key: 'createdAt', header: 'Joined', width: '12%', sortable: true, value: (u) => u.createdAt, render: (u) => formatDate(u.createdAt) },
   ];
