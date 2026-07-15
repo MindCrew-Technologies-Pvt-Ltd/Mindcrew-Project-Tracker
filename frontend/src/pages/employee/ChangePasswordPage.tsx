@@ -13,6 +13,7 @@ const ChangePasswordPage = () => {
   const dispatch = useAppDispatch();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ChangePasswordPayload>({
@@ -42,7 +43,9 @@ const ChangePasswordPage = () => {
             <TextField label="New Password" fullWidth margin="normal" type={showNew ? 'text' : 'password'} error={!!errors.newPassword} helperText={errors.newPassword?.message}
               InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowNew(!showNew)} edge="end">{showNew ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment> }}
               {...register('newPassword')} />
-            <TextField label="Confirm New Password" fullWidth margin="normal" type={showNew ? 'text' : 'password'} error={!!errors.confirmPassword} helperText={errors.confirmPassword?.message} {...register('confirmPassword')} />
+            <TextField label="Confirm New Password" fullWidth margin="normal" type={showConfirm ? 'text' : 'password'} error={!!errors.confirmPassword} helperText={errors.confirmPassword?.message}
+              InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end">{showConfirm ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment> }}
+              {...register('confirmPassword')} />
             <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, py: 1.5 }} disabled={isSubmitting}>
               {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Change Password'}
             </Button>
