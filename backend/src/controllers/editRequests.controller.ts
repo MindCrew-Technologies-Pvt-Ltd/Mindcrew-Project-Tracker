@@ -9,12 +9,23 @@ import { AppError } from '../middleware/errorHandler';
 const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 const qs = (v: unknown): string | undefined => (v && typeof v === 'string' ? v : undefined);
 
+const DURATION_DAYS: Record<string, number> = { '1 day': 1, '3 days': 3, '1 week': 7, '2 weeks': 14 };
+
 function parseDuration(duration: string): Date {
   const now = new Date();
-  const map: Record<string, number> = { '1 day': 1, '3 days': 3, '1 week': 7, '2 weeks': 14 };
-  const days = map[duration.toLowerCase().trim()] ?? 1;
+  const days = DURATION_DAYS[duration.toLowerCase().trim()] ?? 1;
   now.setDate(now.getDate() + days);
   return now;
+}
+
+/** The request's project owner, or an admin, may review (approve/reject) it. */
+async function assertCanReview(editRequestId: string, user: { id: string; role?: string }) {
+  const existing = await prisma.editRequest.findUnique({ where: { id: editRequestId }, include: { project: { select: { ownerId: true, name: true } } } });
+  if (!existing) throw new AppError('Edit request not found', 404);
+  if (user.role !== 'ADMIN' && existing.project.ownerId !== user.id) {
+    throw new AppError('Only the project owner or an admin can review this request', 403);
+  }
+  return existing;
 }
 
 export const getEditRequests: RequestHandler = async (req, res, next) => {
@@ -22,6 +33,9 @@ export const getEditRequests: RequestHandler = async (req, res, next) => {
     const { skip, take, page, pageSize } = getPaginationParams(req.query as Record<string, unknown>);
     const status = qs(req.query.status);
     const projectId = qs(req.query.projectId);
+    // Non-admins must scope the list to one project (the project detail tab);
+    // only admins may list every request across the system.
+    if (req.user?.role !== 'ADMIN' && !projectId) return next(new AppError('projectId is required', 400));
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
     if (projectId) where.projectId = projectId;
@@ -45,9 +59,11 @@ export const getEditRequest: RequestHandler = async (req, res, next) => {
 export const approveEditRequest: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);
-    const existing = await prisma.editRequest.findUnique({ where: { id } });
-    if (!existing) return next(new AppError('Edit request not found', 404));
+    const existing = await assertCanReview(id, req.user!);
     if (existing.status !== 'PENDING') { error(res, 'Only pending requests can be approved', 400); return; }
+    if (req.body.duration && !(req.body.duration.toLowerCase().trim() in DURATION_DAYS)) {
+      error(res, `Invalid duration. Use one of: ${Object.keys(DURATION_DAYS).join(', ')}`, 400); return;
+    }
     const expiresAt = parseDuration(req.body.duration || existing.duration);
     const updated = await prisma.editRequest.update({ where: { id }, data: { status: 'APPROVED', reviewedById: req.user!.id, expiresAt } });
     await createNotification({ userId: existing.requestedById, title: 'Edit Request Approved', message: `Your edit request was approved. Access expires ${expiresAt.toLocaleDateString()}.`, type: 'EDIT_REQUEST_UPDATE', relatedId: id });
@@ -59,12 +75,11 @@ export const approveEditRequest: RequestHandler = async (req, res, next) => {
 export const rejectEditRequest: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);
-    const existing = await prisma.editRequest.findUnique({ where: { id } });
-    if (!existing) return next(new AppError('Edit request not found', 404));
+    const existing = await assertCanReview(id, req.user!);
     if (existing.status !== 'PENDING') { error(res, 'Only pending requests can be rejected', 400); return; }
-    const { reason } = req.body;
-    const updated = await prisma.editRequest.update({ where: { id }, data: { status: 'REJECTED', reviewedById: req.user!.id, reviewerNotes: reason } });
-    await createNotification({ userId: existing.requestedById, title: 'Edit Request Rejected', message: `Your edit request was rejected. Reason: ${reason}`, type: 'EDIT_REQUEST_UPDATE', relatedId: id });
+    const reason = qs(req.body.reason);
+    const updated = await prisma.editRequest.update({ where: { id }, data: { status: 'REJECTED', reviewedById: req.user!.id, reviewerNotes: reason ?? null } });
+    await createNotification({ userId: existing.requestedById, title: 'Edit Request Rejected', message: `Your edit request for "${existing.project.name}" was rejected.${reason ? ` Reason: ${reason}` : ''}`, type: 'EDIT_REQUEST_UPDATE', relatedId: id });
     await logActivity({ userId: req.user!.id, action: 'REJECT', module: 'EDIT_REQUEST', description: `Rejected edit request ${id}` });
     success(res, updated);
   } catch (err) { next(err); }

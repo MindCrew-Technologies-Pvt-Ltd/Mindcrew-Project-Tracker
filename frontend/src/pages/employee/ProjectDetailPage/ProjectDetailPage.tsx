@@ -5,6 +5,7 @@ import { Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material'
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { fetchProjectByIdThunk, deleteProjectThunk, archiveProjectThunk } from '../../../store/slices/projectsSlice';
+import axiosInstance from '../../../services/axiosInstance';
 import PageHeader from '../../../components/common/PageHeader';
 import ProjectStatusChip from '../../../components/project/ProjectStatusChip';
 import PriorityChip from '../../../components/project/PriorityChip';
@@ -30,15 +31,29 @@ const ProjectDetailPage = () => {
   const [tab, setTab] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [hasEditGrant, setHasEditGrant] = useState(false);
 
   useEffect(() => { if (id) dispatch(fetchProjectByIdThunk(id)); }, [id, dispatch]);
+
+  // An approved, unexpired edit request grants this user temporary edit access.
+  useEffect(() => {
+    if (!id || !user) return;
+    axiosInstance.get('/edit-requests', { params: { projectId: id, status: 'APPROVED' } })
+      .then(r => setHasEditGrant((r.data?.data || []).some((er: any) =>
+        er.requestedBy?.id === user.id && er.expiresAt && new Date(er.expiresAt).getTime() > Date.now())))
+      .catch(() => {});
+  }, [id, user]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!project) return null;
 
   const isOwner = project.owner?.id === user?.id;
-  const canEdit = isAdmin || isOwner;
+  const isMember = project.teamMembers?.some((m) => m.user?.id === user?.id) ?? false;
+  // Edit button: owner/admin, or an approved unexpired edit grant.
+  const canEdit = isAdmin || isOwner || hasEditGrant;
+  // Contributing (weekly updates, documents, team): owner/admin/team member.
+  const canContribute = isAdmin || isOwner || isMember;
 
   const handleDelete = async () => {
     await dispatch(deleteProjectThunk(project.id));
@@ -91,9 +106,9 @@ const ProjectDetailPage = () => {
       </Box>
 
       {tab === 0 && <OverviewTab project={project} />}
-      {tab === 1 && <WeeklyUpdatesTab project={project} canEdit={canEdit} />}
-      {tab === 2 && <DocumentsTab project={project} canEdit={canEdit} />}
-      {tab === 3 && <TeamMembersTab project={project} canEdit={canEdit} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
+      {tab === 1 && <WeeklyUpdatesTab project={project} canEdit={canContribute} />}
+      {tab === 2 && <DocumentsTab project={project} canEdit={canContribute} />}
+      {tab === 3 && <TeamMembersTab project={project} canEdit={isAdmin || isOwner} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
       {tab === 4 && <EditRequestsTab project={project} isOwner={isOwner} isAdmin={isAdmin} />}
       {tab === 5 && <TimelineTab project={project} />}
 

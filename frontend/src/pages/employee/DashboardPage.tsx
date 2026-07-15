@@ -32,7 +32,8 @@ const DashboardPage = () => {
   const { list: projects, loading } = useAppSelector((s) => s.projects);
 
   useEffect(() => {
-    dispatch(fetchProjectsThunk({ pageSize: 100 }));
+    // The dashboard shows the employee's own numbers, not the whole company's.
+    dispatch(fetchProjectsThunk({ pageSize: 100, scope: 'mine' }));
   }, [dispatch]);
 
   if (loading) return <LoadingSpinner />;

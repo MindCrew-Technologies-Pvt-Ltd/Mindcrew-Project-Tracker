@@ -7,14 +7,14 @@ import { saveFile, deleteFile } from '../config/storage';
 import { success, error } from '../utils/response';
 import { logActivity } from '../utils/activityLogger';
 import { AppError } from '../middleware/errorHandler';
-import { assertProjectAccess } from '../utils/projectAccess';
+import { assertProjectExists, assertProjectWriteAccess } from '../utils/projectAccess';
 import { DocumentCategory } from '@prisma/client';
 
 const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 
 export const getDocuments: RequestHandler = async (req, res, next) => {
   try {
-    await assertProjectAccess(sp(req.params.projectId), req.user!);
+    await assertProjectExists(sp(req.params.projectId));
     const where: Record<string, unknown> = { projectId: sp(req.params.projectId) };
     const cat = req.query.category;
     if (cat && typeof cat === 'string') where.category = cat as DocumentCategory;
@@ -27,7 +27,7 @@ export const uploadDocument: RequestHandler = async (req, res, next) => {
   try {
     if (!req.file) { error(res, 'No file provided', 400); return; }
     const projectId = sp(req.params.projectId);
-    await assertProjectAccess(projectId, req.user!);
+    await assertProjectWriteAccess(projectId, req.user!);
     const { category, description } = req.body;
     const { filename } = saveFile(req.file.buffer, req.file.originalname);
     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
@@ -40,13 +40,12 @@ export const uploadDocument: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// Authenticated download: files are no longer served publicly from /uploads —
-// access requires being the project's owner, a team member, or an admin.
+// Authenticated download: files are not served publicly from /uploads — any
+// logged-in user may download (matching the view-all project visibility model).
 export const downloadDocument: RequestHandler = async (req, res, next) => {
   try {
     const doc = await prisma.document.findUnique({ where: { id: sp(req.params.id) } });
     if (!doc) return next(new AppError('Document not found', 404));
-    await assertProjectAccess(doc.projectId, req.user!);
     const stored = path.basename(doc.fileUrl.split('/uploads/')[1] ?? '');
     const filePath = stored ? path.join(UPLOAD_DIR, stored) : '';
     if (!stored || !fs.existsSync(filePath)) return next(new AppError('Document file missing', 404));

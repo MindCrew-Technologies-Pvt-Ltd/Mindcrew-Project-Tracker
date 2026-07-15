@@ -60,4 +60,6 @@ export interface ProjectFilters {
   tags?: string;
   page?: number;
   pageSize?: number;
+  /** 'mine' narrows to projects the user owns or is a team member of; omit for all projects. */
+  scope?: 'mine';
 }

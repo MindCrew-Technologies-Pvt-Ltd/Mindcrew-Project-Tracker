@@ -20,7 +20,7 @@ export const getProjects: RequestHandler = async (req, res, next) => {
     const tags = qs(req.query.tags);
     const startDate = qs(req.query.startDate);
     const endDate = qs(req.query.endDate);
-    const isAdmin = req.user?.role === 'ADMIN';
+    const scope = qs(req.query.scope);
 
     const andClauses: Prisma.ProjectWhereInput[] = [];
     if (search) andClauses.push({ OR: [{ name: { contains: search, mode: 'insensitive' } }, { clientName: { contains: search, mode: 'insensitive' } }] });
@@ -30,7 +30,9 @@ export const getProjects: RequestHandler = async (req, res, next) => {
     if (tags) andClauses.push({ tags: { hasSome: tags.split(',').map((t) => t.trim()) } });
     if (startDate) andClauses.push({ startDate: { gte: new Date(startDate) } });
     if (endDate) andClauses.push({ endDate: { lte: new Date(endDate) } });
-    if (!isAdmin) andClauses.push({ OR: [{ ownerId: req.user!.id }, { teamMembers: { some: { userId: req.user!.id } } }] });
+    // Everyone may see every project (per SRS). `scope=mine` narrows to projects
+    // the user owns or is a team member of (used by the dashboard and "My Projects").
+    if (scope === 'mine') andClauses.push({ OR: [{ ownerId: req.user!.id }, { teamMembers: { some: { userId: req.user!.id } } }] });
 
     const where: Prisma.ProjectWhereInput = andClauses.length ? { AND: andClauses } : {};
     const [items, total] = await Promise.all([
@@ -50,13 +52,8 @@ export const getProject: RequestHandler = async (req, res, next) => {
     });
     if (!project) return next(new AppError('Project not found', 404));
 
-    // Non-admins may only view projects they own or are a team member of.
-    // Return 404 (not 403) so we don't reveal that the project exists.
-    const isAdmin = req.user?.role === 'ADMIN';
-    const isOwner = project.ownerId === req.user!.id;
-    const isMember = project.teamMembers.some((m) => m.userId === req.user!.id);
-    if (!isAdmin && !isOwner && !isMember) return next(new AppError('Project not found', 404));
-
+    // Every authenticated user may view any project (per SRS); editing is
+    // still restricted to owner/team/admin or an approved edit request.
     success(res, project);
   } catch (err) { next(err); }
 };
@@ -173,7 +170,8 @@ export const requestEditAccess: RequestHandler = async (req, res, next) => {
     if (pending) { error(res, 'You already have a pending request', 409); return; }
     const { reason, duration, comments } = req.body;
     const editRequest = await prisma.editRequest.create({ data: { projectId: id, requestedById: req.user!.id, reason, duration, comments } });
-    await createNotification({ userId: project.ownerId, title: 'Edit Access Request', message: `Someone requested edit access to "${project.name}"`, type: 'EDIT_REQUEST_UPDATE', projectId: project.id, relatedId: editRequest.id });
+    const requester = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { name: true } });
+    await createNotification({ userId: project.ownerId, title: 'Edit Access Request', message: `${requester?.name ?? 'A user'} requested edit access to "${project.name}". Review it on the project's Edit Requests tab.`, type: 'EDIT_REQUEST_UPDATE', projectId: project.id, relatedId: editRequest.id });
     success(res, editRequest, 'Request submitted', 201);
   } catch (err) { next(err); }
 };

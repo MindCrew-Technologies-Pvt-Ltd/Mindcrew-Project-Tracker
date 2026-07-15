@@ -83,6 +83,16 @@ const ProjectsListPage = () => {
           </Select>
         </FormControl>
 
+        <ToggleButtonGroup
+          value={filters.scope === 'mine' ? 'mine' : 'all'}
+          exclusive
+          size="small"
+          onChange={(_, v) => v && dispatch(setFilters({ scope: v === 'mine' ? 'mine' : undefined, page: 1 }))}
+        >
+          <ToggleButton value="all" sx={{ px: 1.75 }}>All Projects</ToggleButton>
+          <ToggleButton value="mine" sx={{ px: 1.75 }}>My Projects</ToggleButton>
+        </ToggleButtonGroup>
+
         <Box sx={{ ml: 'auto' }}>
           <ToggleButtonGroup value={view} exclusive onChange={(_, v) => v && setView(v)} size="small">
             <ToggleButton value="grid"><GridViewIcon fontSize="small" /></ToggleButton>

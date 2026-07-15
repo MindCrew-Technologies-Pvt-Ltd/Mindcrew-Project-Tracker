@@ -2,14 +2,22 @@ import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
 
 /**
- * Throws 404 unless the user may access the given project. A non-admin may only
- * access a project they own or are a team member of. We return 404 (not 403) so
- * the response doesn't reveal that a project with this id exists.
- *
- * Use this in every project-scoped read/write (project detail, weekly updates,
- * documents, ...) so employees can never see another team's data by guessing an id.
+ * Visibility model (per SRS): every authenticated user may VIEW every project,
+ * its weekly updates and documents. WRITING is restricted to the project owner,
+ * its team members, or an admin — others must go through an approved edit request.
  */
-export async function assertProjectAccess(
+
+/** Throws 404 if the project doesn't exist. Use on read paths. */
+export async function assertProjectExists(projectId: string): Promise<void> {
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+  if (!project) throw new AppError('Project not found', 404);
+}
+
+/**
+ * Throws 404 if the project doesn't exist, 403 unless the user is an admin,
+ * the owner, or a team member. Use on write paths (create update, upload doc, ...).
+ */
+export async function assertProjectWriteAccess(
   projectId: string,
   user: { id: string; role?: string },
 ): Promise<void> {
@@ -22,5 +30,5 @@ export async function assertProjectAccess(
   const isAdmin = user.role === 'ADMIN';
   const isOwner = project.ownerId === user.id;
   const isMember = project.teamMembers.some((m) => m.userId === user.id);
-  if (!isAdmin && !isOwner && !isMember) throw new AppError('Project not found', 404);
+  if (!isAdmin && !isOwner && !isMember) throw new AppError('No permission to modify this project', 403);
 }
