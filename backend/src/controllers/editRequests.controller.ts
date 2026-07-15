@@ -34,9 +34,16 @@ export const getEditRequests: RequestHandler = async (req, res, next) => {
     const status = qs(req.query.status);
     const projectId = qs(req.query.projectId);
     // Non-admins must scope the list to one project (the project detail tab);
-    // only admins may list every request across the system.
-    if (req.user?.role !== 'ADMIN' && !projectId) return next(new AppError('projectId is required', 400));
+    // only admins may list every request across the system. On a project the
+    // user doesn't own, they only see their OWN requests — how many others
+    // asked, and why, is the owner's business.
     const where: Record<string, unknown> = {};
+    if (req.user?.role !== 'ADMIN') {
+      if (!projectId) return next(new AppError('projectId is required', 400));
+      const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+      if (!project) return next(new AppError('Project not found', 404));
+      if (project.ownerId !== req.user!.id) where.requestedById = req.user!.id;
+    }
     if (status) where.status = status;
     if (projectId) where.projectId = projectId;
     const [items, total] = await Promise.all([

@@ -110,9 +110,16 @@ const EditRequestsTab = ({ project, isOwner, isAdmin }: Props) => {
         </Card>
       )}
 
-      <Typography variant="subtitle1" fontWeight={600} mb={2}>Edit Requests ({requests.length})</Typography>
+      <Typography variant="subtitle1" fontWeight={600} mb={2}>
+        {canReview ? `Edit Requests (${requests.length})` : `My Requests (${requests.length})`}
+      </Typography>
       {requests.length === 0 ? (
-        <EmptyState title="No edit requests" description={canReview ? 'Requests from other users to edit this project will appear here for your approval.' : undefined} />
+        <EmptyState
+          title={canReview ? 'No edit requests' : 'No requests yet'}
+          description={canReview
+            ? 'Requests from other users to edit this project will appear here for your approval.'
+            : 'Once you submit a request, its status will show here.'}
+        />
       ) : requests.map((r) => (
         <Card key={r.id} sx={{ mb: 2 }}>
           <CardContent>
