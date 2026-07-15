@@ -55,7 +55,7 @@ The backend `validate()` middleware runs Joi with `stripUnknown: true`
 
 These project fields are collected in the UI, validated on both sides, **and**
 persisted in the database (`backend/prisma/schema.prisma` → `Project`):
-`clientLocation`, `clientWhatsapp`, `clientGmail`, `repositoryUrls[]`, `liveUrls[]`.
+`clientLocation`, `clientWhatsapp`, `clientGmail`, `repositoryUrls[]`, `liveUrls[]`, `videoUrls[]`.
 
 > If you add a new field to a form, add it in all four places:
 > 1. Frontend type + Yup schema

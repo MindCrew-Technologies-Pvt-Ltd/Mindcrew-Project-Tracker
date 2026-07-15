@@ -30,6 +30,7 @@ const ProjectEditPage = () => {
   // in local state, everything else in react-hook-form.
   const [repoUrls, setRepoUrls] = useState<string[]>(['']);
   const [liveUrls, setLiveUrls] = useState<string[]>(['']);
+  const [videoUrls, setVideoUrls] = useState<string[]>(['']);
   const [ongoing, setOngoing] = useState(false);
   // Logo + at least one screenshot are mandatory: existing documents or new files.
   const [existingLogo, setExistingLogo] = useState<ProjectDocument | null>(null);
@@ -89,6 +90,7 @@ const ProjectEditPage = () => {
       });
       setRepoUrls(project.repositoryUrls?.length ? project.repositoryUrls : ['']);
       setLiveUrls(project.liveUrls?.length ? project.liveUrls : ['']);
+      setVideoUrls(project.videoUrls?.length ? project.videoUrls : ['']);
       setOngoing(!project.endDate);
     }
   }, [project, reset]);
@@ -118,6 +120,7 @@ const ProjectEditPage = () => {
       ongoing,
       repositoryUrls: repoUrls.filter(u => u.trim()),
       liveUrls: liveUrls.filter(u => u.trim()),
+      videoUrls: videoUrls.filter(u => u.trim()),
     };
     const result = await dispatch(updateProjectThunk({ id: project.id, payload }));
     if (!updateProjectThunk.fulfilled.match(result)) return;
@@ -314,6 +317,7 @@ const ProjectEditPage = () => {
                   </Grid>
                   <Grid item xs={12}>{renderUrlList('Repository URL', repoUrls, setRepoUrls)}</Grid>
                   <Grid item xs={12}>{renderUrlList('Live URL', liveUrls, setLiveUrls)}</Grid>
+                  <Grid item xs={12}>{renderUrlList('Demo Video URL (YouTube / Drive link)', videoUrls, setVideoUrls)}</Grid>
                 </Grid>
               </CardContent>
             </Card>

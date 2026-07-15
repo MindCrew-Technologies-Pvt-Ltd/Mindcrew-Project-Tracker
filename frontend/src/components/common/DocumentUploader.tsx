@@ -11,14 +11,21 @@ interface Props {
   progress?: number;
 }
 
-const ACCEPTED = { 'application/pdf': ['.pdf'], 'application/msword': ['.doc'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], 'application/vnd.ms-excel': ['.xls'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'application/zip': ['.zip'] };
+const ACCEPTED = { 'application/pdf': ['.pdf'], 'application/msword': ['.doc'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], 'application/vnd.ms-excel': ['.xls'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/gif': ['.gif'], 'image/webp': ['.webp'], 'application/zip': ['.zip'], 'video/mp4': ['.mp4'], 'video/webm': ['.webm'], 'video/quicktime': ['.mov'] };
+const MAX_SIZE = 100 * 1024 * 1024; // matches the backend multer limit
 
 const DocumentUploader = ({ onUpload, uploading, progress }: Props) => {
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState<DocumentCategory>('OTHER');
 
-  const onDrop = useCallback((accepted: File[]) => { if (accepted[0]) setFile(accepted[0]); }, []);
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: ACCEPTED, maxFiles: 1 });
+  const onDrop = useCallback((accepted: File[]) => {
+    if (accepted[0]) {
+      setFile(accepted[0]);
+      // Preselect the Video category when a video is dropped.
+      if (accepted[0].type.startsWith('video/')) setCategory('VIDEO');
+    }
+  }, []);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: ACCEPTED, maxFiles: 1, maxSize: MAX_SIZE });
 
   const handleUpload = async () => {
     if (!file) return;
@@ -41,14 +48,14 @@ const DocumentUploader = ({ onUpload, uploading, progress }: Props) => {
         <input {...getInputProps()} />
         <CloudUploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
         <Typography variant="body2">{isDragActive ? 'Drop file here' : 'Drag & drop or click to select'}</Typography>
-        <Typography variant="caption" color="text.secondary">PDF, DOC, DOCX, XLS, XLSX, PNG, JPG, ZIP</Typography>
+        <Typography variant="caption" color="text.secondary">PDF, DOC, XLS, images, ZIP, MP4/WEBM/MOV video · max 100 MB</Typography>
       </Box>
 
       {file && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <InsertDriveFileIcon color="action" />
           <Typography variant="body2" sx={{ flex: 1 }}>{file.name}</Typography>
-          <Chip label={Math.round(file.size / 1024) + ' KB'} size="small" />
+          <Chip label={file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.round(file.size / 1024) + ' KB'} size="small" />
         </Box>
       )}
 

@@ -43,6 +43,7 @@ enum DocumentCategory {
   CONTRACT
   DELIVERY_FILES
   SCREENSHOTS
+  VIDEO
   OTHER
   // Legacy values kept for existing rows (enum removal would be destructive):
   TECHNICAL
@@ -104,6 +105,7 @@ model Project {
   tags           String[]
   repositoryUrls String[]
   liveUrls       String[]
+  videoUrls      String[]
   startDate      DateTime?
   endDate        DateTime?
   deadline       DateTime?

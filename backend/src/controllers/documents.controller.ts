@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import prisma from '../config/prisma';
 import { UPLOAD_DIR } from '../config/env';
-import { saveFile, deleteFile } from '../config/storage';
+import { deleteFile } from '../config/storage';
 import { success, error } from '../utils/response';
 import { logActivity } from '../utils/activityLogger';
 import { AppError } from '../middleware/errorHandler';
@@ -24,17 +24,23 @@ export const getDocuments: RequestHandler = async (req, res, next) => {
 };
 
 export const uploadDocument: RequestHandler = async (req, res, next) => {
+  // multer's diskStorage has already written the file when this runs, so every
+  // rejection path must remove it again or the volume collects orphans.
+  const cleanup = () => { if (req.file?.filename) deleteFile(req.file.filename); };
   try {
     if (!req.file) { error(res, 'No file provided', 400); return; }
     const projectId = sp(req.params.projectId);
-    await assertProjectWriteAccess(projectId, req.user!);
+    try {
+      await assertProjectWriteAccess(projectId, req.user!);
+    } catch (err) { cleanup(); return next(err); }
     const { category, description } = req.body;
     // Validate against the enum instead of blind-casting — an unknown value
     // used to crash inside Prisma as a 500 (e.g. "SRS" before it was added).
     if (category && !Object.values(DocumentCategory).includes(category)) {
+      cleanup();
       error(res, `Invalid category. Use one of: ${Object.values(DocumentCategory).join(', ')}`, 400); return;
     }
-    const { filename } = saveFile(req.file.buffer, req.file.originalname);
+    const filename = req.file.filename;
     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
     const doc = await prisma.document.create({
       data: { projectId, uploadedById: req.user!.id, fileName: req.file.originalname, fileUrl, fileType: req.file.mimetype, fileSize: req.file.size, category: (category as DocumentCategory) ?? 'OTHER', description },
@@ -42,7 +48,7 @@ export const uploadDocument: RequestHandler = async (req, res, next) => {
     });
     await logActivity({ userId: req.user!.id, action: 'UPLOAD', module: 'DOCUMENT', description: `Uploaded ${req.file.originalname}` });
     success(res, doc, 'Document uploaded', 201);
-  } catch (err) { next(err); }
+  } catch (err) { cleanup(); next(err); }
 };
 
 // Authenticated download: files are not served publicly from /uploads — any

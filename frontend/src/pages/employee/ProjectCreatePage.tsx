@@ -25,6 +25,7 @@ const ProjectCreatePage = () => {
 
   const [repoUrls, setRepoUrls] = useState<string[]>(['']);
   const [liveUrls, setLiveUrls] = useState<string[]>(['']);
+  const [videoUrls, setVideoUrls] = useState<string[]>(['']);
   const [ongoing, setOngoing] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
@@ -62,6 +63,7 @@ const ProjectCreatePage = () => {
       ongoing,
       repositoryUrls: repoUrls.filter(u => u.trim()),
       liveUrls: liveUrls.filter(u => u.trim()),
+      videoUrls: videoUrls.filter(u => u.trim()),
     };
     const result = await dispatch(createProjectThunk(payload));
     if (createProjectThunk.fulfilled.match(result)) {
@@ -308,6 +310,10 @@ const ProjectCreatePage = () => {
 
                   <Grid item xs={12}>
                     <UrlList label="Live URL" urls={liveUrls} setter={setLiveUrls} />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <UrlList label="Demo Video URL (YouTube / Drive link)" urls={videoUrls} setter={setVideoUrls} />
                   </Grid>
                 </Grid>
               </CardContent>

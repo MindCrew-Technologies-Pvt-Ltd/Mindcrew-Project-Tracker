@@ -28,6 +28,7 @@ export interface Project {
   teamMembers: any[];
   repositoryUrls?: string[];
   liveUrls?: string[];
+  videoUrls?: string[];
   createdAt: string;
   updatedAt: string;
   _count?: Record<string, number>;
@@ -49,6 +50,7 @@ export interface CreateProjectPayload {
   tags: string[];
   repositoryUrls?: string[];
   liveUrls?: string[];
+  videoUrls?: string[];
   teamMemberIds?: string[];
 }
 

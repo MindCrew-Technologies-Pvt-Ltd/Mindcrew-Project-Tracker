@@ -1,5 +1,5 @@
 import { Grid, Card, CardContent, Typography, Box, Chip, Link, Divider } from '@mui/material';
-import { GitHub as GitHubIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
+import { GitHub as GitHubIcon, OpenInNew as OpenInNewIcon, PlayCircleOutline as PlayIcon } from '@mui/icons-material';
 import { Project } from '../../../../types/project.types';
 import { formatDate } from '../../../../utils/formatters';
 
@@ -53,6 +53,11 @@ const OverviewTab = ({ project }: Props) => (
           {(project.liveUrls || []).map((url, i) => (
             <Link key={i} href={url} target="_blank" rel="noopener" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
               <OpenInNewIcon fontSize="small" /> Live URL {(project.liveUrls?.length ?? 0) > 1 ? i + 1 : ''}
+            </Link>
+          ))}
+          {(project.videoUrls || []).map((url, i) => (
+            <Link key={i} href={url} target="_blank" rel="noopener" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+              <PlayIcon fontSize="small" /> Demo Video {(project.videoUrls?.length ?? 0) > 1 ? i + 1 : ''}
             </Link>
           ))}
         </CardContent>

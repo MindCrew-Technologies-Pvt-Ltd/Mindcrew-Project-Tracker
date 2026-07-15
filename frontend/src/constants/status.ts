@@ -63,5 +63,6 @@ export const DOCUMENT_CATEGORY_LABELS = {
   CONTRACT: 'Contract',
   DELIVERY_FILES: 'Delivery Files',
   SCREENSHOTS: 'Screenshots',
+  VIDEO: 'Video',
   OTHER: 'Other',
 };

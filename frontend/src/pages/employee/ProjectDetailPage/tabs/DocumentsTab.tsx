@@ -44,7 +44,8 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
     }
   };
 
-  // Open images (logo/screenshots) in a new tab instead of downloading.
+  // Open images and videos in a new tab instead of downloading (browsers
+  // render/play them natively from the blob URL).
   const handleView = async (docId: string, fileType: string) => {
     try {
       const res = await documentsService.downloadDocument(docId);
@@ -80,8 +81,8 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
                   secondary={<><Chip label={DOCUMENT_CATEGORY_LABELS[doc.category]} size="small" sx={{ mr: 1 }} /><Typography variant="caption" color="text.secondary">by {doc.uploadedBy?.name} · {formatDate(doc.createdAt)}</Typography></>}
                 />
                 <ListItemSecondaryAction>
-                  {doc.fileType?.startsWith('image/') && (
-                    <IconButton aria-label="View image" onClick={() => handleView(doc.id, doc.fileType)}><ViewIcon /></IconButton>
+                  {(doc.fileType?.startsWith('image/') || doc.fileType?.startsWith('video/')) && (
+                    <IconButton aria-label="View file" onClick={() => handleView(doc.id, doc.fileType)}><ViewIcon /></IconButton>
                   )}
                   <IconButton aria-label="Download document" onClick={() => handleDownload(doc.id, doc.fileName)}><DownloadIcon /></IconButton>
                   {canEdit && <IconButton onClick={() => setDeleteId(doc.id)} color="error"><DeleteIcon /></IconButton>}
