@@ -7,10 +7,12 @@ import {
   Chip, Typography, Alert, CircularProgress, Card, CardContent,
   IconButton, Tooltip, Autocomplete, FormControlLabel, Checkbox,
 } from '@mui/material';
-import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon, ImageOutlined as ImageIcon, InsertPhoto as ExistingImageIcon } from '@mui/icons-material';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProjectByIdThunk, updateProjectThunk } from '../../store/slices/projectsSlice';
+import documentsService from '../../services/documentsService';
+import { ProjectDocument } from '../../types/document.types';
 import { projectSchema } from '../../utils/validators';
 import { TECHNOLOGY_OPTIONS, TAG_OPTIONS } from '../../constants/status';
 import PageHeader from '../../components/common/PageHeader';
@@ -29,6 +31,13 @@ const ProjectEditPage = () => {
   const [repoUrls, setRepoUrls] = useState<string[]>(['']);
   const [liveUrls, setLiveUrls] = useState<string[]>(['']);
   const [ongoing, setOngoing] = useState(false);
+  // Logo/screenshot are mandatory: either an existing document or a new file.
+  const [existingLogo, setExistingLogo] = useState<ProjectDocument | null>(null);
+  const [existingScreenshot, setExistingScreenshot] = useState<ProjectDocument | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [imageErrors, setImageErrors] = useState<{ logo?: string; screenshot?: string }>({});
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<CreateProjectPayload>({
     resolver: yupResolver(projectSchema) as any,
@@ -36,6 +45,18 @@ const ProjectEditPage = () => {
   });
 
   useEffect(() => { if (id) dispatch(fetchProjectByIdThunk(id)); }, [id, dispatch]);
+
+  // Load the project's current logo/screenshot documents (newest of each category).
+  useEffect(() => {
+    if (!id) return;
+    documentsService.getDocuments(id)
+      .then(r => {
+        const docs: ProjectDocument[] = r.data?.data || [];
+        setExistingLogo(docs.find(d => d.category === 'LOGO') ?? null);
+        setExistingScreenshot(docs.find(d => d.category === 'SCREENSHOTS' && d.fileType?.startsWith('image/')) ?? null);
+      })
+      .catch(() => {});
+  }, [id]);
 
   useEffect(() => {
     if (project) {
@@ -69,6 +90,13 @@ const ProjectEditPage = () => {
     setter(prev => prev.filter((_, i) => i !== index));
 
   const onSubmit = async (data: CreateProjectPayload) => {
+    // Mandatory images: an existing document or a newly picked file must be present.
+    const imgErrs: { logo?: string; screenshot?: string } = {};
+    if (!existingLogo && !logoFile) imgErrs.logo = 'Project logo is required';
+    if (!existingScreenshot && !screenshotFile) imgErrs.screenshot = 'Project screenshot is required';
+    setImageErrors(imgErrs);
+    if (imgErrs.logo || imgErrs.screenshot) return;
+
     const payload: CreateProjectPayload = {
       ...data,
       // '' clears the end date on the backend (Ongoing project)
@@ -78,8 +106,59 @@ const ProjectEditPage = () => {
       liveUrls: liveUrls.filter(u => u.trim()),
     };
     const result = await dispatch(updateProjectThunk({ id: project.id, payload }));
-    if (updateProjectThunk.fulfilled.match(result)) navigate(ROUTES.PROJECT_DETAIL(project.id));
+    if (!updateProjectThunk.fulfilled.match(result)) return;
+
+    // Upload replacements and best-effort remove the doc they replace.
+    const makeForm = (file: File, category: string) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('category', category);
+      return fd;
+    };
+    const jobs: Promise<unknown>[] = [];
+    if (logoFile) {
+      jobs.push(documentsService.uploadDocument(project.id, makeForm(logoFile, 'LOGO'))
+        .then(() => { if (existingLogo) return documentsService.deleteDocument(project.id, existingLogo.id).catch(() => {}); return undefined; }));
+    }
+    if (screenshotFile) {
+      jobs.push(documentsService.uploadDocument(project.id, makeForm(screenshotFile, 'SCREENSHOTS'))
+        .then(() => { if (existingScreenshot) return documentsService.deleteDocument(project.id, existingScreenshot.id).catch(() => {}); return undefined; }));
+    }
+    if (jobs.length) {
+      const results = await Promise.allSettled(jobs);
+      if (results.some(r => r.status === 'rejected')) {
+        setUploadWarning('Changes saved, but an image failed to upload. You can add it from the Documents tab.');
+        setTimeout(() => navigate(ROUTES.PROJECT_DETAIL(project.id)), 2500);
+        return;
+      }
+    }
+    navigate(ROUTES.PROJECT_DETAIL(project.id));
   };
+
+  const ImagePicker = ({ label, file, existing, onPick, error: pickError }: { label: string; file: File | null; existing: ProjectDocument | null; onPick: (f: File | null) => void; error?: string }) => (
+    <Box>
+      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>{label} *</Typography>
+      {existing && !file && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <ExistingImageIcon color="action" fontSize="small" />
+          <Typography variant="body2" noWrap sx={{ maxWidth: 200 }} title={existing.fileName}>{existing.fileName}</Typography>
+        </Box>
+      )}
+      <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ justifyContent: 'flex-start', width: '100%', textTransform: 'none', borderColor: pickError ? 'error.main' : undefined, color: pickError ? 'error.main' : undefined }}>
+        {file ? file.name : existing ? 'Replace image...' : 'Choose image...'}
+        <input type="file" hidden accept="image/*" onChange={e => { onPick(e.target.files?.[0] ?? null); e.target.value = ''; }} />
+      </Button>
+      {file && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+          <Box component="img" src={URL.createObjectURL(file)} alt={label} sx={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }} />
+          <Tooltip title="Remove">
+            <IconButton size="small" onClick={() => onPick(null)}><CloseIcon fontSize="small" /></IconButton>
+          </Tooltip>
+        </Box>
+      )}
+      {pickError && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{pickError}</Typography>}
+    </Box>
+  );
 
   const renderUrlList = (label: string, urls: string[], setter: React.Dispatch<React.SetStateAction<string[]>>) => (
     <Box>
@@ -109,6 +188,7 @@ const ProjectEditPage = () => {
         breadcrumbs={[{ label: 'Projects', href: ROUTES.PROJECTS }, { label: project.name, href: ROUTES.PROJECT_DETAIL(project.id) }, { label: 'Edit' }]}
       />
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {uploadWarning && <Alert severity="warning" sx={{ mb: 2 }}>{uploadWarning}</Alert>}
       <Box component="form" onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
@@ -183,6 +263,23 @@ const ProjectEditPage = () => {
             </Card>
           </Grid>
           <Grid item xs={12} md={4}>
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>Project Images</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  Both are required — they live in the project's Documents tab.
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <ImagePicker label="Project Logo" file={logoFile} existing={existingLogo} onPick={(f) => { setLogoFile(f); setImageErrors(prev => ({ ...prev, logo: undefined })); }} error={imageErrors.logo} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <ImagePicker label="Project Screenshot" file={screenshotFile} existing={existingScreenshot} onPick={(f) => { setScreenshotFile(f); setImageErrors(prev => ({ ...prev, screenshot: undefined })); }} error={imageErrors.screenshot} />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>Client Information</Typography>
