@@ -35,8 +35,8 @@ The backend `validate()` middleware runs Joi with `stripUnknown: true`
 - **Optional:** phone, department, designation
 
 ### Project create
-- **Required:** name (min 2), clientName, status, priority, technologies (≥1), startDate
-- **Optional:** clientLocation, clientWhatsapp, clientGmail (valid email), description,
+- **Required:** name (min 2), clientName, status, priority, technologies (≥1)
+- **Optional:** startDate, clientLocation, clientWhatsapp, clientGmail (valid email), description,
   tags, repositoryUrls[], liveUrls[], endDate, deadline, budget, teamMemberIds
 - Project **update** makes the required fields optional (partial update).
 

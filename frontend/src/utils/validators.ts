@@ -56,7 +56,7 @@ export const projectSchema = yup.object({
   clientWhatsapp: yup.string().optional(),
   clientGmail: yup.string().email('Must be a valid email').nullable().optional(),
   description: yup.string().optional(),
-  startDate: yup.string().required('Start date is required'),
+  startDate: yup.string().nullable().optional(),
   endDate: yup.string().nullable().optional(),
   status: yup.string().required('Status is required'),
   priority: yup.string().required('Priority is required'),

@@ -79,7 +79,7 @@ export const createProjectSchema = Joi.object({
   tags: Joi.array().items(Joi.string()).optional(),
   repositoryUrls: Joi.array().items(Joi.string().allow('')).optional(),
   liveUrls: Joi.array().items(Joi.string().allow('')).optional(),
-  startDate: Joi.date().required(),
+  startDate: Joi.date().allow(null, '').optional(),
   endDate: Joi.date().allow(null, '').optional(),
   deadline: Joi.date().allow(null, '').optional(),
   budget: Joi.number().optional(),
