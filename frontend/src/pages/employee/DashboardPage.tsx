@@ -73,7 +73,7 @@ const DashboardPage = () => {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="subtitle1" fontWeight={600}>Recent Activity</Typography>
-                <Button size="small" onClick={() => navigate(ROUTES.PROJECTS)}>View all</Button>
+                <Button size="small" onClick={() => navigate(ROUTES.MY_PROJECTS)}>View all</Button>
               </Box>
               {recent.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">No recent projects</Typography>

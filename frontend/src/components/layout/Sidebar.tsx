@@ -102,10 +102,12 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', background: NAVY, overflow: 'hidden' }}>
-      {/* Logo + collapse toggle */}
+      {/* Logo + collapse toggle. Collapsed: stacked vertically so nothing
+          overflows the 64px rail. */}
       <Box sx={{
-        px: collapsed ? 1 : 2.5, py: 2,
+        px: collapsed ? 0 : 2.5, py: 2,
         display: 'flex', alignItems: 'center',
+        flexDirection: collapsed ? 'column' : 'row',
         justifyContent: collapsed ? 'center' : 'space-between',
         gap: 1, minHeight: 64,
       }}>

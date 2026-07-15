@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Box, Grid, Button, MenuItem, Select, FormControl, InputLabel, ToggleButtonGroup, ToggleButton, Pagination, Skeleton, Snackbar, Alert } from '@mui/material';
-import { GridView as GridViewIcon, List as ListIcon } from '@mui/icons-material';
+import { Box, Grid, Button, MenuItem, Select, FormControl, InputLabel, ToggleButtonGroup, ToggleButton, Pagination, Skeleton, Snackbar, Alert, Typography, Avatar, IconButton, Tooltip } from '@mui/material';
+import { GridView as GridViewIcon, List as ListIcon, Visibility as ViewIcon, DeleteOutline as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -8,7 +8,7 @@ import { fetchProjectsThunk, setFilters, deleteProjectThunk } from '../../store/
 import PageHeader from '../../components/common/PageHeader';
 import SearchBar from '../../components/common/SearchBar';
 import ProjectCard from '../../components/project/ProjectCard';
-import DataTable from '../../components/data-display/DataTable';
+import DataTablePro, { Column } from '../../components/data-display/DataTablePro';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import ProjectStatusChip from '../../components/project/ProjectStatusChip';
@@ -40,6 +40,12 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
     dispatch(setFilters({ scope: scopeMine ? 'mine' : undefined, page: 1 }));
   }, [scopeMine, dispatch]);
 
+  // List view mirrors the admin tables: load a big page and let the table
+  // paginate client-side; grid view keeps server-side pagination.
+  useEffect(() => {
+    dispatch(setFilters({ pageSize: view === 'list' ? 200 : undefined, page: 1 }));
+  }, [view, dispatch]);
+
   const handleDelete = async () => {
     if (!toDelete) return;
     const result = await dispatch(deleteProjectThunk(toDelete.id));
@@ -56,15 +62,41 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
     dispatch(fetchProjectsThunk(filters));
   }, [filters, dispatch]);
 
-  const colDefs = [
-    { field: 'name', headerName: 'Project', flex: 2 },
-    { field: 'clientName', headerName: 'Client', flex: 1.5 },
-    { field: 'status', headerName: 'Status', flex: 1, cellRenderer: (p: any) => <ProjectStatusChip status={p.value} /> },
-    { field: 'priority', headerName: 'Priority', flex: 1, cellRenderer: (p: any) => <PriorityChip priority={p.value} /> },
-    { field: 'startDate', headerName: 'Start', flex: 1, valueFormatter: (p: any) => formatDate(p.value) },
-    { field: 'endDate', headerName: 'End', flex: 1, valueFormatter: (p: any) => formatDate(p.value) },
-    { field: 'owner', headerName: 'Owner', flex: 1, valueFormatter: (p: any) => p.value?.name },
+  const columns: Column<Project>[] = [
+    {
+      key: 'name', header: 'Project', width: '28%', sortable: true, value: (p) => p.name,
+      render: (p) => (
+        <Box sx={{ minWidth: 0 }}>
+          <Typography noWrap sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{p.name}</Typography>
+          <Typography noWrap sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{p.clientName || '—'}</Typography>
+        </Box>
+      ),
+    },
+    {
+      key: 'owner', header: 'Owner', width: '18%', sortable: true, value: (p) => p.owner?.name || '',
+      render: (p) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <Avatar sx={{ width: 28, height: 28, fontSize: 12, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>{p.owner?.name?.charAt(0).toUpperCase()}</Avatar>
+          <Typography noWrap sx={{ fontSize: '0.85rem' }}>{p.owner?.name || '—'}</Typography>
+        </Box>
+      ),
+    },
+    { key: 'status', header: 'Status', width: '12%', sortable: true, value: (p) => p.status, render: (p) => <ProjectStatusChip status={p.status} /> },
+    { key: 'priority', header: 'Priority', width: '12%', sortable: true, value: (p) => p.priority, render: (p) => <PriorityChip priority={p.priority} /> },
+    {
+      key: 'startDate', header: 'Timeline', width: '20%', sortable: true, value: (p) => p.startDate || '',
+      render: (p) => <Typography noWrap sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>{formatDate(p.startDate) || '—'} – {formatDate(p.endDate) || 'Ongoing'}</Typography>,
+    },
   ];
+
+  const rowActions = (p: Project) => (
+    <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
+      <Tooltip title="View project" arrow><IconButton size="small" sx={{ color: '#4F46E5' }} onClick={(e) => { e.stopPropagation(); navigate(ROUTES.PROJECT_DETAIL(p.id)); }}><ViewIcon fontSize="small" /></IconButton></Tooltip>
+      {(isAdmin || p.owner?.id === user?.id) && (
+        <Tooltip title="Delete project" arrow><IconButton size="small" sx={{ color: '#DC2626' }} onClick={(e) => { e.stopPropagation(); setToDelete(p); }}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
+      )}
+    </Box>
+  );
 
   return (
     <Box>
@@ -112,7 +144,15 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
           {list.map(p => <Grid item key={p.id} xs={12} sm={6} md={4}><ProjectCard project={p} canDelete={isAdmin || p.owner?.id === user?.id} onDelete={setToDelete} /></Grid>)}
         </Grid>
       ) : (
-        <DataTable rowData={list} columnDefs={colDefs} onRowClicked={(p) => navigate(ROUTES.PROJECT_DETAIL(p.id))} />
+        <DataTablePro
+          rows={list}
+          columns={columns}
+          getId={(p) => p.id}
+          loading={loading}
+          emptyText="No projects found"
+          onRowClick={(p) => navigate(ROUTES.PROJECT_DETAIL(p.id))}
+          rowActions={rowActions}
+        />
       )}
 
       {view === 'grid' && pagination.totalPages > 1 && (
