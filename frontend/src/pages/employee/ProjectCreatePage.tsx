@@ -27,7 +27,7 @@ const ProjectCreatePage = () => {
   const [liveUrls, setLiveUrls] = useState<string[]>(['']);
   const [ongoing, setOngoing] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [imageErrors, setImageErrors] = useState<{ logo?: string; screenshot?: string }>({});
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
@@ -49,10 +49,10 @@ const ProjectCreatePage = () => {
   ) => setter(prev => prev.map((u, i) => (i === index ? value : u)));
 
   const onSubmit = async (data: CreateProjectPayload) => {
-    // Logo and screenshot are mandatory (they land in the Documents tab).
+    // Logo and at least one screenshot are mandatory (they land in the Documents tab).
     const imgErrs: { logo?: string; screenshot?: string } = {};
     if (!logoFile) imgErrs.logo = 'Project logo is required';
-    if (!screenshotFile) imgErrs.screenshot = 'Project screenshot is required';
+    if (screenshotFiles.length === 0) imgErrs.screenshot = 'At least one screenshot is required';
     setImageErrors(imgErrs);
     if (imgErrs.logo || imgErrs.screenshot) return;
 
@@ -75,16 +75,39 @@ const ProjectCreatePage = () => {
       };
       const uploads = await Promise.allSettled([
         documentsService.uploadDocument(projectId, makeForm(logoFile!, 'LOGO')),
-        documentsService.uploadDocument(projectId, makeForm(screenshotFile!, 'SCREENSHOTS')),
+        ...screenshotFiles.map(f => documentsService.uploadDocument(projectId, makeForm(f, 'SCREENSHOTS'))),
       ]);
       if (uploads.some(u => u.status === 'rejected')) {
-        setUploadWarning('The project was created, but one of the images failed to upload. You can add it from the Documents tab.');
+        setUploadWarning('The project was created, but some images failed to upload. You can add them from the Documents tab.');
         setTimeout(() => navigate(ROUTES.PROJECT_DETAIL(projectId)), 2500);
         return;
       }
       navigate(ROUTES.PROJECT_DETAIL(projectId));
     }
   };
+
+  const ScreenshotsPicker = ({ files, onAdd, onRemove, error: pickError }: { files: File[]; onAdd: (fs: File[]) => void; onRemove: (i: number) => void; error?: string }) => (
+    <Box>
+      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>Project Screenshots * <Typography component="span" variant="caption" color="text.secondary">(one or more)</Typography></Typography>
+      {files.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
+          {files.map((f, i) => (
+            <Box key={`${f.name}-${i}`} sx={{ position: 'relative' }}>
+              <Box component="img" src={URL.createObjectURL(f)} alt={f.name} title={f.name} sx={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider', display: 'block' }} />
+              <IconButton size="small" onClick={() => onRemove(i)} sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', p: 0.25, '&:hover': { bgcolor: 'error.main', color: '#fff' } }}>
+                <CloseIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Box>
+          ))}
+        </Box>
+      )}
+      <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ justifyContent: 'flex-start', width: '100%', textTransform: 'none', borderColor: pickError ? 'error.main' : undefined, color: pickError ? 'error.main' : undefined }}>
+        {files.length ? 'Add more screenshots...' : 'Choose images...'}
+        <input type="file" hidden multiple accept="image/*" onChange={e => { onAdd(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
+      </Button>
+      {pickError && <FormHelperText error>{pickError}</FormHelperText>}
+    </Box>
+  );
 
   const ImagePicker = ({ label, file, onPick, error: pickError }: { label: string; file: File | null; onPick: (f: File | null) => void; error?: string }) => (
     <Box>
@@ -303,7 +326,12 @@ const ProjectCreatePage = () => {
                     <ImagePicker label="Project Logo" file={logoFile} onPick={(f) => { setLogoFile(f); setImageErrors(prev => ({ ...prev, logo: undefined })); }} error={imageErrors.logo} />
                   </Grid>
                   <Grid item xs={12}>
-                    <ImagePicker label="Project Screenshot" file={screenshotFile} onPick={(f) => { setScreenshotFile(f); setImageErrors(prev => ({ ...prev, screenshot: undefined })); }} error={imageErrors.screenshot} />
+                    <ScreenshotsPicker
+                      files={screenshotFiles}
+                      onAdd={(fs) => { setScreenshotFiles(prev => [...prev, ...fs]); setImageErrors(prev => ({ ...prev, screenshot: undefined })); }}
+                      onRemove={(i) => setScreenshotFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      error={imageErrors.screenshot}
+                    />
                   </Grid>
                 </Grid>
               </CardContent>

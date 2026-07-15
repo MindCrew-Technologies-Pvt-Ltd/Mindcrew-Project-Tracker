@@ -31,11 +31,13 @@ const ProjectEditPage = () => {
   const [repoUrls, setRepoUrls] = useState<string[]>(['']);
   const [liveUrls, setLiveUrls] = useState<string[]>(['']);
   const [ongoing, setOngoing] = useState(false);
-  // Logo/screenshot are mandatory: either an existing document or a new file.
+  // Logo + at least one screenshot are mandatory: existing documents or new files.
   const [existingLogo, setExistingLogo] = useState<ProjectDocument | null>(null);
-  const [existingScreenshot, setExistingScreenshot] = useState<ProjectDocument | null>(null);
+  const [existingScreenshots, setExistingScreenshots] = useState<ProjectDocument[]>([]);
+  const [removedScreenshotIds, setRemovedScreenshotIds] = useState<string[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [imageErrors, setImageErrors] = useState<{ logo?: string; screenshot?: string }>({});
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
@@ -46,14 +48,25 @@ const ProjectEditPage = () => {
 
   useEffect(() => { if (id) dispatch(fetchProjectByIdThunk(id)); }, [id, dispatch]);
 
-  // Load the project's current logo/screenshot documents (newest of each category).
+  // Load the project's current logo + screenshot documents and fetch their
+  // thumbnails (files are auth-gated, so previews go through the download API).
   useEffect(() => {
     if (!id) return;
     documentsService.getDocuments(id)
       .then(r => {
         const docs: ProjectDocument[] = r.data?.data || [];
-        setExistingLogo(docs.find(d => d.category === 'LOGO') ?? null);
-        setExistingScreenshot(docs.find(d => d.category === 'SCREENSHOTS' && d.fileType?.startsWith('image/')) ?? null);
+        const logo = docs.find(d => d.category === 'LOGO') ?? null;
+        const shots = docs.filter(d => d.category === 'SCREENSHOTS' && d.fileType?.startsWith('image/'));
+        setExistingLogo(logo);
+        setExistingScreenshots(shots);
+        [...(logo ? [logo] : []), ...shots].forEach(d => {
+          documentsService.downloadDocument(d.id)
+            .then(res => {
+              const url = URL.createObjectURL(new Blob([res.data], { type: d.fileType }));
+              setThumbs(prev => ({ ...prev, [d.id]: url }));
+            })
+            .catch(() => {});
+        });
       })
       .catch(() => {});
   }, [id]);
@@ -90,10 +103,11 @@ const ProjectEditPage = () => {
     setter(prev => prev.filter((_, i) => i !== index));
 
   const onSubmit = async (data: CreateProjectPayload) => {
-    // Mandatory images: an existing document or a newly picked file must be present.
+    // Mandatory images: logo (existing or new) and ≥1 screenshot after removals.
+    const keptScreenshots = existingScreenshots.filter(d => !removedScreenshotIds.includes(d.id));
     const imgErrs: { logo?: string; screenshot?: string } = {};
     if (!existingLogo && !logoFile) imgErrs.logo = 'Project logo is required';
-    if (!existingScreenshot && !screenshotFile) imgErrs.screenshot = 'Project screenshot is required';
+    if (keptScreenshots.length + screenshotFiles.length === 0) imgErrs.screenshot = 'At least one screenshot is required';
     setImageErrors(imgErrs);
     if (imgErrs.logo || imgErrs.screenshot) return;
 
@@ -120,14 +134,13 @@ const ProjectEditPage = () => {
       jobs.push(documentsService.uploadDocument(project.id, makeForm(logoFile, 'LOGO'))
         .then(() => { if (existingLogo) return documentsService.deleteDocument(project.id, existingLogo.id).catch(() => {}); return undefined; }));
     }
-    if (screenshotFile) {
-      jobs.push(documentsService.uploadDocument(project.id, makeForm(screenshotFile, 'SCREENSHOTS'))
-        .then(() => { if (existingScreenshot) return documentsService.deleteDocument(project.id, existingScreenshot.id).catch(() => {}); return undefined; }));
-    }
+    screenshotFiles.forEach(f => jobs.push(documentsService.uploadDocument(project.id, makeForm(f, 'SCREENSHOTS'))));
+    // Best-effort removal of screenshots the user deleted in the grid.
+    removedScreenshotIds.forEach(docId => jobs.push(documentsService.deleteDocument(project.id, docId).catch(() => {})));
     if (jobs.length) {
       const results = await Promise.allSettled(jobs);
       if (results.some(r => r.status === 'rejected')) {
-        setUploadWarning('Changes saved, but an image failed to upload. You can add it from the Documents tab.');
+        setUploadWarning('Changes saved, but some images failed to upload. You can add them from the Documents tab.');
         setTimeout(() => navigate(ROUTES.PROJECT_DETAIL(project.id)), 2500);
         return;
       }
@@ -135,28 +148,71 @@ const ProjectEditPage = () => {
     navigate(ROUTES.PROJECT_DETAIL(project.id));
   };
 
-  const ImagePicker = ({ label, file, existing, onPick, error: pickError }: { label: string; file: File | null; existing: ProjectDocument | null; onPick: (f: File | null) => void; error?: string }) => (
+  const Thumb = ({ src, name, onRemove, dim }: { src?: string; name: string; onRemove?: () => void; dim?: boolean }) => (
+    <Box sx={{ position: 'relative', opacity: dim ? 0.45 : 1 }}>
+      {src ? (
+        <Box component="img" src={src} alt={name} title={name} sx={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider', display: 'block' }} />
+      ) : (
+        <Box title={name} sx={{ width: 72, height: 72, borderRadius: 1.5, border: '1px dashed', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ExistingImageIcon color="disabled" />
+        </Box>
+      )}
+      {onRemove && (
+        <IconButton size="small" onClick={onRemove} sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', p: 0.25, '&:hover': { bgcolor: 'error.main', color: '#fff' } }}>
+          <CloseIcon sx={{ fontSize: 14 }} />
+        </IconButton>
+      )}
+    </Box>
+  );
+
+  const LogoPicker = () => (
     <Box>
-      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>{label} *</Typography>
-      {existing && !file && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <ExistingImageIcon color="action" fontSize="small" />
-          <Typography variant="body2" noWrap sx={{ maxWidth: 200 }} title={existing.fileName}>{existing.fileName}</Typography>
-        </Box>
-      )}
-      <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ justifyContent: 'flex-start', width: '100%', textTransform: 'none', borderColor: pickError ? 'error.main' : undefined, color: pickError ? 'error.main' : undefined }}>
-        {file ? file.name : existing ? 'Replace image...' : 'Choose image...'}
-        <input type="file" hidden accept="image/*" onChange={e => { onPick(e.target.files?.[0] ?? null); e.target.value = ''; }} />
+      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>Project Logo *</Typography>
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+        {logoFile
+          ? <Thumb src={URL.createObjectURL(logoFile)} name={logoFile.name} onRemove={() => setLogoFile(null)} />
+          : existingLogo && <Thumb src={thumbs[existingLogo.id]} name={existingLogo.fileName} />}
+      </Box>
+      <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ justifyContent: 'flex-start', width: '100%', textTransform: 'none', borderColor: imageErrors.logo ? 'error.main' : undefined, color: imageErrors.logo ? 'error.main' : undefined }}>
+        {logoFile ? logoFile.name : existingLogo ? 'Replace logo...' : 'Choose image...'}
+        <input type="file" hidden accept="image/*" onChange={e => { setLogoFile(e.target.files?.[0] ?? null); setImageErrors(prev => ({ ...prev, logo: undefined })); e.target.value = ''; }} />
       </Button>
-      {file && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-          <Box component="img" src={URL.createObjectURL(file)} alt={label} sx={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }} />
-          <Tooltip title="Remove">
-            <IconButton size="small" onClick={() => onPick(null)}><CloseIcon fontSize="small" /></IconButton>
-          </Tooltip>
+      {imageErrors.logo && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{imageErrors.logo}</Typography>}
+    </Box>
+  );
+
+  const ScreenshotsPicker = () => (
+    <Box>
+      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>Project Screenshots * <Typography component="span" variant="caption" color="text.secondary">(one or more)</Typography></Typography>
+      {(existingScreenshots.length > 0 || screenshotFiles.length > 0) && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
+          {existingScreenshots.map(d => {
+            const removed = removedScreenshotIds.includes(d.id);
+            return (
+              <Thumb
+                key={d.id}
+                src={thumbs[d.id]}
+                name={d.fileName}
+                dim={removed}
+                onRemove={() => setRemovedScreenshotIds(prev => removed ? prev.filter(x => x !== d.id) : [...prev, d.id])}
+              />
+            );
+          })}
+          {screenshotFiles.map((f, i) => (
+            <Thumb key={`new-${f.name}-${i}`} src={URL.createObjectURL(f)} name={f.name} onRemove={() => setScreenshotFiles(prev => prev.filter((_, idx) => idx !== i))} />
+          ))}
         </Box>
       )}
-      {pickError && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{pickError}</Typography>}
+      {removedScreenshotIds.length > 0 && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          Faded screenshots will be deleted when you save (click × again to keep them).
+        </Typography>
+      )}
+      <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ justifyContent: 'flex-start', width: '100%', textTransform: 'none', borderColor: imageErrors.screenshot ? 'error.main' : undefined, color: imageErrors.screenshot ? 'error.main' : undefined }}>
+        Add screenshots...
+        <input type="file" hidden multiple accept="image/*" onChange={e => { setScreenshotFiles(prev => [...prev, ...Array.from(e.target.files ?? [])]); setImageErrors(prev => ({ ...prev, screenshot: undefined })); e.target.value = ''; }} />
+      </Button>
+      {imageErrors.screenshot && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{imageErrors.screenshot}</Typography>}
     </Box>
   );
 
@@ -271,10 +327,10 @@ const ProjectEditPage = () => {
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <ImagePicker label="Project Logo" file={logoFile} existing={existingLogo} onPick={(f) => { setLogoFile(f); setImageErrors(prev => ({ ...prev, logo: undefined })); }} error={imageErrors.logo} />
+                    <LogoPicker />
                   </Grid>
                   <Grid item xs={12}>
-                    <ImagePicker label="Project Screenshot" file={screenshotFile} existing={existingScreenshot} onPick={(f) => { setScreenshotFile(f); setImageErrors(prev => ({ ...prev, screenshot: undefined })); }} error={imageErrors.screenshot} />
+                    <ScreenshotsPicker />
                   </Grid>
                 </Grid>
               </CardContent>
