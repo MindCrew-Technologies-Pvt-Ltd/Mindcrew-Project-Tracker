@@ -6,11 +6,12 @@ import {
   FormHelperText, Chip, Typography, Alert, CircularProgress, Card, CardContent,
   IconButton, Tooltip, Autocomplete, FormControlLabel, Checkbox,
 } from '@mui/material';
-import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon, ImageOutlined as ImageIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { createProjectThunk } from '../../store/slices/projectsSlice';
+import documentsService from '../../services/documentsService';
 import { projectSchema } from '../../utils/validators';
 import { TECHNOLOGY_OPTIONS, TAG_OPTIONS } from '../../constants/status';
 import PageHeader from '../../components/common/PageHeader';
@@ -25,6 +26,10 @@ const ProjectCreatePage = () => {
   const [repoUrls, setRepoUrls] = useState<string[]>(['']);
   const [liveUrls, setLiveUrls] = useState<string[]>(['']);
   const [ongoing, setOngoing] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [imageErrors, setImageErrors] = useState<{ logo?: string; screenshot?: string }>({});
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<CreateProjectPayload>({
     resolver: yupResolver(projectSchema) as any,
@@ -44,6 +49,13 @@ const ProjectCreatePage = () => {
   ) => setter(prev => prev.map((u, i) => (i === index ? value : u)));
 
   const onSubmit = async (data: CreateProjectPayload) => {
+    // Logo and screenshot are mandatory (they land in the Documents tab).
+    const imgErrs: { logo?: string; screenshot?: string } = {};
+    if (!logoFile) imgErrs.logo = 'Project logo is required';
+    if (!screenshotFile) imgErrs.screenshot = 'Project screenshot is required';
+    setImageErrors(imgErrs);
+    if (imgErrs.logo || imgErrs.screenshot) return;
+
     const payload: CreateProjectPayload = {
       ...data,
       endDate: ongoing ? undefined : data.endDate,
@@ -53,9 +65,45 @@ const ProjectCreatePage = () => {
     };
     const result = await dispatch(createProjectThunk(payload));
     if (createProjectThunk.fulfilled.match(result)) {
-      navigate(ROUTES.PROJECT_DETAIL(result.payload.id));
+      const projectId = result.payload.id;
+      // Attach logo + screenshot as project documents so they show in the Documents tab.
+      const makeForm = (file: File, category: string) => {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('category', category);
+        return fd;
+      };
+      const uploads = await Promise.allSettled([
+        documentsService.uploadDocument(projectId, makeForm(logoFile!, 'LOGO')),
+        documentsService.uploadDocument(projectId, makeForm(screenshotFile!, 'SCREENSHOTS')),
+      ]);
+      if (uploads.some(u => u.status === 'rejected')) {
+        setUploadWarning('The project was created, but one of the images failed to upload. You can add it from the Documents tab.');
+        setTimeout(() => navigate(ROUTES.PROJECT_DETAIL(projectId)), 2500);
+        return;
+      }
+      navigate(ROUTES.PROJECT_DETAIL(projectId));
     }
   };
+
+  const ImagePicker = ({ label, file, onPick, error: pickError }: { label: string; file: File | null; onPick: (f: File | null) => void; error?: string }) => (
+    <Box>
+      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>{label} *</Typography>
+      <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ justifyContent: 'flex-start', width: '100%', textTransform: 'none', borderColor: pickError ? 'error.main' : undefined, color: pickError ? 'error.main' : undefined }}>
+        {file ? file.name : 'Choose image...'}
+        <input type="file" hidden accept="image/*" onChange={e => { onPick(e.target.files?.[0] ?? null); e.target.value = ''; }} />
+      </Button>
+      {file && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+          <Box component="img" src={URL.createObjectURL(file)} alt={label} sx={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }} />
+          <Tooltip title="Remove">
+            <IconButton size="small" onClick={() => onPick(null)}><CloseIcon fontSize="small" /></IconButton>
+          </Tooltip>
+        </Box>
+      )}
+      {pickError && <FormHelperText error>{pickError}</FormHelperText>}
+    </Box>
+  );
 
   const UrlList = ({
     label,
@@ -107,6 +155,7 @@ const ProjectCreatePage = () => {
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {uploadWarning && <Alert severity="warning" sx={{ mb: 2 }}>{uploadWarning}</Alert>}
 
       <Box component="form" onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={3}>
@@ -243,6 +292,23 @@ const ProjectCreatePage = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>Project Images</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  Both are required — they are saved to the project's Documents tab.
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <ImagePicker label="Project Logo" file={logoFile} onPick={(f) => { setLogoFile(f); setImageErrors(prev => ({ ...prev, logo: undefined })); }} error={imageErrors.logo} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <ImagePicker label="Project Screenshot" file={screenshotFile} onPick={(f) => { setScreenshotFile(f); setImageErrors(prev => ({ ...prev, screenshot: undefined })); }} error={imageErrors.screenshot} />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>Client Information</Typography>

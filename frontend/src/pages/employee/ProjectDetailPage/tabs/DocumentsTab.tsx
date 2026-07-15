@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Chip, Typography, Divider, Alert } from '@mui/material';
-import { InsertDriveFile as InsertDriveFileIcon, Download as DownloadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { InsertDriveFile as InsertDriveFileIcon, Image as ImageFileIcon, Download as DownloadIcon, Delete as DeleteIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { fetchDocumentsThunk, uploadDocumentThunk, deleteDocumentThunk, clearDocumentsError } from '../../../../store/slices/documentsSlice';
@@ -44,6 +44,18 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
     }
   };
 
+  // Open images (logo/screenshots) in a new tab instead of downloading.
+  const handleView = async (docId: string, fileType: string) => {
+    try {
+      const res = await documentsService.downloadDocument(docId);
+      const url = URL.createObjectURL(new Blob([res.data], { type: fileType }));
+      window.open(url, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      // interceptor surfaces auth errors
+    }
+  };
+
   const handleDelete = async () => {
     if (deleteId) { await dispatch(deleteDocumentThunk({ projectId: project.id, docId: deleteId })); setDeleteId(null); }
   };
@@ -62,12 +74,15 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
             <Box key={doc.id}>
               {i > 0 && <Divider />}
               <ListItem>
-                <ListItemIcon><InsertDriveFileIcon color="action" /></ListItemIcon>
+                <ListItemIcon>{doc.fileType?.startsWith('image/') ? <ImageFileIcon color="action" /> : <InsertDriveFileIcon color="action" />}</ListItemIcon>
                 <ListItemText
                   primary={doc.fileName}
                   secondary={<><Chip label={DOCUMENT_CATEGORY_LABELS[doc.category]} size="small" sx={{ mr: 1 }} /><Typography variant="caption" color="text.secondary">by {doc.uploadedBy?.name} · {formatDate(doc.createdAt)}</Typography></>}
                 />
                 <ListItemSecondaryAction>
+                  {doc.fileType?.startsWith('image/') && (
+                    <IconButton aria-label="View image" onClick={() => handleView(doc.id, doc.fileType)}><ViewIcon /></IconButton>
+                  )}
                   <IconButton aria-label="Download document" onClick={() => handleDownload(doc.id, doc.fileName)}><DownloadIcon /></IconButton>
                   {canEdit && <IconButton onClick={() => setDeleteId(doc.id)} color="error"><DeleteIcon /></IconButton>}
                 </ListItemSecondaryAction>

@@ -38,6 +38,7 @@ enum DocumentCategory {
   PROPOSAL
   SRS
   DESIGN
+  LOGO
   MEETING_NOTES
   CONTRACT
   DELIVERY_FILES

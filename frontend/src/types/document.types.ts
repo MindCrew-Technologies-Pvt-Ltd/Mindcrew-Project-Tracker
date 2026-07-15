@@ -1,6 +1,6 @@
 import { User } from './user.types';
 
-export type DocumentCategory = 'PROPOSAL' | 'SRS' | 'DESIGN' | 'MEETING_NOTES' | 'CONTRACT' | 'DELIVERY_FILES' | 'SCREENSHOTS' | 'OTHER';
+export type DocumentCategory = 'PROPOSAL' | 'SRS' | 'DESIGN' | 'LOGO' | 'MEETING_NOTES' | 'CONTRACT' | 'DELIVERY_FILES' | 'SCREENSHOTS' | 'OTHER';
 
 export interface ProjectDocument {
   id: string;

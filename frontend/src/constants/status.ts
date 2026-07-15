@@ -57,6 +57,7 @@ export const TAG_OPTIONS = [
 export const DOCUMENT_CATEGORY_LABELS = {
   PROPOSAL: 'Proposal',
   SRS: 'SRS',
+  LOGO: 'Logo',
   DESIGN: 'Design',
   MEETING_NOTES: 'Meeting Notes',
   CONTRACT: 'Contract',
