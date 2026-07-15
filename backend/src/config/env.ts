@@ -41,9 +41,6 @@ export const CORS_ORIGIN = getEnv('CORS_ORIGIN', 'http://localhost:5173');
 // Directory where uploaded documents are stored. In production this should be a
 // mounted Railway volume path (e.g. /data/uploads); locally it defaults to ./uploads.
 export const UPLOAD_DIR = getEnv('UPLOAD_DIR', NODE_ENV === 'production' ? '/data/uploads' : './uploads');
-export const CLOUDINARY_CLOUD_NAME = getEnv('CLOUDINARY_CLOUD_NAME', '');
-export const CLOUDINARY_API_KEY = getEnv('CLOUDINARY_API_KEY', '');
-export const CLOUDINARY_API_SECRET = getEnv('CLOUDINARY_API_SECRET', '');
 export const SMTP_HOST = getEnv('SMTP_HOST', 'smtp.gmail.com');
 export const SMTP_PORT = getEnvNumber('SMTP_PORT', 587);
 export const SMTP_USER = getEnv('SMTP_USER', '');

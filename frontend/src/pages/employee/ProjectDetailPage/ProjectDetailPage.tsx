@@ -16,11 +16,10 @@ import OverviewTab from './tabs/OverviewTab';
 import WeeklyUpdatesTab from './tabs/WeeklyUpdatesTab';
 import DocumentsTab from './tabs/DocumentsTab';
 import TeamMembersTab from './tabs/TeamMembersTab';
-import ActivityLogsTab from './tabs/ActivityLogsTab';
 import EditRequestsTab from './tabs/EditRequestsTab';
 import TimelineTab from './tabs/TimelineTab';
 
-const TABS = ['Overview', 'Weekly Updates', 'Documents', 'Team Members', 'Activity Logs', 'Edit Requests', 'Timeline'];
+const TABS = ['Overview', 'Weekly Updates', 'Documents', 'Team Members', 'Edit Requests', 'Timeline'];
 
 const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,7 +65,7 @@ const ProjectDetailPage = () => {
             <Button variant="outlined" onClick={(e) => setAnchorEl(e.currentTarget)}><MoreVertIcon /></Button>
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
               <MenuItem onClick={() => navigate(ROUTES.WEEKLY_UPDATE_NEW(project.id))}>Add Weekly Update</MenuItem>
-              {!isOwner && !isAdmin && <MenuItem onClick={() => { setTab(5); setAnchorEl(null); }}>Request Edit Access</MenuItem>}
+              {!isOwner && !isAdmin && <MenuItem onClick={() => { setTab(4); setAnchorEl(null); }}>Request Edit Access</MenuItem>}
               {(isAdmin || isOwner) && [
                 <Divider key="d" />,
                 <MenuItem key="archive" onClick={handleArchive}>Archive Project</MenuItem>,
@@ -95,9 +94,8 @@ const ProjectDetailPage = () => {
       {tab === 1 && <WeeklyUpdatesTab project={project} canEdit={canEdit} />}
       {tab === 2 && <DocumentsTab project={project} canEdit={canEdit} />}
       {tab === 3 && <TeamMembersTab project={project} canEdit={canEdit} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
-      {tab === 4 && <ActivityLogsTab projectId={project.id} />}
-      {tab === 5 && <EditRequestsTab project={project} isOwner={isOwner} isAdmin={isAdmin} />}
-      {tab === 6 && <TimelineTab project={project} />}
+      {tab === 4 && <EditRequestsTab project={project} isOwner={isOwner} isAdmin={isAdmin} />}
+      {tab === 5 && <TimelineTab project={project} />}
 
       <ConfirmDialog
         open={deleteDialog}

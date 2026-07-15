@@ -15,11 +15,10 @@ import OverviewTab from '../employee/ProjectDetailPage/tabs/OverviewTab';
 import WeeklyUpdatesTab from '../employee/ProjectDetailPage/tabs/WeeklyUpdatesTab';
 import DocumentsTab from '../employee/ProjectDetailPage/tabs/DocumentsTab';
 import TeamMembersTab from '../employee/ProjectDetailPage/tabs/TeamMembersTab';
-import ActivityLogsTab from '../employee/ProjectDetailPage/tabs/ActivityLogsTab';
 import EditRequestsTab from '../employee/ProjectDetailPage/tabs/EditRequestsTab';
 import TimelineTab from '../employee/ProjectDetailPage/tabs/TimelineTab';
 
-const TABS = ['Overview', 'Weekly Updates', 'Documents', 'Team Members', 'Activity Logs', 'Edit Requests', 'Timeline'];
+const TABS = ['Overview', 'Weekly Updates', 'Documents', 'Team Members', 'Edit Requests', 'Timeline'];
 
 const AdminProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,9 +71,8 @@ const AdminProjectDetailPage = () => {
       {tab === 1 && <WeeklyUpdatesTab project={project} canEdit={true} />}
       {tab === 2 && <DocumentsTab project={project} canEdit={true} />}
       {tab === 3 && <TeamMembersTab project={project} canEdit={true} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
-      {tab === 4 && <ActivityLogsTab projectId={project.id} />}
-      {tab === 5 && <EditRequestsTab project={project} isOwner={true} isAdmin={true} />}
-      {tab === 6 && <TimelineTab project={project} />}
+      {tab === 4 && <EditRequestsTab project={project} isOwner={true} isAdmin={true} />}
+      {tab === 5 && <TimelineTab project={project} />}
 
       <ConfirmDialog open={deleteDialog} title="Delete Project" message="This will permanently delete the project and all its data." confirmLabel="Delete" onConfirm={handleDelete} onCancel={() => setDeleteDialog(false)} />
     </Box>
