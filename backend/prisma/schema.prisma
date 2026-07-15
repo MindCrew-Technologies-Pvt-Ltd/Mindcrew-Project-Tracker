@@ -36,11 +36,16 @@ enum HealthStatus {
 
 enum DocumentCategory {
   PROPOSAL
-  TECHNICAL
+  SRS
   DESIGN
+  MEETING_NOTES
   CONTRACT
-  REPORT
+  DELIVERY_FILES
+  SCREENSHOTS
   OTHER
+  // Legacy values kept for existing rows (enum removal would be destructive):
+  TECHNICAL
+  REPORT
 }
 
 enum NotificationType {

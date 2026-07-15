@@ -34,7 +34,7 @@ const LandingPage = () => {
         >
           <FolderIcon sx={{ color: '#FFFFFF', fontSize: 34 }} />
         </Box>
-        <Typography variant="h4" fontWeight={700} gutterBottom>ProjectTracker</Typography>
+        <Typography variant="h4" fontWeight={700} gutterBottom sx={{ color: '#FFFFFF' }}>ProjectTracker</Typography>
         <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 5 }}>
           Internal Project Repository & Weekly Tracking
         </Typography>

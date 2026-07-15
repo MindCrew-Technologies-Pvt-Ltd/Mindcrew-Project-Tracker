@@ -33,9 +33,20 @@ export const PRIORITY_COLORS: Record<ProjectPriority, 'default' | 'primary' | 's
 };
 
 export const TECHNOLOGY_OPTIONS = [
-  'React', 'React Native', 'Node.js', 'Python', 'Laravel', 'PostgreSQL',
-  'MongoDB', 'AWS', 'Docker', 'Vue.js', 'Angular', 'TypeScript', 'MySQL',
-  'Redis', 'Kubernetes', 'Next.js', 'Django', 'Spring Boot', 'Flutter',
+  // Mobile
+  'Android', 'iOS', 'Flutter', 'React Native', 'Swift', 'SwiftUI', 'Kotlin', 'Dart',
+  // Languages
+  'JavaScript', 'TypeScript', 'Python', 'Java', 'C#', 'PHP', 'Go', 'Rust', 'C++',
+  // Frontend
+  'React', 'Next.js', 'Vue.js', 'Angular', 'Tailwind CSS', 'HTML/CSS',
+  // Backend
+  'Node.js', 'Express', 'NestJS', 'Django', 'FastAPI', 'Flask', 'Laravel', 'Spring Boot', '.NET', 'Ruby on Rails', 'GraphQL',
+  // Databases & BaaS
+  'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Supabase', 'Firebase', 'SQLite', 'Prisma',
+  // Cloud & DevOps
+  'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes', 'Railway', 'Vercel',
+  // CMS & other
+  'WordPress', 'Shopify', 'Unity', 'Electron',
 ];
 
 export const TAG_OPTIONS = [

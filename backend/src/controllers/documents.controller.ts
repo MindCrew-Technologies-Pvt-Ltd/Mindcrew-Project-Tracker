@@ -29,6 +29,11 @@ export const uploadDocument: RequestHandler = async (req, res, next) => {
     const projectId = sp(req.params.projectId);
     await assertProjectWriteAccess(projectId, req.user!);
     const { category, description } = req.body;
+    // Validate against the enum instead of blind-casting — an unknown value
+    // used to crash inside Prisma as a 500 (e.g. "SRS" before it was added).
+    if (category && !Object.values(DocumentCategory).includes(category)) {
+      error(res, `Invalid category. Use one of: ${Object.values(DocumentCategory).join(', ')}`, 400); return;
+    }
     const { filename } = saveFile(req.file.buffer, req.file.originalname);
     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
     const doc = await prisma.document.create({
