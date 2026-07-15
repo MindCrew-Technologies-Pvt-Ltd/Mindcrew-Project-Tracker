@@ -29,15 +29,19 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { list, filters, pagination, loading } = useAppSelector((s) => s.projects);
-  const [view, setView] = useState<'grid' | 'list'>('grid');
+  // All Projects opens as the CRM table; My Projects opens as cards.
+  const [view, setView] = useState<'grid' | 'list'>(scopeMine ? 'grid' : 'list');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
   const [toDelete, setToDelete] = useState<Project | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // The page's scope is fixed by the route (My Projects vs All Projects).
+  // The component instance survives navigation between the two routes, so the
+  // default view must be re-applied when the scope changes.
   useEffect(() => {
     dispatch(setFilters({ scope: scopeMine ? 'mine' : undefined, page: 1 }));
+    setView(scopeMine ? 'grid' : 'list');
   }, [scopeMine, dispatch]);
 
   // List view mirrors the admin tables: load a big page and let the table
