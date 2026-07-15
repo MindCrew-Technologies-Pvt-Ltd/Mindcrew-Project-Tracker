@@ -117,7 +117,6 @@ export const updateWeeklyUpdateSchema = createWeeklyUpdateSchema.fork(
 
 export const createEditRequestSchema = Joi.object({
   reason: Joi.string().min(10).required(),
-  duration: Joi.string().required(),
   comments: Joi.string().allow('').optional(),
 });
 

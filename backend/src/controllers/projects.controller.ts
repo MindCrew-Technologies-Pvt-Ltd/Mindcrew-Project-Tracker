@@ -78,7 +78,8 @@ export const updateProject: RequestHandler = async (req, res, next) => {
     const isAdmin = req.user?.role === 'ADMIN';
     const isOwner = existing.ownerId === req.user!.id;
     if (!isAdmin && !isOwner) {
-      const approved = await prisma.editRequest.findFirst({ where: { projectId: id, requestedById: req.user!.id, status: 'APPROVED', expiresAt: { gt: new Date() } } });
+      // An approved edit request grants permanent edit access (no expiry).
+      const approved = await prisma.editRequest.findFirst({ where: { projectId: id, requestedById: req.user!.id, status: 'APPROVED' } });
       if (!approved) return next(new AppError('No permission to update this project', 403));
     }
     const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, startDate, endDate, deadline, budget } = req.body;
@@ -168,8 +169,8 @@ export const requestEditAccess: RequestHandler = async (req, res, next) => {
     if (project.ownerId === req.user!.id) { error(res, 'You already own this project', 400); return; }
     const pending = await prisma.editRequest.findFirst({ where: { projectId: id, requestedById: req.user!.id, status: 'PENDING' } });
     if (pending) { error(res, 'You already have a pending request', 409); return; }
-    const { reason, duration, comments } = req.body;
-    const editRequest = await prisma.editRequest.create({ data: { projectId: id, requestedById: req.user!.id, reason, duration, comments } });
+    const { reason, comments } = req.body;
+    const editRequest = await prisma.editRequest.create({ data: { projectId: id, requestedById: req.user!.id, reason, comments } });
     const requester = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { name: true } });
     await createNotification({ userId: project.ownerId, title: 'Edit Access Request', message: `${requester?.name ?? 'A user'} requested edit access to "${project.name}". Review it on the project's Edit Requests tab.`, type: 'EDIT_REQUEST_UPDATE', projectId: project.id, relatedId: editRequest.id });
     success(res, editRequest, 'Request submitted', 201);

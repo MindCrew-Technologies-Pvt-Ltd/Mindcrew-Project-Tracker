@@ -79,6 +79,5 @@ export const weeklyUpdateSchema = yup.object({
 
 export const editRequestSchema = yup.object({
   reason: yup.string().min(10).required('Reason is required'),
-  duration: yup.string().required('Duration is required'),
   comments: yup.string().optional(),
 });

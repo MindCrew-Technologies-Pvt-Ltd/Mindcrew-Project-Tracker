@@ -35,12 +35,11 @@ const ProjectDetailPage = () => {
 
   useEffect(() => { if (id) dispatch(fetchProjectByIdThunk(id)); }, [id, dispatch]);
 
-  // An approved, unexpired edit request grants this user temporary edit access.
+  // An approved edit request grants this user permanent edit access.
   useEffect(() => {
     if (!id || !user) return;
     axiosInstance.get('/edit-requests', { params: { projectId: id, status: 'APPROVED' } })
-      .then(r => setHasEditGrant((r.data?.data || []).some((er: any) =>
-        er.requestedBy?.id === user.id && er.expiresAt && new Date(er.expiresAt).getTime() > Date.now())))
+      .then(r => setHasEditGrant((r.data?.data || []).some((er: any) => er.requestedBy?.id === user.id)))
       .catch(() => {});
   }, [id, user]);
 

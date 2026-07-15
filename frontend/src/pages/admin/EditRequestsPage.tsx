@@ -32,8 +32,7 @@ const EditRequestsPage = () => {
   const columns: Column<EditRequest>[] = [
     { key: 'project', header: 'Project', width: '20%', sortable: true, value: (r) => r.project?.name || '', render: (r) => <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary' }}>{r.project?.name || '—'}</Typography> },
     { key: 'requestedBy', header: 'Requested By', width: '16%', sortable: true, value: (r) => r.requestedBy?.name || '', render: (r) => r.requestedBy?.name || '—' },
-    { key: 'reason', header: 'Reason', width: '26%', render: (r) => r.reason },
-    { key: 'duration', header: 'Duration', width: '12%', render: (r) => r.duration },
+    { key: 'reason', header: 'Reason', width: '38%', render: (r) => r.reason },
     { key: 'status', header: 'Status', width: '12%', sortable: true, value: (r) => r.status, render: (r) => <StatusPill status={r.status} /> },
     { key: 'createdAt', header: 'Date', width: '14%', sortable: true, value: (r) => r.createdAt, render: (r) => formatDateTime(r.createdAt) },
   ];

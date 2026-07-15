@@ -46,8 +46,10 @@ The backend `validate()` middleware runs Joi with `stripUnknown: true`
 - **Optional:** completedTasks[], plannedTasks[], blockers, milestones, hoursLogged (0–168)
 
 ### Edit request
-- **Required:** reason (min 10), duration
+- **Required:** reason (min 10)
 - **Optional:** comments
+- (No duration — approved edit access is permanent, per user decision 2026-07-15.
+  The `duration`/`expiresAt` columns remain in the DB as nullable legacy fields.)
 
 ## Data model fields
 

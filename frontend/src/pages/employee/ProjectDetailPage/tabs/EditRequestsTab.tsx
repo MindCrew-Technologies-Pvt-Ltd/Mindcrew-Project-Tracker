@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Card, CardContent, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { useForm, Controller } from 'react-hook-form';
+import { Box, Card, CardContent, Typography, Button, TextField, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { editRequestSchema } from '../../../../utils/validators';
 import axiosInstance from '../../../../services/axiosInstance';
@@ -10,8 +10,6 @@ import { formatDateTime } from '../../../../utils/formatters';
 import EmptyState from '../../../../components/common/EmptyState';
 
 interface Props { project: Project; isOwner: boolean; isAdmin: boolean; }
-
-const DURATION_OPTIONS = ['1 day', '3 days', '1 week', '2 weeks'];
 
 const EditRequestsTab = ({ project, isOwner, isAdmin }: Props) => {
   const [requests, setRequests] = useState<EditRequest[]>([]);
@@ -23,9 +21,8 @@ const EditRequestsTab = ({ project, isOwner, isAdmin }: Props) => {
 
   const canReview = isOwner || isAdmin;
 
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<CreateEditRequestPayload>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateEditRequestPayload>({
     resolver: yupResolver(editRequestSchema) as any,
-    defaultValues: { duration: '' as any },
   });
 
   const loadRequests = useCallback(() => {
@@ -89,19 +86,6 @@ const EditRequestsTab = ({ project, isOwner, isAdmin }: Props) => {
             ) : (
               <Box component="form" onSubmit={handleSubmit(onSubmit)}>
                 <TextField label="Reason" fullWidth multiline rows={3} sx={{ mb: 2 }} error={!!errors.reason} helperText={errors.reason?.message} {...register('reason')} />
-                <FormControl fullWidth size="small" sx={{ mb: 2 }} error={!!errors.duration}>
-                  <InputLabel>Duration</InputLabel>
-                  <Controller
-                    name="duration"
-                    control={control}
-                    render={({ field }) => (
-                      <Select label="Duration" {...field} value={field.value || ''}>
-                        {DURATION_OPTIONS.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                      </Select>
-                    )}
-                  />
-                  {errors.duration && <Typography variant="caption" color="error" sx={{ mt: 0.5, mx: 1.75 }}>{errors.duration.message}</Typography>}
-                </FormControl>
                 <TextField label="Comments (optional)" fullWidth sx={{ mb: 2 }} {...register('comments')} />
                 <Button type="submit" variant="contained" disabled={sending}>Submit Request</Button>
               </Box>
@@ -128,7 +112,7 @@ const EditRequestsTab = ({ project, isOwner, isAdmin }: Props) => {
               <Chip label={r.status} size="small" color={r.status === 'APPROVED' ? 'success' : r.status === 'REJECTED' ? 'error' : 'warning'} />
             </Box>
             <Typography variant="body2" color="text.secondary" mb={1}>{r.reason}</Typography>
-            <Typography variant="caption" color="text.secondary">Duration: {r.duration} · {formatDateTime(r.createdAt)}</Typography>
+            <Typography variant="caption" color="text.secondary">{formatDateTime(r.createdAt)}</Typography>
             {canReview && r.status === 'PENDING' && (
               <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
                 <Button size="small" variant="contained" color="success" onClick={() => handleApprove(r.id)}>Approve</Button>

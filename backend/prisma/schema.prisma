@@ -187,7 +187,9 @@ model EditRequest {
   projectId     String
   requestedById String
   reason        String
-  duration      String
+  // duration/expiresAt are legacy: approved access no longer expires (user
+  // decision 2026-07-15). Kept nullable so the auto db push stays non-destructive.
+  duration      String?
   comments      String?
   status        EditRequestStatus @default(PENDING)
   reviewedById  String?

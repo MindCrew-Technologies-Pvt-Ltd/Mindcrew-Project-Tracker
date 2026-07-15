@@ -9,15 +9,6 @@ import { AppError } from '../middleware/errorHandler';
 const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 const qs = (v: unknown): string | undefined => (v && typeof v === 'string' ? v : undefined);
 
-const DURATION_DAYS: Record<string, number> = { '1 day': 1, '3 days': 3, '1 week': 7, '2 weeks': 14 };
-
-function parseDuration(duration: string): Date {
-  const now = new Date();
-  const days = DURATION_DAYS[duration.toLowerCase().trim()] ?? 1;
-  now.setDate(now.getDate() + days);
-  return now;
-}
-
 /** The request's project owner, or an admin, may review (approve/reject) it. */
 async function assertCanReview(editRequestId: string, user: { id: string; role?: string }) {
   const existing = await prisma.editRequest.findUnique({ where: { id: editRequestId }, include: { project: { select: { ownerId: true, name: true } } } });
@@ -68,12 +59,9 @@ export const approveEditRequest: RequestHandler = async (req, res, next) => {
     const id = sp(req.params.id);
     const existing = await assertCanReview(id, req.user!);
     if (existing.status !== 'PENDING') { error(res, 'Only pending requests can be approved', 400); return; }
-    if (req.body.duration && !(req.body.duration.toLowerCase().trim() in DURATION_DAYS)) {
-      error(res, `Invalid duration. Use one of: ${Object.keys(DURATION_DAYS).join(', ')}`, 400); return;
-    }
-    const expiresAt = parseDuration(req.body.duration || existing.duration);
-    const updated = await prisma.editRequest.update({ where: { id }, data: { status: 'APPROVED', reviewedById: req.user!.id, expiresAt } });
-    await createNotification({ userId: existing.requestedById, title: 'Edit Request Approved', message: `Your edit request was approved. Access expires ${expiresAt.toLocaleDateString()}.`, type: 'EDIT_REQUEST_UPDATE', relatedId: id });
+    // Approved access does not expire (user decision 2026-07-15).
+    const updated = await prisma.editRequest.update({ where: { id }, data: { status: 'APPROVED', reviewedById: req.user!.id, expiresAt: null } });
+    await createNotification({ userId: existing.requestedById, title: 'Edit Request Approved', message: `Your edit request for "${existing.project.name}" was approved. You can now edit the project.`, type: 'EDIT_REQUEST_UPDATE', relatedId: id });
     await logActivity({ userId: req.user!.id, action: 'APPROVE', module: 'EDIT_REQUEST', description: `Approved edit request ${id}` });
     success(res, updated);
   } catch (err) { next(err); }
