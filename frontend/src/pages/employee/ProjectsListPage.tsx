@@ -68,7 +68,7 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
 
   const columns: Column<Project>[] = [
     {
-      key: 'name', header: 'Project', width: '28%', sortable: true, value: (p) => p.name,
+      key: 'name', header: 'Project', width: '24%', sortable: true, value: (p) => p.name,
       render: (p) => (
         <Box sx={{ minWidth: 0 }}>
           <Typography noWrap sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{p.name}</Typography>
@@ -77,7 +77,7 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
       ),
     },
     {
-      key: 'owner', header: 'Owner', width: '18%', sortable: true, value: (p) => p.owner?.name || '',
+      key: 'owner', header: 'Owner', width: '16%', sortable: true, value: (p) => p.owner?.name || '',
       render: (p) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
           <Avatar sx={{ width: 28, height: 28, fontSize: 12, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>{p.owner?.name?.charAt(0).toUpperCase()}</Avatar>
@@ -85,12 +85,13 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
         </Box>
       ),
     },
-    { key: 'status', header: 'Status', width: '12%', sortable: true, value: (p) => p.status, render: (p) => <ProjectStatusChip status={p.status} /> },
-    { key: 'priority', header: 'Priority', width: '12%', sortable: true, value: (p) => p.priority, render: (p) => <PriorityChip priority={p.priority} /> },
+    { key: 'status', header: 'Status', width: '11%', sortable: true, value: (p) => p.status, render: (p) => <ProjectStatusChip status={p.status} /> },
+    { key: 'priority', header: 'Priority', width: '11%', sortable: true, value: (p) => p.priority, render: (p) => <PriorityChip priority={p.priority} /> },
     {
-      key: 'startDate', header: 'Timeline', width: '20%', sortable: true, value: (p) => p.startDate || '',
+      key: 'startDate', header: 'Timeline', width: '16%', sortable: true, value: (p) => p.startDate || '',
       render: (p) => <Typography noWrap sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>{formatDate(p.startDate) || '—'} – {formatDate(p.endDate) || 'Ongoing'}</Typography>,
     },
+    { key: 'createdAt', header: 'Added', width: '12%', sortable: true, value: (p) => p.createdAt, render: (p) => formatDate(p.createdAt) },
   ];
 
   const rowActions = (p: Project) => (

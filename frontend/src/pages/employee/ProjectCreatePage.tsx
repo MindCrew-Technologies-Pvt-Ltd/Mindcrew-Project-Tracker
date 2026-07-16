@@ -31,6 +31,10 @@ const ProjectCreatePage = () => {
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [imageErrors, setImageErrors] = useState<{ logo?: string; screenshot?: string }>({});
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
+  // Redux `loading` clears as soon as the project row is created, but the image
+  // uploads are still running — during that window extra clicks used to create
+  // duplicate projects. This flag covers the whole submit, click to navigate.
+  const [submitting, setSubmitting] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<CreateProjectPayload>({
     resolver: yupResolver(projectSchema) as any,
@@ -50,12 +54,14 @@ const ProjectCreatePage = () => {
   ) => setter(prev => prev.map((u, i) => (i === index ? value : u)));
 
   const onSubmit = async (data: CreateProjectPayload) => {
+    if (submitting) return;
     // Logo and at least one screenshot are mandatory (they land in the Documents tab).
     const imgErrs: { logo?: string; screenshot?: string } = {};
     if (!logoFile) imgErrs.logo = 'Project logo is required';
     if (screenshotFiles.length === 0) imgErrs.screenshot = 'At least one screenshot is required';
     setImageErrors(imgErrs);
     if (imgErrs.logo || imgErrs.screenshot) return;
+    setSubmitting(true);
 
     const payload: CreateProjectPayload = {
       ...data,
@@ -66,7 +72,8 @@ const ProjectCreatePage = () => {
       videoUrls: videoUrls.filter(u => u.trim()),
     };
     const result = await dispatch(createProjectThunk(payload));
-    if (createProjectThunk.fulfilled.match(result)) {
+    if (!createProjectThunk.fulfilled.match(result)) { setSubmitting(false); return; }
+    {
       const projectId = result.payload.id;
       // Attach logo + screenshot as project documents so they show in the Documents tab.
       const makeForm = (file: File, category: string) => {
@@ -390,9 +397,9 @@ const ProjectCreatePage = () => {
         </Grid>
 
         <Box sx={{ display: 'flex', gap: 2, mt: 2, justifyContent: 'flex-end' }}>
-          <Button variant="outlined" onClick={() => navigate(ROUTES.PROJECTS)} disabled={loading}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={22} color="inherit" /> : 'Create Project'}
+          <Button variant="outlined" onClick={() => navigate(ROUTES.PROJECTS)} disabled={loading || submitting}>Cancel</Button>
+          <Button type="submit" variant="contained" disabled={loading || submitting}>
+            {loading || submitting ? <CircularProgress size={22} color="inherit" /> : 'Create Project'}
           </Button>
         </Box>
       </Box>

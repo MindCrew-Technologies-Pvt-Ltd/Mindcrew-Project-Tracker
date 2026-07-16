@@ -50,10 +50,11 @@ const AdminProjectsListPage = () => {
         </Box>
       ),
     },
-    { key: 'owner', header: 'Owner', width: '16%', sortable: true, value: (p) => p.owner?.name || '', render: (p) => p.owner?.name || '—' },
-    { key: 'status', header: 'Status', width: '14%', sortable: true, value: (p) => p.status, render: (p) => <ProjectStatusChip status={p.status} /> },
-    { key: 'priority', header: 'Priority', width: '12%', sortable: true, value: (p) => p.priority, render: (p) => <PriorityChip priority={p.priority} /> },
-    { key: 'startDate', header: 'Timeline', width: '22%', sortable: true, value: (p) => p.startDate, render: (p) => `${formatDate(p.startDate)} – ${formatDate(p.endDate || p.deadline) || 'Ongoing'}` },
+    { key: 'owner', header: 'Owner', width: '14%', sortable: true, value: (p) => p.owner?.name || '', render: (p) => p.owner?.name || '—' },
+    { key: 'status', header: 'Status', width: '12%', sortable: true, value: (p) => p.status, render: (p) => <ProjectStatusChip status={p.status} /> },
+    { key: 'priority', header: 'Priority', width: '11%', sortable: true, value: (p) => p.priority, render: (p) => <PriorityChip priority={p.priority} /> },
+    { key: 'startDate', header: 'Timeline', width: '17%', sortable: true, value: (p) => p.startDate, render: (p) => `${formatDate(p.startDate)} – ${formatDate(p.endDate || p.deadline) || 'Ongoing'}` },
+    { key: 'createdAt', header: 'Added', width: '12%', sortable: true, value: (p) => p.createdAt, render: (p) => formatDate(p.createdAt) },
   ];
 
   const rowActions = (p: Project) => (
