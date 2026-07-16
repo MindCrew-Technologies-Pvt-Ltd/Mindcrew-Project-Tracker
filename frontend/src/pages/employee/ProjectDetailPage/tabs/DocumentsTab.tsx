@@ -23,8 +23,23 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
   const docs = documents[project.id] || [];
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
 
   useEffect(() => { dispatch(fetchDocumentsThunk(project.id)); }, [project.id, dispatch]);
+
+  // Fetch thumbnails for image documents (files are auth-gated, so previews
+  // must go through the download API rather than a plain <img src>).
+  useEffect(() => {
+    docs.filter(d => d.fileType?.startsWith('image/') && !thumbs[d.id]).forEach(d => {
+      documentsService.downloadDocument(d.id)
+        .then(res => {
+          const url = URL.createObjectURL(new Blob([res.data], { type: d.fileType }));
+          setThumbs(prev => (prev[d.id] ? prev : { ...prev, [d.id]: url }));
+        })
+        .catch(() => {});
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docs]);
 
   const handleUpload = async (file: File, category: DocumentCategory) => {
     setUploading(true);
@@ -75,7 +90,21 @@ const DocumentsTab = ({ project, canEdit }: Props) => {
             <Box key={doc.id}>
               {i > 0 && <Divider />}
               <ListItem>
-                <ListItemIcon>{doc.fileType?.startsWith('image/') ? <ImageFileIcon color="action" /> : <InsertDriveFileIcon color="action" />}</ListItemIcon>
+                <ListItemIcon sx={{ minWidth: 72 }}>
+                  {doc.fileType?.startsWith('image/') && thumbs[doc.id] ? (
+                    <Box
+                      component="img"
+                      src={thumbs[doc.id]}
+                      alt={doc.fileName}
+                      onClick={() => handleView(doc.id, doc.fileType)}
+                      sx={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider', cursor: 'pointer', '&:hover': { opacity: 0.85 } }}
+                    />
+                  ) : doc.fileType?.startsWith('image/') ? (
+                    <ImageFileIcon color="action" />
+                  ) : (
+                    <InsertDriveFileIcon color="action" />
+                  )}
+                </ListItemIcon>
                 <ListItemText
                   primary={doc.fileName}
                   secondary={<><Chip label={DOCUMENT_CATEGORY_LABELS[doc.category]} size="small" sx={{ mr: 1 }} /><Typography variant="caption" color="text.secondary">by {doc.uploadedBy?.name} · {formatDate(doc.createdAt)}</Typography></>}
