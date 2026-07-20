@@ -19,7 +19,7 @@ import {
   fetchPendingThunk, approveWeekThunk, rejectWeekThunk, reopenWeekThunk,
 } from '../../store/slices/timesheetSlice';
 import timesheetService from '../../services/timesheetService';
-import { PendingWeekRow, WeekDetail, MissingUser, TimeEntry } from '../../types/timesheet.types';
+import { PendingWeekRow, WeekDetail, MissingUser, TimeEntry, TimesheetWeek } from '../../types/timesheet.types';
 import { minutesToHM, minutesToPretty, weekLabel, isoWeekOf, shiftIsoWeek, dateKey } from '../../utils/timeFormat';
 import { formatDate } from '../../utils/formatters';
 
@@ -56,12 +56,18 @@ const ApprovalsPage = () => {
   const { isAdmin } = useAuth();
   const { pending, pendingLoading } = useAppSelector((s) => s.timesheet);
 
-  const [tab, setTab] = useState<'pending' | 'reviewed' | 'missing'>('pending');
+  // Plain employees land on their own submissions; reviewers land on the queue.
+  const [tab, setTab] = useState<'mine' | 'pending' | 'reviewed' | 'missing'>(isAdmin ? 'pending' : 'mine');
   const [reviewedStatus, setReviewedStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
   const [snack, setSnack] = useState<{ msg: string; severity: 'success' | 'error' } | null>(null);
 
+  // My submissions (read-only — where an employee tracks their own approval status)
+  const [myWeeks, setMyWeeks] = useState<TimesheetWeek[]>([]);
+  const [myWeeksLoading, setMyWeeksLoading] = useState(false);
+
   // Drawer with the week detail
   const [drawerId, setDrawerId] = useState<string | null>(null);
+  const [drawerReadOnly, setDrawerReadOnly] = useState(false);
   const [detail, setDetail] = useState<WeekDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -90,6 +96,15 @@ const ApprovalsPage = () => {
   }, [tab, reviewedStatus, refetchQueue]);
 
   useEffect(() => {
+    if (tab !== 'mine') return;
+    setMyWeeksLoading(true);
+    timesheetService.myWeeks()
+      .then((r) => setMyWeeks(r.data?.data || []))
+      .catch(() => setMyWeeks([]))
+      .finally(() => setMyWeeksLoading(false));
+  }, [tab]);
+
+  useEffect(() => {
     if (tab !== 'missing') return;
     setMissingLoading(true);
     timesheetService.missing(missingRef.year, missingRef.week)
@@ -98,8 +113,9 @@ const ApprovalsPage = () => {
       .finally(() => setMissingLoading(false));
   }, [tab, missingRef]);
 
-  const openDrawer = (id: string) => {
+  const openDrawer = (id: string, readOnly = false) => {
     setDrawerId(id);
+    setDrawerReadOnly(readOnly);
     setDetail(null);
     setDetailLoading(true);
     timesheetService.weekDetail(id)
@@ -232,13 +248,69 @@ const ApprovalsPage = () => {
 
   return (
     <Box>
-      <PageHeader title="Timesheet Approvals" subtitle="Review the submitted weeks of your project members" />
+      <PageHeader title="Timesheet Approvals" subtitle="Track your own submissions and review your project members' weeks" />
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2.5, borderBottom: '1px solid #E9EBF2' }}>
+        <Tab value="mine" label="My submissions" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="pending" label="Pending review" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="reviewed" label="Reviewed" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="missing" label="Missing" sx={{ textTransform: 'none', fontWeight: 600 }} />
       </Tabs>
+
+      {tab === 'mine' && (
+        <DataTablePro
+          rows={myWeeks}
+          columns={[
+            {
+              key: 'week', header: 'Week', width: '20%', sortable: true, value: (w: TimesheetWeek) => w.isoYear * 100 + w.isoWeek,
+              render: (w: TimesheetWeek) => <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>{weekLabel(w.isoYear, w.isoWeek)}</Typography>,
+            },
+            {
+              key: 'hours', header: 'Hours', width: '10%', sortable: true, value: (w: TimesheetWeek) => w.totalMinutes,
+              render: (w: TimesheetWeek) => <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.totalMinutes)}</Typography>,
+            },
+            {
+              key: 'status', header: 'Status', width: '16%', sortable: true, value: (w: TimesheetWeek) => w.status,
+              render: (w: TimesheetWeek) => (
+                <Chip
+                  label={w.status === 'SUBMITTED' ? 'Pending approval' : w.status === 'APPROVED' ? 'Approved' : 'Rejected'}
+                  size="small"
+                  sx={{
+                    fontWeight: 700, fontSize: '0.7rem',
+                    ...(w.status === 'SUBMITTED' ? { bgcolor: '#FEF3E2', color: '#B45309' }
+                      : w.status === 'APPROVED' ? { bgcolor: '#E9F9EF', color: '#15803D' }
+                        : { bgcolor: '#FDECEC', color: '#B91C1C' }),
+                  }}
+                />
+              ),
+            },
+            {
+              key: 'submittedAt', header: 'Submitted', width: '13%', sortable: true, value: (w: TimesheetWeek) => w.submittedAt || '',
+              render: (w: TimesheetWeek) => formatDate(w.submittedAt),
+            },
+            {
+              key: 'reviewedBy', header: 'Reviewed by', width: '14%',
+              render: (w: TimesheetWeek) => (w.reviewedBy?.name ? `${w.reviewedBy.name} · ${formatDate(w.reviewedAt)}` : '—'),
+            },
+            {
+              key: 'reviewNote', header: 'Note', width: '17%',
+              render: (w: TimesheetWeek) => w.reviewNote
+                ? <Typography noWrap sx={{ fontSize: '0.8rem', color: '#B45309' }} title={w.reviewNote}>{w.reviewNote}</Typography>
+                : '—',
+            },
+          ] as Column<TimesheetWeek>[]}
+          getId={(w) => w.id}
+          loading={myWeeksLoading}
+          emptyText="You haven't submitted any weeks yet — submit one from My Timesheet"
+          onRowClick={(w) => openDrawer(w.id, true)}
+          rowActions={(w) => (
+            <Tooltip title="View week" arrow>
+              <IconButton size="small" sx={{ color: '#4F46E5' }} onClick={(e) => { e.stopPropagation(); openDrawer(w.id, true); }}><ViewIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
+          minWidth={880}
+        />
+      )}
 
       {tab === 'pending' && (
         <DataTablePro
@@ -383,7 +455,12 @@ const ApprovalsPage = () => {
               ))}
             </Box>
 
-            {detail.status === 'SUBMITTED' && (
+            {detail.status === 'SUBMITTED' && drawerReadOnly && (
+              <Box sx={{ px: 3, py: 2, borderTop: '1px solid #E9EBF2' }}>
+                <Alert severity="info" sx={{ py: 0.5 }}>Waiting for the project owner's approval — no action needed from you.</Alert>
+              </Box>
+            )}
+            {detail.status === 'SUBMITTED' && !drawerReadOnly && (
               <Box sx={{ px: 3, py: 2, borderTop: '1px solid #E9EBF2', display: 'flex', gap: 1.5 }}>
                 <Button
                   fullWidth variant="contained" color="success" startIcon={<ApproveIcon />}
