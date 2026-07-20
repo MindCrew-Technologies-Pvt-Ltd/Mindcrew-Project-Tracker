@@ -113,15 +113,22 @@ const theme = createTheme({
           transition: 'all 0.18s ease',
           '&:active': { transform: 'scale(0.98)' },
         },
+        // Disabled contained buttons: flat grey with white text (the gradients
+        // below would otherwise persist and make disabled look enabled).
+        contained: {
+          '&.Mui-disabled': { background: '#9CA3AF', color: '#FFFFFF', boxShadow: 'none' },
+        },
         containedPrimary: {
           background: `linear-gradient(135deg, ${INDIGO} 0%, ${INDIGO_LIGHT} 100%)`,
           color: '#FFFFFF',
           boxShadow: '0 4px 14px rgba(79,70,229,0.35)',
           '&:hover': { boxShadow: '0 6px 20px rgba(79,70,229,0.45)', transform: 'translateY(-1px)' },
+          '&.Mui-disabled': { background: '#9CA3AF', color: '#FFFFFF', boxShadow: 'none' },
         },
         containedSecondary: {
           background: `linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)`,
           '&:hover': { boxShadow: '0 6px 20px rgba(124,58,237,0.4)' },
+          '&.Mui-disabled': { background: '#9CA3AF', color: '#FFFFFF', boxShadow: 'none' },
         },
         outlinedPrimary: {
           borderColor: alpha(INDIGO, 0.4),
