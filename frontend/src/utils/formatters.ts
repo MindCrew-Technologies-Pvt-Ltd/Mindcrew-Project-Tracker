@@ -18,6 +18,9 @@ export const formatRelative = (date: string) => {
   return formatDate(date);
 };
 
-export const truncate = (str: string, len = 80) => str.length > len ? str.slice(0, len) + '...' : str;
+export const truncate = (str?: string | null, len = 80) => {
+  const s = str ?? '';
+  return s.length > len ? s.slice(0, len) + '...' : s;
+};
 
 export const formatPercentage = (val: number) => `${val}%`;
