@@ -4,6 +4,8 @@ import {
   Dashboard as DashboardIcon, Folder as FolderIcon, FolderCopy as FolderCopyIcon, People as PeopleIcon,
   Assessment as AssessmentIcon, EditNote as EditNoteIcon,
   ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon,
+  AccessTime as AccessTimeIcon, FactCheck as FactCheckIcon, Insights as InsightsIcon,
+  Tune as TuneIcon,
 } from '@mui/icons-material';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,10 +22,19 @@ const employeeNav = [
   { label: 'All Projects', icon: <FolderCopyIcon fontSize="small" />, to: ROUTES.PROJECTS },
 ];
 
+// Shown to everyone — the backend scopes what each role can see
+// (owners get their approval queue, employees see self-scoped reports).
+const timesheetNav = [
+  { label: 'My Timesheet', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET },
+  { label: 'Approvals', icon: <FactCheckIcon fontSize="small" />, to: ROUTES.TIMESHEET_APPROVALS },
+  { label: 'Time Reports', icon: <InsightsIcon fontSize="small" />, to: ROUTES.TIMESHEET_REPORTS },
+];
+
 const adminNav = [
   { label: 'Users', icon: <PeopleIcon fontSize="small" />, to: ROUTES.ADMIN_USERS },
   { label: 'Edit Requests', icon: <EditNoteIcon fontSize="small" />, to: ROUTES.ADMIN_EDIT_REQUESTS },
   { label: 'Reports', icon: <AssessmentIcon fontSize="small" />, to: ROUTES.ADMIN_REPORTS },
+  { label: 'Timesheet Settings', icon: <TuneIcon fontSize="small" />, to: ROUTES.TIMESHEET_SETTINGS },
 ];
 
 interface Props {
@@ -169,6 +180,14 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
         )}
 
         {employeeNav.map((item) => <NavItem key={item.to} item={item} />)}
+
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }} />
+        {!collapsed && (
+          <Typography variant="caption" sx={{ px: 2.5, display: 'block', mb: 0.5, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.07em', fontSize: '0.65rem' }}>
+            TIMESHEET
+          </Typography>
+        )}
+        {timesheetNav.map((item) => <NavItem key={item.to} item={item} />)}
 
         {isAdmin && (
           <>

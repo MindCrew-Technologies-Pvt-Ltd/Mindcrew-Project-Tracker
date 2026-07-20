@@ -23,6 +23,11 @@ import ProfilePage from '../pages/employee/ProfilePage';
 import ChangePasswordPage from '../pages/employee/ChangePasswordPage';
 import SearchPage from '../pages/employee/SearchPage';
 
+import MyTimesheetPage from '../pages/timesheet/MyTimesheetPage';
+import ApprovalsPage from '../pages/timesheet/ApprovalsPage';
+import TimeReportsPage from '../pages/timesheet/TimeReportsPage';
+import TimesheetSettingsPage from '../pages/timesheet/TimesheetSettingsPage';
+
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
 import UsersListPage from '../pages/admin/UsersListPage';
 import UserDetailPage from '../pages/admin/UserDetailPage';
@@ -57,6 +62,9 @@ const AppRouter = () => (
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/timesheet" element={<MyTimesheetPage />} />
+        <Route path="/timesheet/approvals" element={<ApprovalsPage />} />
+        <Route path="/timesheet/reports" element={<TimeReportsPage />} />
       </Route>
     </Route>
 
@@ -69,6 +77,7 @@ const AppRouter = () => (
         <Route path="/admin/projects/:id" element={<AdminProjectDetailPage />} />
         <Route path="/admin/edit-requests" element={<EditRequestsPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
+        <Route path="/timesheet/settings" element={<TimesheetSettingsPage />} />
       </Route>
     </Route>
 

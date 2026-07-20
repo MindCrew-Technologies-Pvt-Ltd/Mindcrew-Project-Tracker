@@ -81,3 +81,15 @@ export const editRequestSchema = yup.object({
   reason: yup.string().min(10).required('Reason is required'),
   comments: yup.string().optional(),
 });
+
+// Mirrors backend `createTimeEntrySchema` (Joi): projectId + date required,
+// hours 0-24 int, minutes 0-59 int, and at least 1 minute in total.
+export const timeEntrySchema = yup.object({
+  projectId: yup.string().required('Project is required'),
+  date: yup.string().required('Date is required'),
+  hours: yup.number().typeError('Hours must be a number').integer('Whole hours only').min(0).max(24).required('Hours are required'),
+  minutes: yup.number().typeError('Minutes must be a number').integer('Whole minutes only').min(0).max(59).required('Minutes are required'),
+  description: yup.string().optional(),
+  billable: yup.boolean().optional(),
+}).test('at-least-one-minute', 'Entry must be at least 1 minute', (v) =>
+  ((v?.hours ?? 0) * 60 + (v?.minutes ?? 0)) >= 1);

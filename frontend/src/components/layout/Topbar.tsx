@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { } from './Sidebar';
 import NotificationBell from '../common/NotificationBell';
+import TimerWidget from '../timesheet/TimerWidget';
 import { useAuth } from '../../hooks/useAuth';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { logoutThunk } from '../../store/slices/authSlice';
@@ -52,6 +53,8 @@ const Topbar = ({ onMenuClick, sidebarWidth = 248 }: Props) => {
         </IconButton>
 
         <Box sx={{ flex: 1 }} />
+
+        <TimerWidget />
 
         <NotificationBell />
 

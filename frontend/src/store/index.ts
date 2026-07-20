@@ -7,6 +7,7 @@ import notificationsReducer from './slices/notificationsSlice';
 import usersReducer from './slices/usersSlice';
 import editRequestsReducer from './slices/editRequestsSlice';
 import reportsReducer from './slices/reportsSlice';
+import timesheetReducer from './slices/timesheetSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     users: usersReducer,
     editRequests: editRequestsReducer,
     reports: reportsReducer,
+    timesheet: timesheetReducer,
   },
 });
 
