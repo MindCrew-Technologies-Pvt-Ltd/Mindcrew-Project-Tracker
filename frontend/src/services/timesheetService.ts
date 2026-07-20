@@ -51,15 +51,19 @@ const timesheetService = {
   setRate: (userId: string, payload: { hourlyRate: number; currency?: string }) =>
     axiosInstance.put(`/billable-rates/${userId}`, payload),
 
-  /** Lightweight project options for pickers: my projects first, fall back to all. */
+  /** Project options for pickers: my projects listed first, then every other
+   *  project — time may be logged to any project (view-all model). */
   getProjectOptions: async (): Promise<ProjectRef[]> => {
     const toRefs = (list: Array<{ id: string; name: string }>): ProjectRef[] =>
       (list || []).map((p) => ({ id: p.id, name: p.name }));
-    const mine = await axiosInstance.get('/projects', { params: { scope: 'mine', pageSize: 100 } });
+    const [mine, all] = await Promise.all([
+      axiosInstance.get('/projects', { params: { scope: 'mine', pageSize: 100 } }),
+      axiosInstance.get('/projects', { params: { pageSize: 200 } }),
+    ]);
     const mineRefs = toRefs(mine.data?.data || []);
-    if (mineRefs.length > 0) return mineRefs;
-    const all = await axiosInstance.get('/projects', { params: { pageSize: 100 } });
-    return toRefs(all.data?.data || []);
+    const mineIds = new Set(mineRefs.map((p) => p.id));
+    const rest = toRefs(all.data?.data || []).filter((p) => !mineIds.has(p.id));
+    return [...mineRefs, ...rest];
   },
 };
 
