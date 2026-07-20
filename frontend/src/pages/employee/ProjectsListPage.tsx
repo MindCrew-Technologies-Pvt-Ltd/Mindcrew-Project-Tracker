@@ -62,9 +62,12 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
     dispatch(setFilters({ search: debouncedSearch, page: 1 }));
   }, [debouncedSearch, dispatch]);
 
+  // Scope is forced into every fetch from the prop — relying on the store's
+  // filters alone races on first load (the initial fetch could run before the
+  // scope effect lands, briefly showing ALL projects on My Projects).
   useEffect(() => {
-    dispatch(fetchProjectsThunk(filters));
-  }, [filters, dispatch]);
+    dispatch(fetchProjectsThunk({ ...filters, scope: scopeMine ? 'mine' : undefined }));
+  }, [filters, scopeMine, dispatch]);
 
   const columns: Column<Project>[] = [
     {
