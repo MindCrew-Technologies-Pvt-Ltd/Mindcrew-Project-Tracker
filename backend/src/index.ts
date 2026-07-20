@@ -31,7 +31,13 @@ async function main() {
   await prisma.$connect();
   logger.info('Database connected');
   app.listen(PORT, () => logger.info(`Server running on port ${PORT} [${process.env.NODE_ENV ?? 'development'}]`));
-  startCronJobs();
+  // Friday weekly-update reminder emails are OFF until explicitly enabled
+  // (user decision 2026-07-16). Set ENABLE_WEEKLY_REMINDERS=true to turn on.
+  if (process.env.ENABLE_WEEKLY_REMINDERS === 'true') {
+    startCronJobs();
+  } else {
+    logger.info('Weekly reminder emails disabled (set ENABLE_WEEKLY_REMINDERS=true to enable)');
+  }
 }
 
 main().catch((err) => { logger.error('Failed to start:', err); process.exit(1); });
