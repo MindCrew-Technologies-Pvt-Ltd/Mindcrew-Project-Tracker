@@ -14,7 +14,7 @@ import {
 } from '../../store/slices/timesheetSlice';
 import timesheetService from '../../services/timesheetService';
 import { ProjectRef } from '../../types/timesheet.types';
-import { minutesToHM, minutesToPretty } from '../../utils/timeFormat';
+import { minutesToPretty } from '../../utils/timeFormat';
 
 const INDIGO = '#4F46E5';
 
@@ -31,7 +31,7 @@ const TimerWidget = () => {
   const [billable, setBillable] = useState(true);
   const [busy, setBusy] = useState(false);
   const [snack, setSnack] = useState<{ msg: string; severity: 'success' | 'error' } | null>(null);
-  const [, setTick] = useState(0); // re-render every 30s so the elapsed label moves
+  const [, setTick] = useState(0); // re-render every second so the clock visibly runs
 
   // Timestamp of the last server sync — the local display extrapolates from it.
   const syncedAtRef = useRef<number>(Date.now());
@@ -39,20 +39,29 @@ const TimerWidget = () => {
   useEffect(() => { dispatch(fetchTimerThunk()); }, [dispatch]);
   useEffect(() => { syncedAtRef.current = Date.now(); }, [timer]);
 
-  // Running: tick locally every 30s + refetch the server state every 60s.
+  // Running: tick every second (a stuck-looking timer reads as broken) and
+  // resync with the server every 60s. Paused: no ticking needed.
   useEffect(() => {
     if (!timer) return;
-    const tickId = window.setInterval(() => setTick((t) => t + 1), 30_000);
+    const tickId = timer.isPaused ? 0 : window.setInterval(() => setTick((t) => t + 1), 1000);
     const pollId = window.setInterval(() => { dispatch(fetchTimerThunk()); }, 60_000);
-    return () => { window.clearInterval(tickId); window.clearInterval(pollId); };
+    return () => { if (tickId) window.clearInterval(tickId); window.clearInterval(pollId); };
   }, [timer, dispatch]);
 
-  // Recomputed on every render — the 30s tick above forces one while running.
-  const elapsed = !timer
+  // Elapsed in SECONDS (server stores minutes; seconds are extrapolated locally).
+  const elapsedSeconds = !timer
     ? 0
     : timer.isPaused
-      ? timer.elapsedMinutes
-      : timer.elapsedMinutes + Math.floor((Date.now() - syncedAtRef.current) / 60_000);
+      ? timer.elapsedMinutes * 60
+      : timer.elapsedMinutes * 60 + Math.floor((Date.now() - syncedAtRef.current) / 1000);
+
+  const clock = (() => {
+    const h = Math.floor(elapsedSeconds / 3600);
+    const m = Math.floor((elapsedSeconds % 3600) / 60);
+    const s = elapsedSeconds % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${h}:${pad(m)}:${pad(s)}`;
+  })();
 
   const openPopover = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
@@ -146,7 +155,7 @@ const TimerWidget = () => {
         }}>
           <TimerIcon sx={{ fontSize: 16, color: timer.isPaused ? '#94A3B8' : INDIGO }} />
           <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: timer.isPaused ? '#64748B' : INDIGO, fontVariantNumeric: 'tabular-nums' }}>
-            {minutesToHM(elapsed)}
+            {clock}
           </Typography>
           <Typography noWrap sx={{ fontSize: '0.8rem', color: 'text.secondary', maxWidth: { xs: 60, sm: 120 } }} title={timer.project?.name}>
             {timer.project?.name}
