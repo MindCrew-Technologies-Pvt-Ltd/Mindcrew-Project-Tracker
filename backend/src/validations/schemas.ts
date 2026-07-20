@@ -138,3 +138,63 @@ export const paginationSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1).optional(),
   pageSize: Joi.number().integer().min(1).max(100).default(20).optional(),
 });
+
+// ---- Timesheet module (mirrors frontend timesheet schemas; see VALIDATION_CONTRACT.md) ----
+
+export const createTimeEntrySchema = Joi.object({
+  projectId: Joi.string().required(),
+  date: Joi.date().required(),
+  hours: Joi.number().integer().min(0).max(24).required(),
+  minutes: Joi.number().integer().min(0).max(59).required(),
+  description: Joi.string().allow('').optional(),
+  billable: Joi.boolean().optional(),
+}).custom((v, helpers) => (v.hours * 60 + v.minutes < 1 ? helpers.error('any.invalid') : v))
+  .messages({ 'any.invalid': 'Entry must be at least 1 minute' });
+
+export const updateTimeEntrySchema = Joi.object({
+  projectId: Joi.string().optional(),
+  date: Joi.date().optional(),
+  hours: Joi.number().integer().min(0).max(24).optional(),
+  minutes: Joi.number().integer().min(0).max(59).optional(),
+  description: Joi.string().allow('').optional(),
+  billable: Joi.boolean().optional(),
+});
+
+export const copyWeekSchema = Joi.object({
+  fromIsoYear: Joi.number().integer().min(2020).max(2100).required(),
+  fromIsoWeek: Joi.number().integer().min(1).max(53).required(),
+  toIsoYear: Joi.number().integer().min(2020).max(2100).required(),
+  toIsoWeek: Joi.number().integer().min(1).max(53).required(),
+});
+
+export const timerStartSchema = Joi.object({
+  projectId: Joi.string().required(),
+  description: Joi.string().allow('').optional(),
+  billable: Joi.boolean().optional(),
+});
+
+export const submitWeekSchema = Joi.object({
+  isoYear: Joi.number().integer().min(2020).max(2100).required(),
+  isoWeek: Joi.number().integer().min(1).max(53).required(),
+});
+
+export const rejectWeekSchema = Joi.object({
+  note: Joi.string().min(3).required().messages({ 'string.min': 'A rejection note is required' }),
+});
+
+export const timesheetSettingsSchema = Joi.object({
+  weeklyTargetHours: Joi.number().integer().min(1).max(100).optional(),
+  reminderEnabled: Joi.boolean().optional(),
+  reminderDay: Joi.number().integer().min(0).max(6).optional(),
+  reminderHour: Joi.number().integer().min(0).max(23).optional(),
+});
+
+export const holidaySchema = Joi.object({
+  date: Joi.date().required(),
+  name: Joi.string().min(2).required(),
+});
+
+export const billableRateSchema = Joi.object({
+  hourlyRate: Joi.number().min(0).required(),
+  currency: Joi.string().length(3).uppercase().optional(),
+});

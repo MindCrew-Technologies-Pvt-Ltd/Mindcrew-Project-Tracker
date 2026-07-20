@@ -54,7 +54,15 @@ enum NotificationType {
   EDIT_REQUEST_UPDATE
   PROJECT_UPDATE
   WEEKLY_UPDATE_REMINDER
+  TIMESHEET
   SYSTEM
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
 }
 
 enum EditRequestStatus {
@@ -89,6 +97,11 @@ model User {
   editRequests     EditRequest[]   @relation("requester")
   reviewedRequests EditRequest[]   @relation("reviewer")
   activityLogs     ActivityLog[]
+  timeEntries      TimeEntry[]
+  timesheetWeeks   TimesheetWeek[] @relation("tsWeekUser")
+  reviewedWeeks    TimesheetWeek[] @relation("tsWeekReviewer")
+  activeTimer      ActiveTimer?
+  billableRate     BillableRate?
 }
 
 model Project {
@@ -120,6 +133,91 @@ model Project {
   documents     Document[]
   editRequests  EditRequest[]
   notifications Notification[]
+  timeEntries   TimeEntry[]
+  activeTimers  ActiveTimer[]
+}
+
+// ==== Timesheet module (docs/timesheet/04-database-design.md) ====
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String
+  date        DateTime
+  minutes     Int
+  description String?
+  billable    Boolean  @default(true)
+  isoYear     Int
+  isoWeek     Int
+  source      String   @default("MANUAL")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isoYear, isoWeek])
+  @@index([projectId, date])
+  @@index([date])
+}
+
+model TimesheetWeek {
+  id           String          @id @default(cuid())
+  userId       String
+  isoYear      Int
+  isoWeek      Int
+  status       TimesheetStatus @default(SUBMITTED)
+  totalMinutes Int
+  submittedAt  DateTime        @default(now())
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user       User  @relation("tsWeekUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("tsWeekReviewer", fields: [reviewedById], references: [id])
+
+  @@unique([userId, isoYear, isoWeek])
+  @@index([status])
+}
+
+model ActiveTimer {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  projectId      String
+  description    String?
+  billable       Boolean  @default(true)
+  startedAt      DateTime @default(now())
+  accumulatedMin Int      @default(0)
+  isPaused       Boolean  @default(false)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model BillableRate {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  hourlyRate Float
+  currency   String   @default("INR")
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Holiday {
+  id   String   @id @default(cuid())
+  date DateTime @unique
+  name String
+}
+
+model TimesheetSettings {
+  id                String  @id @default("singleton")
+  weeklyTargetHours Int     @default(40)
+  reminderEnabled   Boolean @default(false)
+  reminderDay       Int     @default(1)
+  reminderHour      Int     @default(10)
 }
 
 model ProjectMember {

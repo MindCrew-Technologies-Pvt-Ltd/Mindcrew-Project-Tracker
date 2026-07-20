@@ -19,6 +19,7 @@ import weeklyUpdatesRoutes from './routes/weeklyUpdates.routes';
 import documentsRoutes from './routes/documents.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import editRequestsRoutes from './routes/editRequests.routes';
+import timesheetRoutes from './routes/timesheet.routes';
 import adminRoutes from './routes/admin.routes';
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api', weeklyUpdatesRoutes);
 app.use('/api', documentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/edit-requests', editRequestsRoutes);
+app.use('/api', timesheetRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
