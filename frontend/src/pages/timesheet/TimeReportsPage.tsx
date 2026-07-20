@@ -135,7 +135,7 @@ const TimeReportsPage = () => {
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Billable</InputLabel>
               <Select value={billable} label="Billable" onChange={(e) => setBillable(e.target.value as 'all' | 'true' | 'false')}>
-                <MenuItem value="all">All time</MenuItem>
+                <MenuItem value="all">All hours</MenuItem>
                 <MenuItem value="true">Billable only</MenuItem>
                 <MenuItem value="false">Non-billable</MenuItem>
               </Select>
