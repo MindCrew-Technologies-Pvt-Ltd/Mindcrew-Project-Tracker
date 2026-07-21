@@ -56,9 +56,12 @@ app.use('/api', weeklyUpdatesRoutes);
 app.use('/api', documentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/edit-requests', editRequestsRoutes);
-app.use('/api', timesheetRoutes);
+// NOTE: timesheetRoutes applies router-level `authenticate` to every request
+// entering /api — anything that must accept OTHER auth (API tokens) or no auth
+// has to be mounted BEFORE it (same reason /api/health is declared early).
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/api-tokens', apiTokensRoutes);
+app.use('/api', timesheetRoutes);
 app.use('/api/admin', adminRoutes);
 
 // MCP endpoint for AI agents (Claude/Cursor/Antigravity/...). Auth = personal
