@@ -191,3 +191,13 @@ export const billableRateSchema = Joi.object({
   hourlyRate: Joi.number().min(0).required(),
   currency: Joi.string().length(3).uppercase().optional(),
 });
+
+// ---- AI integrations (no Yup mirror: consumed by agents/scripts, not browser forms) ----
+
+export const workLogSchema = Joi.object({
+  project: Joi.string().min(1).required(),
+  hours: Joi.number().integer().min(0).max(24).required(),
+  minutes: Joi.number().integer().min(0).max(59).required(),
+  summary: Joi.string().min(3).required(),
+  billable: Joi.boolean().optional(),
+});

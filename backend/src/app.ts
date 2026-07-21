@@ -20,7 +20,10 @@ import documentsRoutes from './routes/documents.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import editRequestsRoutes from './routes/editRequests.routes';
 import timesheetRoutes from './routes/timesheet.routes';
+import integrationsRoutes from './routes/integrations.routes';
+import apiTokensRoutes from './routes/apiTokens.routes';
 import adminRoutes from './routes/admin.routes';
+import mcpRouter from './mcp/mcpServer';
 
 const app = express();
 
@@ -49,7 +52,13 @@ app.use('/api', documentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/edit-requests', editRequestsRoutes);
 app.use('/api', timesheetRoutes);
+app.use('/api/integrations', integrationsRoutes);
+app.use('/api/api-tokens', apiTokensRoutes);
 app.use('/api/admin', adminRoutes);
+
+// MCP endpoint for AI agents (Claude/Cursor/Antigravity/...). Auth = personal
+// API token; carries its own rate limit; outside the /api limiter.
+app.use('/mcp', mcpRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

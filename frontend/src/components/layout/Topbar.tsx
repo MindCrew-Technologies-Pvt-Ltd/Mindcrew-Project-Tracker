@@ -1,5 +1,5 @@
 import { AppBar, Toolbar, IconButton, Typography, Box, Avatar, Menu, MenuItem, Divider, Tooltip } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle as AccountCircleIcon, Logout as LogoutIcon, Lock as LockIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle as AccountCircleIcon, Logout as LogoutIcon, Lock as LockIcon, SmartToyOutlined as AiIcon } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { } from './Sidebar';
@@ -90,6 +90,10 @@ const Topbar = ({ onMenuClick, sidebarWidth = 248 }: Props) => {
           <MenuItem onClick={() => { navigate(ROUTES.PROFILE); setAnchorEl(null); }} sx={{ gap: 1.5, py: 1.2 }}>
             <AccountCircleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
             <Typography variant="body2">Profile</Typography>
+          </MenuItem>
+          <MenuItem onClick={() => { navigate(ROUTES.INTEGRATIONS); setAnchorEl(null); }} sx={{ gap: 1.5, py: 1.2 }}>
+            <AiIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="body2">AI Integrations</Typography>
           </MenuItem>
           <MenuItem onClick={() => { navigate(ROUTES.CHANGE_PASSWORD); setAnchorEl(null); }} sx={{ gap: 1.5, py: 1.2 }}>
             <LockIcon fontSize="small" sx={{ color: 'text.secondary' }} />

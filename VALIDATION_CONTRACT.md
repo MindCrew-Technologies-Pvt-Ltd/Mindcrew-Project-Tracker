@@ -45,6 +45,12 @@ The backend `validate()` middleware runs Joi with `stripUnknown: true`
   healthStatus, completionPercentage (0–100)
 - **Optional:** completedTasks[], plannedTasks[], blockers, milestones, hoursLogged (0–168)
 
+### AI work-log (`POST /api/integrations/work-log`, MCP `log_work`)
+- **Required:** project (min 1), hours (0–24), minutes (0–59), summary (min 3)
+- **Optional:** billable
+- Joi only — consumed by AI agents/scripts, not browser forms, so there is
+  deliberately **no Yup mirror** for this schema.
+
 ### Edit request
 - **Required:** reason (min 10)
 - **Optional:** comments

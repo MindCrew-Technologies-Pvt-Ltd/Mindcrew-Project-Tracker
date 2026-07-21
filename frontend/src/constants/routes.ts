@@ -16,6 +16,7 @@ export const ROUTES = {
   NOTIFICATIONS: '/notifications',
   PROFILE: '/profile',
   CHANGE_PASSWORD: '/change-password',
+  INTEGRATIONS: '/integrations',
   SEARCH: '/search',
   TIMESHEET: '/timesheet',
   TIMESHEET_APPROVALS: '/timesheet/approvals',

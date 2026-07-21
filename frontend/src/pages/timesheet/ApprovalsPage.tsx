@@ -443,6 +443,7 @@ const ApprovalsPage = () => {
                               <Typography noWrap sx={{ fontWeight: 600, fontSize: '0.85rem', maxWidth: 220 }} title={e.project.name}>{e.project.name}</Typography>
                               <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(e.minutes)}</Typography>
                               {e.billable && <Chip label="Billable" size="small" sx={{ height: 18, fontSize: '0.62rem', bgcolor: '#E9F9EF', color: '#15803D' }} />}
+                              {e.source === 'AI_AGENT' && <Chip label="AI" size="small" sx={{ height: 18, fontSize: '0.62rem', fontWeight: 700, bgcolor: '#EEF0FF', color: '#4338CA', border: '1px solid #DFE2FA' }} />}
                             </Box>
                           }
                           secondary={e.description || undefined}

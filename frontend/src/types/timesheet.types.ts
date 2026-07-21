@@ -1,5 +1,5 @@
 export type TimesheetStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
-export type TimeEntrySource = 'MANUAL' | 'TIMER' | 'COPY';
+export type TimeEntrySource = 'MANUAL' | 'TIMER' | 'COPY' | 'AI_AGENT';
 
 export interface ProjectRef { id: string; name: string; }
 export interface UserRef { id: string; name: string; email?: string; }

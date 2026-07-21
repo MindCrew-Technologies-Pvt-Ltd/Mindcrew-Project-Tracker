@@ -13,6 +13,7 @@ import ResetPasswordPage from '../pages/auth/ResetPasswordPage';
 
 import DashboardPage from '../pages/employee/DashboardPage';
 import ProjectsListPage from '../pages/employee/ProjectsListPage';
+import IntegrationsPage from '../pages/IntegrationsPage';
 import ProjectCreatePage from '../pages/employee/ProjectCreatePage';
 import ProjectDetailPage from '../pages/employee/ProjectDetailPage/ProjectDetailPage';
 import ProjectEditPage from '../pages/employee/ProjectEditPage';
@@ -53,6 +54,7 @@ const AppRouter = () => (
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/projects" element={<ProjectsListPage />} />
         <Route path="/my-projects" element={<ProjectsListPage scopeMine />} />
+        <Route path="/integrations" element={<IntegrationsPage />} />
         <Route path="/projects/new" element={<ProjectCreatePage />} />
         <Route path="/projects/:id" element={<ProjectDetailPage />} />
         <Route path="/projects/:id/edit" element={<ProjectEditPage />} />

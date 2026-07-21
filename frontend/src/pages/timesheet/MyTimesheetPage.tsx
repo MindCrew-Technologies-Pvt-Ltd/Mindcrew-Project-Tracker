@@ -499,7 +499,8 @@ const MyTimesheetPage = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(e.minutes)}</Typography>
                       {e.billable && <Chip label="Billable" size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#E9F9EF', color: '#15803D' }} />}
-                      {e.source !== 'MANUAL' && <Chip label={e.source === 'TIMER' ? 'Timer' : 'Copied'} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />}
+                      {e.source === 'AI_AGENT' && <Chip label="AI" size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#EEF0FF', color: '#4338CA', border: '1px solid #DFE2FA' }} />}
+                      {e.source === 'TIMER' && <Chip label="Timer" size="small" sx={{ height: 18, fontSize: '0.65rem' }} />}
                     </Box>
                   }
                   secondary={e.description || 'No description'}
