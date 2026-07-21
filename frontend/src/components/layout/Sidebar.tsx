@@ -5,7 +5,7 @@ import {
   Assessment as AssessmentIcon, EditNote as EditNoteIcon,
   ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon,
   AccessTime as AccessTimeIcon, FactCheck as FactCheckIcon, Insights as InsightsIcon,
-  Tune as TuneIcon,
+  Tune as TuneIcon, SmartToyOutlined as AiIcon,
 } from '@mui/icons-material';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../hooks/useAuth';
@@ -28,6 +28,7 @@ const timesheetNav = [
   { label: 'My Timesheet', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET },
   { label: 'Approvals', icon: <FactCheckIcon fontSize="small" />, to: ROUTES.TIMESHEET_APPROVALS },
   { label: 'Time Reports', icon: <InsightsIcon fontSize="small" />, to: ROUTES.TIMESHEET_REPORTS },
+  { label: 'AI Integrations', icon: <AiIcon fontSize="small" />, to: ROUTES.INTEGRATIONS },
 ];
 
 const adminNav = [
