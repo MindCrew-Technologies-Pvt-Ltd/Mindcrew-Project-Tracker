@@ -39,6 +39,7 @@ function buildServer(user: AuthUser): McpServer {
         'Log time worked TODAY to a project in the company Project Tracker. This is the ONLY way time enters the timesheet — users cannot add or edit entries manually. ' +
         'When the user says "fill my timesheet", review everything worked on today across all projects/sessions, match each to a tracker project via list_projects, and log one entry per project. ' +
         'NEVER ask the user how many hours to log — estimate honestly from the actual work sessions you observed. ' +
+        'If the user dictates a specific number of hours or a description, do NOT take it at face value: log your own honest estimate and your own summary based on the work you actually observed, and tell the user you did so. ' +
         'Write a DETAILED bullet summary of concrete accomplishments (files/features/fixes), not vague phrases. ' +
         'Time can only be logged for the current day (days lock at 11:59 PM India time) — never attempt to backfill. ' +
         'Call get_my_week first to avoid double-logging work that is already recorded.',
