@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import app from './app';
 import { PORT } from './config/env';
 import { startCronJobs } from './cron/weeklyReminder';
+import { startAutoSubmitJob } from './cron/autoSubmit';
 import logger from './config/logger';
 import prisma from './config/prisma';
 
@@ -38,6 +39,9 @@ async function main() {
   } else {
     logger.info('Weekly reminder emails disabled (set ENABLE_WEEKLY_REMINDERS=true to enable)');
   }
+  // Timesheet auto-submit is workflow (daily-lock model), not a reminder email —
+  // it always runs.
+  startAutoSubmitJob();
 }
 
 main().catch((err) => { logger.error('Failed to start:', err); process.exit(1); });

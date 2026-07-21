@@ -1,26 +1,12 @@
 import { RequestHandler } from 'express';
 import prisma from '../config/prisma';
 import { success, error } from '../utils/response';
-import { logActivity } from '../utils/activityLogger';
 import { AppError } from '../middleware/errorHandler';
-import { isoWeekOf, isoWeekDates, toUtcDateOnly } from '../utils/isoWeek';
-import { assertWeekUnlocked, canReadUserTime } from '../utils/timesheetAccess';
+import { isoWeekOf, isoWeekDates, toUtcDateOnly, todayInOrgTz } from '../utils/isoWeek';
+import { assertWeekUnlocked, assertDateEditable, assertDayCapacity, canReadUserTime, orgTimezone } from '../utils/timesheetAccess';
 
 const sp = (v: string | string[]): string => (Array.isArray(v) ? v[0]! : v);
 const qs = (v: unknown): string | undefined => (v && typeof v === 'string' ? v : undefined);
-
-const MAX_DAY_MINUTES = 24 * 60;
-
-/** Reject if adding `minutes` to the user's existing total for `date` exceeds 24h. */
-async function assertDayCapacity(userId: string, date: Date, minutes: number, excludeEntryId?: string) {
-  const agg = await prisma.timeEntry.aggregate({
-    where: { userId, date, ...(excludeEntryId ? { id: { not: excludeEntryId } } : {}) },
-    _sum: { minutes: true },
-  });
-  if ((agg._sum.minutes ?? 0) + minutes > MAX_DAY_MINUTES) {
-    throw new AppError('This would exceed 24 hours for that day', 400);
-  }
-}
 
 export const getTimeEntries: RequestHandler = async (req, res, next) => {
   try {
@@ -71,7 +57,9 @@ export const getWeekEntries: RequestHandler = async (req, res, next) => {
         where: { date: { gte: isoWeekDates(isoYear, isoWeek)[0], lte: isoWeekDates(isoYear, isoWeek)[6] } },
       }),
     ]);
-    success(res, { entries, week: envelope, dates: isoWeekDates(isoYear, isoWeek), holidays });
+    // `today` (org timezone) drives the daily-lock UI: only that column is editable.
+    const today = todayInOrgTz(await orgTimezone());
+    success(res, { entries, week: envelope, dates: isoWeekDates(isoYear, isoWeek), holidays, today });
   } catch (err) { next(err); }
 };
 
@@ -83,6 +71,7 @@ export const createTimeEntry: RequestHandler = async (req, res, next) => {
     const { isoYear, isoWeek } = isoWeekOf(day);
     const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
     if (!project) return next(new AppError('Project not found', 404));
+    await assertDateEditable(day, req.user!);
     await assertWeekUnlocked(req.user!.id, isoYear, isoWeek);
     await assertDayCapacity(req.user!.id, day, totalMinutes);
     const entry = await prisma.timeEntry.create({
@@ -102,13 +91,15 @@ export const updateTimeEntry: RequestHandler = async (req, res, next) => {
     const existing = await prisma.timeEntry.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Time entry not found', 404));
     if (existing.userId !== req.user!.id) return next(new AppError('You can only edit your own time entries', 403));
+    await assertDateEditable(existing.date, req.user!); // day of the entry itself
     await assertWeekUnlocked(existing.userId, existing.isoYear, existing.isoWeek);
 
     const { projectId, date, hours, minutes, description, billable } = req.body;
     const newDay = date !== undefined ? toUtcDateOnly(date) : existing.date;
     const { isoYear, isoWeek } = isoWeekOf(newDay);
-    if (date !== undefined && (isoYear !== existing.isoYear || isoWeek !== existing.isoWeek)) {
-      await assertWeekUnlocked(existing.userId, isoYear, isoWeek); // moving INTO a locked week is also blocked
+    if (date !== undefined && newDay.getTime() !== existing.date.getTime()) {
+      await assertDateEditable(newDay, req.user!); // moving INTO another day obeys the same rule
+      await assertWeekUnlocked(existing.userId, isoYear, isoWeek);
     }
     const newMinutes = hours !== undefined && minutes !== undefined ? hours * 60 + minutes : existing.minutes;
     if (newMinutes < 1) { error(res, 'Entry must be at least 1 minute', 400); return; }
@@ -138,39 +129,12 @@ export const deleteTimeEntry: RequestHandler = async (req, res, next) => {
     const existing = await prisma.timeEntry.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Time entry not found', 404));
     if (existing.userId !== req.user!.id) return next(new AppError('You can only delete your own time entries', 403));
+    await assertDateEditable(existing.date, req.user!);
     await assertWeekUnlocked(existing.userId, existing.isoYear, existing.isoWeek);
     await prisma.timeEntry.delete({ where: { id } });
     success(res, null, 'Time entry deleted');
   } catch (err) { next(err); }
 };
 
-/** Copy own entries from one week into another (skips project+day cells that already have time). */
-export const copyWeek: RequestHandler = async (req, res, next) => {
-  try {
-    const { fromIsoYear, fromIsoWeek, toIsoYear, toIsoWeek } = req.body;
-    if (fromIsoYear === toIsoYear && fromIsoWeek === toIsoWeek) { error(res, 'Source and target week are the same', 400); return; }
-    await assertWeekUnlocked(req.user!.id, toIsoYear, toIsoWeek);
-    const [sourceEntries, targetEntries] = await Promise.all([
-      prisma.timeEntry.findMany({ where: { userId: req.user!.id, isoYear: fromIsoYear, isoWeek: fromIsoWeek } }),
-      prisma.timeEntry.findMany({ where: { userId: req.user!.id, isoYear: toIsoYear, isoWeek: toIsoWeek } }),
-    ]);
-    if (sourceEntries.length === 0) { error(res, 'The source week has no entries to copy', 400); return; }
-    const sourceDates = isoWeekDates(fromIsoYear, fromIsoWeek).map((d) => d.getTime());
-    const targetDates = isoWeekDates(toIsoYear, toIsoWeek);
-    const occupied = new Set(targetEntries.map((e) => `${e.projectId}|${e.date.getTime()}`));
-    const toCreate = sourceEntries.flatMap((e) => {
-      const dayIndex = sourceDates.indexOf(e.date.getTime());
-      if (dayIndex === -1) return [];
-      const targetDate = targetDates[dayIndex];
-      if (occupied.has(`${e.projectId}|${targetDate.getTime()}`)) return [];
-      return [{
-        userId: e.userId, projectId: e.projectId, date: targetDate, minutes: e.minutes,
-        billable: e.billable, isoYear: toIsoYear, isoWeek: toIsoWeek, source: 'COPY',
-      }];
-    });
-    if (toCreate.length === 0) { error(res, 'Nothing to copy — the target week already has entries for those projects', 400); return; }
-    await prisma.timeEntry.createMany({ data: toCreate });
-    await logActivity({ userId: req.user!.id, action: 'COPY_WEEK', module: 'TIMESHEET', description: `Copied ${toCreate.length} entries from W${fromIsoWeek}/${fromIsoYear} to W${toIsoWeek}/${toIsoYear}` });
-    success(res, { copied: toCreate.length }, `${toCreate.length} entries copied`, 201);
-  } catch (err) { next(err); }
-};
+// copyWeek was removed: the daily-lock model (time is logged the same day only)
+// makes copying a previous week's hours meaningless.

@@ -17,40 +17,60 @@ function weekLabel(isoYear: number, isoWeek: number): string {
   return `W${isoWeek} ${isoYear} (${fmt(start)} – ${fmt(end)})`;
 }
 
+/**
+ * Core submission: creates/updates the SUBMITTED envelope and notifies the
+ * owners of every project included. Used by the HTTP handler AND the Monday
+ * auto-submit cron. Throws AppError on empty week / already submitted.
+ */
+export async function submitWeekForUser(
+  userId: string,
+  isoYear: number,
+  isoWeek: number,
+  opts: { auto?: boolean } = {},
+) {
+  const entries = await prisma.timeEntry.findMany({ where: { userId, isoYear, isoWeek } });
+  if (entries.length === 0) throw new AppError('Nothing to submit — this week has no time entries', 400);
+  const existing = await prisma.timesheetWeek.findUnique({
+    where: { userId_isoYear_isoWeek: { userId, isoYear, isoWeek } },
+  });
+  if (existing && (existing.status === 'SUBMITTED' || existing.status === 'APPROVED')) {
+    throw new AppError(`This week is already ${existing.status.toLowerCase()}`, 409);
+  }
+  // A rejected week is never auto-resubmitted — the person must fix it first.
+  if (opts.auto && existing?.status === 'REJECTED') {
+    throw new AppError('Week was rejected — needs manual resubmission', 409);
+  }
+  const totalMinutes = entries.reduce((s, e) => s + e.minutes, 0);
+  const week = await prisma.timesheetWeek.upsert({
+    where: { userId_isoYear_isoWeek: { userId, isoYear, isoWeek } },
+    update: { status: 'SUBMITTED', totalMinutes, submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null },
+    create: { userId, isoYear, isoWeek, status: 'SUBMITTED', totalMinutes },
+  });
+  await logActivity({
+    userId, action: opts.auto ? 'AUTO_SUBMIT' : 'SUBMIT', module: 'TIMESHEET',
+    description: `${opts.auto ? 'Auto-submitted' : 'Submitted'} timesheet ${weekLabel(isoYear, isoWeek)} (${Math.round(totalMinutes / 6) / 10}h)`,
+  });
+
+  const projectIds = [...new Set(entries.map((e) => e.projectId))];
+  const owners = await prisma.project.findMany({ where: { id: { in: projectIds } }, select: { ownerId: true, name: true } });
+  const ownerIds = [...new Set(owners.map((o) => o.ownerId))].filter((id) => id !== userId);
+  const submitter = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+  await Promise.all(ownerIds.map((ownerId) =>
+    createNotification({
+      userId: ownerId,
+      title: 'Timesheet submitted',
+      message: `${submitter?.name ?? 'A team member'} submitted their timesheet for ${weekLabel(isoYear, isoWeek)} — review it under Timesheet → Approvals.`,
+      type: 'TIMESHEET',
+      relatedId: week.id,
+    })));
+  return week;
+}
+
 /** Submit (or resubmit) my week for approval. */
 export const submitWeek: RequestHandler = async (req, res, next) => {
   try {
     const { isoYear, isoWeek } = req.body;
-    const userId = req.user!.id;
-    const entries = await prisma.timeEntry.findMany({ where: { userId, isoYear, isoWeek } });
-    if (entries.length === 0) { error(res, 'Nothing to submit — this week has no time entries', 400); return; }
-    const existing = await prisma.timesheetWeek.findUnique({
-      where: { userId_isoYear_isoWeek: { userId, isoYear, isoWeek } },
-    });
-    if (existing && (existing.status === 'SUBMITTED' || existing.status === 'APPROVED')) {
-      error(res, `This week is already ${existing.status.toLowerCase()}`, 409); return;
-    }
-    const totalMinutes = entries.reduce((s, e) => s + e.minutes, 0);
-    const week = await prisma.timesheetWeek.upsert({
-      where: { userId_isoYear_isoWeek: { userId, isoYear, isoWeek } },
-      update: { status: 'SUBMITTED', totalMinutes, submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null },
-      create: { userId, isoYear, isoWeek, status: 'SUBMITTED', totalMinutes },
-    });
-    await logActivity({ userId, action: 'SUBMIT', module: 'TIMESHEET', description: `Submitted timesheet ${weekLabel(isoYear, isoWeek)} (${Math.round(totalMinutes / 6) / 10}h)` });
-
-    // Notify each owner of the projects included (not the submitter themself).
-    const projectIds = [...new Set(entries.map((e) => e.projectId))];
-    const owners = await prisma.project.findMany({ where: { id: { in: projectIds } }, select: { ownerId: true, name: true } });
-    const ownerIds = [...new Set(owners.map((o) => o.ownerId))].filter((id) => id !== userId);
-    const submitter = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
-    await Promise.all(ownerIds.map((ownerId) =>
-      createNotification({
-        userId: ownerId,
-        title: 'Timesheet submitted',
-        message: `${submitter?.name ?? 'A team member'} submitted their timesheet for ${weekLabel(isoYear, isoWeek)} — review it under Timesheet → Approvals.`,
-        type: 'TIMESHEET',
-        relatedId: week.id,
-      })));
+    const week = await submitWeekForUser(req.user!.id, isoYear, isoWeek);
     success(res, week, 'Timesheet submitted for approval', 201);
   } catch (err) { next(err); }
 };

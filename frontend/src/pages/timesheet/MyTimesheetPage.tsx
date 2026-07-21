@@ -6,8 +6,8 @@ import {
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon, ChevronRight as NextIcon, Lock as LockIcon,
-  Add as AddIcon, ContentCopy as CopyIcon, Send as SendIcon, Check as CheckIcon,
-  EditOutlined as EditIcon, DeleteOutline as DeleteIcon,
+  Add as AddIcon, Send as SendIcon, Check as CheckIcon,
+  EditOutlined as EditIcon, DeleteOutline as DeleteIcon, TodayOutlined as TodayIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import PageHeader from '../../components/common/PageHeader';
@@ -15,9 +15,10 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TimeEntryDialog from '../../components/timesheet/TimeEntryDialog';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAuth } from '../../hooks/useAuth';
 import {
   fetchWeekThunk, createEntryThunk, updateEntryThunk, deleteEntryThunk,
-  copyWeekThunk, submitWeekThunk,
+  submitWeekThunk,
 } from '../../store/slices/timesheetSlice';
 import timesheetService from '../../services/timesheetService';
 import {
@@ -67,6 +68,7 @@ const cellKeyOf = (projectId: string, dk: string) => `${projectId}|${dk}`;
 
 const MyTimesheetPage = () => {
   const dispatch = useAppDispatch();
+  const { isAdmin } = useAuth();
   const { week, weekLoading } = useAppSelector((s) => s.timesheet);
 
   const initial = isoWeekOf(new Date());
@@ -84,7 +86,6 @@ const MyTimesheetPage = () => {
   const [entrySaving, setEntrySaving] = useState(false);
   const [entryError, setEntryError] = useState<string | null>(null);
   const [multiCell, setMultiCell] = useState<{ projectName: string; projectId: string; dk: string } | null>(null);
-  const [copyConfirm, setCopyConfirm] = useState(false);
   const [submitConfirm, setSubmitConfirm] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
 
@@ -113,6 +114,14 @@ const MyTimesheetPage = () => {
   const holidays = weekMatches ? week.holidays : [];
   const holidaySet = new Set(holidays.map((h) => dateKey(h.date)));
   const holidayName = (dk: string) => holidays.find((h) => dateKey(h.date) === dk)?.name;
+
+  // Daily-lock rule: only "today" (ORG timezone, from the server payload) is
+  // editable. Exceptions: a REJECTED week (fix window) and admins.
+  const todayKey = weekMatches && week.today ? dateKey(week.today) : dateKey(new Date());
+  const canEditDay = (dk: string) => !locked && (isAdmin || status === 'REJECTED' || dk === todayKey);
+  const weekHasEditableDay = !locked && (isAdmin || status === 'REJECTED' || dates.includes(todayKey));
+  const lockReason = (dk: string) =>
+    dk > todayKey ? "Future days can't be filled in advance" : 'This day is locked — time is logged the same day (locks 11:59 PM)';
 
   // ---- Build grid rows ----
   const rowMap = new Map<string, GridRow>();
@@ -147,7 +156,7 @@ const MyTimesheetPage = () => {
   };
 
   const beginEdit = (row: GridRow, dk: string) => {
-    if (locked) return;
+    if (!canEditDay(dk)) return;
     const cellEntries = row.cells[dk] ?? [];
     if (cellEntries.length > 1) {
       setMultiCell({ projectId: row.project.id, projectName: row.project.name, dk });
@@ -217,22 +226,6 @@ const MyTimesheetPage = () => {
     }
   };
 
-  // ---- Copy last week ----
-  const handleCopyWeek = async () => {
-    setActionBusy(true);
-    const prev = shiftIsoWeek(ref.year, ref.week, -1);
-    const result = await dispatch(copyWeekThunk({
-      fromIsoYear: prev.year, fromIsoWeek: prev.week, toIsoYear: ref.year, toIsoWeek: ref.week,
-    }));
-    setActionBusy(false);
-    setCopyConfirm(false);
-    if (copyWeekThunk.fulfilled.match(result)) {
-      setSnack({ msg: `${result.payload.copied} entries copied from last week`, severity: 'success' });
-    } else {
-      setSnack({ msg: (result.payload as string) || 'Copy failed', severity: 'error' });
-    }
-  };
-
   // ---- Submit week ----
   const doSubmit = async () => {
     setActionBusy(true);
@@ -295,13 +288,17 @@ const MyTimesheetPage = () => {
         </Box>
         <StatusChip status={status} note={envelope?.reviewNote} />
         {locked && <LockIcon sx={{ fontSize: 18, color: '#94A3B8' }} />}
+        <Tooltip title="Time is logged the same day it was worked — each day locks at 11:59 PM and the week auto-submits Monday morning." arrow>
+          <Chip icon={<TodayIcon sx={{ fontSize: 15 }} />} label="Same-day entry" size="small" sx={{ bgcolor: '#FEF3E2', color: '#B45309', fontWeight: 600, fontSize: '0.72rem' }} />
+        </Tooltip>
         <Box sx={{ flex: 1 }} />
-        <Button size="small" variant="outlined" startIcon={<CopyIcon />} disabled={locked || actionBusy} onClick={() => setCopyConfirm(true)} sx={{ textTransform: 'none' }}>
-          Copy last week
-        </Button>
-        <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={locked} onClick={() => setEntryDialog({ open: true, defaultDate: dates.includes(dateKey(new Date())) ? dateKey(new Date()) : dates[0] })} sx={{ textTransform: 'none' }}>
-          Add entry
-        </Button>
+        <Tooltip title={weekHasEditableDay ? '' : 'This week is locked — time can only be logged on the current day'} arrow disableHoverListener={weekHasEditableDay}>
+          <span>
+            <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={!weekHasEditableDay} onClick={() => setEntryDialog({ open: true, defaultDate: dates.includes(todayKey) ? todayKey : dates[0] })} sx={{ textTransform: 'none' }}>
+              Add entry
+            </Button>
+          </span>
+        </Tooltip>
         <Button size="small" variant="contained" startIcon={<SendIcon />} disabled={entries.length === 0 || locked || actionBusy} onClick={handleSubmitClick} sx={{ textTransform: 'none' }}>
           Submit week
         </Button>
@@ -369,6 +366,7 @@ const MyTimesheetPage = () => {
                     const cellEntries = row.cells[dk] ?? [];
                     const sum = cellEntries.reduce((s, e) => s + e.minutes, 0);
                     const feedback = cellFeedback[key];
+                    const editable = canEditDay(dk);
                     if (editingCell === key) {
                       return (
                         <Box component="td" key={dk} sx={bodyCellSx}>
@@ -388,8 +386,8 @@ const MyTimesheetPage = () => {
                       );
                     }
                     return (
-                      <Box component="td" key={dk} sx={{ ...bodyCellSx, cursor: locked ? 'default' : 'pointer' }} onClick={() => beginEdit(row, dk)}>
-                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, minHeight: 32, px: 1, borderRadius: '8px', '&:hover': locked ? {} : { bgcolor: '#EEF0FF' } }}>
+                      <Box component="td" key={dk} sx={{ ...bodyCellSx, cursor: editable ? 'pointer' : 'default', ...(editable ? {} : { opacity: 0.55 }) }} onClick={() => beginEdit(row, dk)} title={editable || locked ? undefined : lockReason(dk)}>
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, minHeight: 32, px: 1, borderRadius: '8px', '&:hover': editable ? { bgcolor: '#EEF0FF' } : {} }}>
                           <Typography sx={{ fontSize: '0.875rem', fontWeight: sum > 0 ? 600 : 400, color: sum > 0 ? 'text.primary' : '#CBD5E1', fontVariantNumeric: 'tabular-nums' }}>
                             {sum > 0 ? minutesToHM(sum) : '–'}
                           </Typography>
@@ -431,7 +429,7 @@ const MyTimesheetPage = () => {
         )}
       </Card>
 
-      {!locked && (
+      {weekHasEditableDay && (
         <Button size="small" startIcon={<AddIcon />} onClick={openAddRow} sx={{ textTransform: 'none', color: 'text.secondary' }}>
           Add row
         </Button>
@@ -465,6 +463,7 @@ const MyTimesheetPage = () => {
         entry={entryDialog.entry}
         defaultDate={entryDialog.defaultDate}
         defaultProjectId={entryDialog.defaultProjectId}
+        dateLocked={!isAdmin && status !== 'REJECTED'}
         saving={entrySaving}
         errorMsg={entryError}
         onSave={handleDialogSave}
@@ -513,18 +512,6 @@ const MyTimesheetPage = () => {
           <Button onClick={() => setMultiCell(null)}>Close</Button>
         </DialogActions>
       </Dialog>
-
-      {/* Copy last week confirm */}
-      <ConfirmDialog
-        open={copyConfirm}
-        title="Copy Last Week"
-        message={`Copy last week's entries (projects, days and durations, descriptions cleared) into ${weekLabel(ref.year, ref.week)}? Cells that already have time for the same project are skipped.`}
-        confirmLabel="Copy"
-        confirmColor="primary"
-        loading={actionBusy}
-        onConfirm={handleCopyWeek}
-        onCancel={() => setCopyConfirm(false)}
-      />
 
       {/* Sub-target submit confirm */}
       <ConfirmDialog

@@ -40,3 +40,16 @@ export function toUtcDateOnly(input: string | Date): Date {
   const d = new Date(input);
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
+
+/**
+ * The org-local calendar date "today", as a UTC-midnight Date — the single
+ * definition of "today" for the daily-lock rule. A day ends at 23:59:59 in the
+ * org timezone (default Asia/Kolkata), not in UTC or the server's zone.
+ */
+export function todayInOrgTz(timezone: string): Date {
+  // en-CA yields YYYY-MM-DD
+  const local = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  return new Date(`${local}T00:00:00.000Z`);
+}

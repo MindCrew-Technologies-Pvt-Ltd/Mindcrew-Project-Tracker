@@ -26,6 +26,8 @@ interface Props {
   /** Prefills for create mode. */
   defaultDate?: string;
   defaultProjectId?: string;
+  /** Daily-lock rule: the date field is fixed (admins / rejected weeks may change it). */
+  dateLocked?: boolean;
   saving?: boolean;
   errorMsg?: string | null;
   onSave: (payload: CreateTimeEntryPayload) => void;
@@ -37,7 +39,7 @@ const todayISO = () => {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 };
 
-const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, saving, errorMsg, onSave, onClose }: Props) => {
+const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocked, saving, errorMsg, onSave, onClose }: Props) => {
   const [projects, setProjects] = useState<ProjectRef[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
 
@@ -136,7 +138,9 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, saving, e
           <Grid item xs={12} sm={6}>
             <TextField
               label="Date" type="date" fullWidth InputLabelProps={{ shrink: true }}
-              error={!!errors.date} helperText={errors.date?.message}
+              disabled={dateLocked}
+              error={!!errors.date}
+              helperText={errors.date?.message || (dateLocked ? 'Same-day entry — days lock at 11:59 PM' : undefined)}
               {...register('date')}
             />
           </Grid>

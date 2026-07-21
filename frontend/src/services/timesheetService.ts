@@ -1,6 +1,6 @@
 import axiosInstance from './axiosInstance';
 import {
-  CreateTimeEntryPayload, UpdateTimeEntryPayload, CopyWeekPayload, SummaryFilters, ProjectRef,
+  CreateTimeEntryPayload, UpdateTimeEntryPayload, SummaryFilters, ProjectRef,
 } from '../types/timesheet.types';
 
 const timesheetService = {
@@ -12,7 +12,6 @@ const timesheetService = {
   createEntry: (payload: CreateTimeEntryPayload) => axiosInstance.post('/time-entries', payload),
   updateEntry: (id: string, payload: UpdateTimeEntryPayload) => axiosInstance.put(`/time-entries/${id}`, payload),
   deleteEntry: (id: string) => axiosInstance.delete(`/time-entries/${id}`),
-  copyWeek: (payload: CopyWeekPayload) => axiosInstance.post('/time-entries/copy-week', payload),
 
   // ---- Timer ----
   getTimer: () => axiosInstance.get('/timer'),

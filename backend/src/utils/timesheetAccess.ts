@@ -1,7 +1,50 @@
 import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
+import { isoWeekOf, todayInOrgTz } from './isoWeek';
 
 type AuthUser = { id: string; role?: string };
+
+const MAX_DAY_MINUTES = 24 * 60;
+
+/** The org timezone from settings (default Asia/Kolkata). */
+export async function orgTimezone(): Promise<string> {
+  const settings = await prisma.timesheetSettings.findUnique({ where: { id: 'singleton' }, select: { timezone: true } });
+  return settings?.timezone || 'Asia/Kolkata';
+}
+
+/**
+ * Daily-lock rule: a day's time can only be logged/edited ON that day (org
+ * timezone). Exceptions: the date's week envelope is REJECTED (the reviewer
+ * sent it back for fixes), or the actor is an admin (corrections).
+ */
+export async function assertDateEditable(date: Date, user: AuthUser): Promise<void> {
+  if (user.role === 'ADMIN') return;
+  const today = todayInOrgTz(await orgTimezone());
+  if (date.getTime() === today.getTime()) return;
+  const { isoYear, isoWeek } = isoWeekOf(date);
+  const envelope = await prisma.timesheetWeek.findUnique({
+    where: { userId_isoYear_isoWeek: { userId: user.id, isoYear, isoWeek } },
+    select: { status: true },
+  });
+  if (envelope?.status === 'REJECTED') return; // fix window after rejection
+  throw new AppError(
+    date.getTime() > today.getTime()
+      ? 'Future days cannot be filled in advance'
+      : 'This day is locked — time can only be logged on the same day',
+    409,
+  );
+}
+
+/** Reject if adding `minutes` to the user's existing total for `date` exceeds 24h. */
+export async function assertDayCapacity(userId: string, date: Date, minutes: number, excludeEntryId?: string): Promise<void> {
+  const agg = await prisma.timeEntry.aggregate({
+    where: { userId, date, ...(excludeEntryId ? { id: { not: excludeEntryId } } : {}) },
+    _sum: { minutes: true },
+  });
+  if ((agg._sum.minutes ?? 0) + minutes > MAX_DAY_MINUTES) {
+    throw new AppError('This would exceed 24 hours for that day', 400);
+  }
+}
 
 /** Is this user-week locked (SUBMITTED or APPROVED envelope exists)? */
 export async function weekLocked(userId: string, isoYear: number, isoWeek: number): Promise<boolean> {

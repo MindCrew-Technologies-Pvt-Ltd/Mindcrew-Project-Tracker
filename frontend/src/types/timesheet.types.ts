@@ -61,6 +61,8 @@ export interface WeekGridPayload {
   week: TimesheetWeek | null;
   dates: string[];
   holidays: Holiday[];
+  /** "Today" in the ORG timezone — the only editable day (daily-lock rule). */
+  today: string;
 }
 
 export interface ActiveTimer {
@@ -96,13 +98,6 @@ export interface CreateTimeEntryPayload {
 }
 
 export type UpdateTimeEntryPayload = Partial<CreateTimeEntryPayload>;
-
-export interface CopyWeekPayload {
-  fromIsoYear: number;
-  fromIsoWeek: number;
-  toIsoYear: number;
-  toIsoWeek: number;
-}
 
 export type SummaryGroupBy = 'user' | 'project' | 'day';
 

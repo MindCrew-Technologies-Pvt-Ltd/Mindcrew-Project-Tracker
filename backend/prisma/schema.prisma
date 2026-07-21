@@ -102,6 +102,7 @@ model User {
   reviewedWeeks    TimesheetWeek[] @relation("tsWeekReviewer")
   activeTimer      ActiveTimer?
   billableRate     BillableRate?
+  apiTokens        ApiToken[]
 }
 
 model Project {
@@ -218,6 +219,22 @@ model TimesheetSettings {
   reminderEnabled   Boolean @default(false)
   reminderDay       Int     @default(1)
   reminderHour      Int     @default(10)
+  timezone          String  @default("Asia/Kolkata")
+}
+
+model ApiToken {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  tokenHash  String    @unique
+  prefix     String
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ProjectMember {

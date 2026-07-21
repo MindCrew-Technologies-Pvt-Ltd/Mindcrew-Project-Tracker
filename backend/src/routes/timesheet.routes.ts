@@ -2,11 +2,11 @@ import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
-  createTimeEntrySchema, updateTimeEntrySchema, copyWeekSchema, timerStartSchema,
+  createTimeEntrySchema, updateTimeEntrySchema, timerStartSchema,
   submitWeekSchema, rejectWeekSchema, timesheetSettingsSchema, holidaySchema, billableRateSchema,
 } from '../validations/schemas';
 import {
-  getTimeEntries, getWeekEntries, createTimeEntry, updateTimeEntry, deleteTimeEntry, copyWeek,
+  getTimeEntries, getWeekEntries, createTimeEntry, updateTimeEntry, deleteTimeEntry,
 } from '../controllers/timeEntries.controller';
 import {
   getTimer, startTimer, pauseTimer, resumeTimer, stopTimer, discardTimer,
@@ -26,7 +26,6 @@ router.use(authenticate);
 router.get('/time-entries', getTimeEntries);
 router.get('/time-entries/week', getWeekEntries);
 router.post('/time-entries', validate(createTimeEntrySchema), createTimeEntry);
-router.post('/time-entries/copy-week', validate(copyWeekSchema), copyWeek);
 router.put('/time-entries/:id', validate(updateTimeEntrySchema), updateTimeEntry);
 router.delete('/time-entries/:id', deleteTimeEntry);
 

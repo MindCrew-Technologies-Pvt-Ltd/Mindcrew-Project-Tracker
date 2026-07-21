@@ -160,13 +160,6 @@ export const updateTimeEntrySchema = Joi.object({
   billable: Joi.boolean().optional(),
 });
 
-export const copyWeekSchema = Joi.object({
-  fromIsoYear: Joi.number().integer().min(2020).max(2100).required(),
-  fromIsoWeek: Joi.number().integer().min(1).max(53).required(),
-  toIsoYear: Joi.number().integer().min(2020).max(2100).required(),
-  toIsoWeek: Joi.number().integer().min(1).max(53).required(),
-});
-
 export const timerStartSchema = Joi.object({
   projectId: Joi.string().required(),
   description: Joi.string().allow('').optional(),

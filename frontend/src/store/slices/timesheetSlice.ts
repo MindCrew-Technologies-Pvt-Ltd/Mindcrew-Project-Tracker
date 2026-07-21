@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
   WeekGridPayload, ActiveTimer, TimesheetWeek, PendingWeekRow,
-  CreateTimeEntryPayload, UpdateTimeEntryPayload, CopyWeekPayload, TimeEntry,
+  CreateTimeEntryPayload, UpdateTimeEntryPayload, TimeEntry,
 } from '../../types/timesheet.types';
 import timesheetService from '../../services/timesheetService';
 
@@ -62,14 +62,7 @@ export const deleteEntryThunk = createAsyncThunk('timesheet/deleteEntry',
     } catch (err: any) { return rejectWithValue(msg(err, 'Failed to delete the entry')); }
   });
 
-export const copyWeekThunk = createAsyncThunk('timesheet/copyWeek',
-  async (payload: CopyWeekPayload, { dispatch, rejectWithValue }) => {
-    try {
-      const res = (await timesheetService.copyWeek(payload)).data;
-      await dispatch(fetchWeekThunk({ isoYear: payload.toIsoYear, isoWeek: payload.toIsoWeek }));
-      return res.data as { copied: number };
-    } catch (err: any) { return rejectWithValue(msg(err, 'Failed to copy the week')); }
-  });
+// copyWeek thunk removed — daily-lock model: time is logged the same day only.
 
 export const submitWeekThunk = createAsyncThunk('timesheet/submitWeek',
   async ({ isoYear, isoWeek }: WeekRef, { dispatch, rejectWithValue }) => {
