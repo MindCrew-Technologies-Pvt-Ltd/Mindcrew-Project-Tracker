@@ -14,6 +14,8 @@ const timesheetService = {
   deleteEntry: (id: string) => axiosInstance.delete(`/time-entries/${id}`),
 
   // ---- Timer ----
+  getProjectEntries: (projectId: string) => axiosInstance.get(`/time-entries/project/${projectId}`),
+
   getTimer: () => axiosInstance.get('/timer'),
   startTimer: (payload: { projectId: string; description?: string; billable?: boolean }) =>
     axiosInstance.post('/timer/start', payload),

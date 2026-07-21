@@ -6,7 +6,7 @@ import {
   submitWeekSchema, rejectWeekSchema, timesheetSettingsSchema, holidaySchema, billableRateSchema,
 } from '../validations/schemas';
 import {
-  getTimeEntries, getWeekEntries, createTimeEntry, updateTimeEntry, deleteTimeEntry,
+  getTimeEntries, getWeekEntries, getProjectTimeEntries, createTimeEntry, updateTimeEntry, deleteTimeEntry,
 } from '../controllers/timeEntries.controller';
 import {
   getTimer, startTimer, pauseTimer, resumeTimer, stopTimer, discardTimer,
@@ -25,6 +25,7 @@ router.use(authenticate);
 // Time entries
 router.get('/time-entries', getTimeEntries);
 router.get('/time-entries/week', getWeekEntries);
+router.get('/time-entries/project/:projectId', getProjectTimeEntries);
 router.post('/time-entries', validate(createTimeEntrySchema), createTimeEntry);
 router.put('/time-entries/:id', validate(updateTimeEntrySchema), updateTimeEntry);
 router.delete('/time-entries/:id', deleteTimeEntry);

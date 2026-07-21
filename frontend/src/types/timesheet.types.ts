@@ -19,6 +19,17 @@ export interface TimeEntry {
   createdAt: string;
   updatedAt: string;
   project: ProjectRef;
+  /** Present on project-scoped listings (the project Timesheet tab). */
+  user?: UserRef;
+}
+
+/** GET /time-entries/project/:projectId */
+export interface ProjectTimePayload {
+  entries: TimeEntry[];
+  totalMinutes: number;
+  billableMinutes: number;
+  /** 'all' for admin/owner/team members; 'own' for everyone else. */
+  scope: 'all' | 'own';
 }
 
 export interface TimesheetWeek {

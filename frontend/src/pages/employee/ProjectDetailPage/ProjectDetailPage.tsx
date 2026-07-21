@@ -19,8 +19,9 @@ import DocumentsTab from './tabs/DocumentsTab';
 import TeamMembersTab from './tabs/TeamMembersTab';
 import EditRequestsTab from './tabs/EditRequestsTab';
 import TimelineTab from './tabs/TimelineTab';
+import ProjectTimesheetTab from './tabs/ProjectTimesheetTab';
 
-const TABS = ['Overview', 'Weekly Updates', 'Documents', 'Team Members', 'Edit Requests', 'Timeline'];
+const TABS = ['Overview', 'Weekly Updates', 'Documents', 'Team Members', 'Edit Requests', 'Timeline', 'Timesheet'];
 
 const ProjectDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,6 +111,7 @@ const ProjectDetailPage = () => {
       {tab === 3 && <TeamMembersTab project={project} canEdit={isAdmin || isOwner} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
       {tab === 4 && <EditRequestsTab project={project} isOwner={isOwner} isAdmin={isAdmin} />}
       {tab === 5 && <TimelineTab project={project} />}
+      {tab === 6 && <ProjectTimesheetTab project={project} />}
 
       <ConfirmDialog
         open={deleteDialog}

@@ -71,6 +71,35 @@ export const getWeekEntries: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/**
+ * All time logged to one project, for the project's Timesheet tab.
+ * Admin/owner/team members see everyone's entries; anyone else sees only
+ * their own (normally none).
+ */
+export const getProjectTimeEntries: RequestHandler = async (req, res, next) => {
+  try {
+    const projectId = sp(req.params.projectId);
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, ownerId: true, teamMembers: { select: { userId: true } } },
+    });
+    if (!project) return next(new AppError('Project not found', 404));
+    const isContributor =
+      req.user!.role === 'ADMIN' ||
+      project.ownerId === req.user!.id ||
+      project.teamMembers.some((m) => m.userId === req.user!.id);
+    const entries = await prisma.timeEntry.findMany({
+      where: { projectId, ...(isContributor ? {} : { userId: req.user!.id }) },
+      orderBy: [{ date: 'desc' }, { createdAt: 'asc' }],
+      take: 1000,
+      include: { user: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },
+    });
+    const totalMinutes = entries.reduce((s, e) => s + e.minutes, 0);
+    const billableMinutes = entries.filter((e) => e.billable).reduce((s, e) => s + e.minutes, 0);
+    success(res, { entries, totalMinutes, billableMinutes, scope: isContributor ? 'all' : 'own' });
+  } catch (err) { next(err); }
+};
+
 export const createTimeEntry: RequestHandler = async (req, res, next) => {
   try {
     const { projectId, date, hours, minutes, description, billable } = req.body;
