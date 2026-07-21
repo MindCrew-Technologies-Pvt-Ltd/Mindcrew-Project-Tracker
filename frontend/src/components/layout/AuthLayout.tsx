@@ -1,6 +1,7 @@
 import { Box, Paper, Typography, Button } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { Outlet, useNavigate } from 'react-router-dom';
+import BrandMark from '../common/BrandMark';
 import { ROUTES } from '../../constants/routes';
 
 const AuthLayout = () => {
@@ -15,6 +16,9 @@ const AuthLayout = () => {
           Back to home
         </Button>
         <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1.25 }}>
+            <BrandMark size={44} />
+          </Box>
           <Typography variant="h5" fontWeight={700} color="primary">ProjectTracker</Typography>
           <Typography variant="body2" color="text.secondary">Internal Project Repository</Typography>
         </Box>

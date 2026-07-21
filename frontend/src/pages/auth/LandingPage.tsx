@@ -1,11 +1,11 @@
 import { Box, Button, Typography, Stack } from '@mui/material';
-import { Folder as FolderIcon, Login as LoginIcon, PersonAdd as PersonAddIcon, AdminPanelSettings as AdminIcon } from '@mui/icons-material';
+import { Login as LoginIcon, PersonAdd as PersonAddIcon, AdminPanelSettings as AdminIcon } from '@mui/icons-material';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import BrandMark from '../../components/common/BrandMark';
 import { ROUTES } from '../../constants/routes';
 
 const NAVY = '#0F1729';
-const SAND = '#4F46E5';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -26,13 +26,8 @@ const LandingPage = () => {
       }}
     >
       <Box sx={{ width: '100%', maxWidth: 440, textAlign: 'center', color: '#fff' }}>
-        <Box
-          sx={{
-            width: 64, height: 64, borderRadius: '16px', background: SAND, mx: 'auto', mb: 3,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <FolderIcon sx={{ color: '#FFFFFF', fontSize: 34 }} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <BrandMark size={64} />
         </Box>
         <Typography variant="h4" fontWeight={700} gutterBottom sx={{ color: '#FFFFFF' }}>ProjectTracker</Typography>
         <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 5 }}>

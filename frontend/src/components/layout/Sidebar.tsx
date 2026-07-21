@@ -1,5 +1,6 @@
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, Typography, Divider, Tooltip, IconButton } from '@mui/material';
 import { NavLink } from 'react-router-dom';
+import BrandMark from '../common/BrandMark';
 import {
   Dashboard as DashboardIcon, Folder as FolderIcon, FolderCopy as FolderCopyIcon, People as PeopleIcon,
   Assessment as AssessmentIcon, EditNote as EditNoteIcon,
@@ -125,12 +126,7 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
       }}>
         {!collapsed && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, overflow: 'hidden' }}>
-            <Box sx={{
-              width: 32, height: 32, borderRadius: '8px', background: SAND, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <FolderIcon sx={{ color: '#FFFFFF', fontSize: 17 }} />
-            </Box>
+            <BrandMark size={32} />
             <Box sx={{ overflow: 'hidden' }}>
               <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#FFFFFF', lineHeight: 1.1, whiteSpace: 'nowrap' }}>
                 ProjectTracker
@@ -142,14 +138,7 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
           </Box>
         )}
 
-        {collapsed && (
-          <Box sx={{
-            width: 32, height: 32, borderRadius: '8px', background: SAND,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <FolderIcon sx={{ color: '#FFFFFF', fontSize: 17 }} />
-          </Box>
-        )}
+        {collapsed && <BrandMark size={32} />}
 
         <Tooltip title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} placement="right" arrow>
           <IconButton
