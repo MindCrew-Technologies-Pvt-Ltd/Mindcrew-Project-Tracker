@@ -45,6 +45,11 @@ ensureUploadDir();
 
 app.use('/api', apiLimiter);
 
+// Health must be declared BEFORE the routers: timesheet.routes applies
+// router-level authenticate to everything entering /api, which would
+// otherwise swallow unauthenticated health probes with a 401.
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api', weeklyUpdatesRoutes);
@@ -60,7 +65,6 @@ app.use('/api/admin', adminRoutes);
 // API token; carries its own rate limit; outside the /api limiter.
 app.use('/mcp', mcpRouter);
 
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(notFound);
