@@ -83,10 +83,10 @@ const IntegrationsPage = () => {
       label: 'Claude Code',
       body: (
         <>
-          <Typography variant="body2" mb={1}>Run this once in any terminal (replace the token if needed):</Typography>
+          <Typography variant="body2" mb={1}>Run this once in any terminal — your token is already inside the command:</Typography>
           <CodeBlock
-            code={`claude mcp add project-tracker --transport http ${MCP_URL} --header "Authorization: Bearer ${tokenPlaceholder}"`}
-            onCopy={() => copy(`claude mcp add project-tracker --transport http ${MCP_URL} --header "Authorization: Bearer ${tokenPlaceholder}"`)}
+            code={`claude mcp add project-tracker --scope user --transport http ${MCP_URL} --header "Authorization: Bearer ${tokenPlaceholder}"`}
+            onCopy={() => copy(`claude mcp add project-tracker --scope user --transport http ${MCP_URL} --header "Authorization: Bearer ${tokenPlaceholder}"`)}
           />
         </>
       ),
