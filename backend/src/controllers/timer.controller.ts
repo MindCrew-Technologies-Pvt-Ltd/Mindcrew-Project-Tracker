@@ -3,7 +3,7 @@ import prisma from '../config/prisma';
 import { success, error } from '../utils/response';
 import { AppError } from '../middleware/errorHandler';
 import { isoWeekOf, toUtcDateOnly } from '../utils/isoWeek';
-import { assertWeekUnlocked } from '../utils/timesheetAccess';
+import { assertWeekUnlocked, assertManualEntryAllowed } from '../utils/timesheetAccess';
 
 /** Cap a single running span at 12h so a forgotten timer can't log days of time. */
 const MAX_SPAN_MINUTES = 12 * 60;
@@ -16,16 +16,24 @@ function elapsedMinutes(timer: { startedAt: Date; accumulatedMin: number; isPaus
 
 export const getTimer: RequestHandler = async (req, res, next) => {
   try {
-    const timer = await prisma.activeTimer.findUnique({
-      where: { userId: req.user!.id },
-      include: { project: { select: { id: true, name: true } } },
+    const [timer, settings] = await Promise.all([
+      prisma.activeTimer.findUnique({
+        where: { userId: req.user!.id },
+        include: { project: { select: { id: true, name: true } } },
+      }),
+      prisma.timesheetSettings.findUnique({ where: { id: 'singleton' }, select: { manualEntryEnabled: true } }),
+    ]);
+    success(res, {
+      timer: timer ? { ...timer, elapsedMinutes: elapsedMinutes(timer) } : null,
+      // AI-only mode hides the timer widget for non-admins (server also blocks start)
+      manualEntryEnabled: req.user!.role === 'ADMIN' ? true : (settings?.manualEntryEnabled ?? false),
     });
-    success(res, timer ? { ...timer, elapsedMinutes: elapsedMinutes(timer) } : null);
   } catch (err) { next(err); }
 };
 
 export const startTimer: RequestHandler = async (req, res, next) => {
   try {
+    await assertManualEntryAllowed(req.user!); // the timer is a manual write path
     const { projectId, description, billable } = req.body;
     const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
     if (!project) return next(new AppError('Project not found', 404));

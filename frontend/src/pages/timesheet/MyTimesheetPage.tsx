@@ -118,10 +118,16 @@ const MyTimesheetPage = () => {
   // Daily-lock rule: only "today" (ORG timezone, from the server payload) is
   // editable. Exceptions: a REJECTED week (fix window) and admins.
   const todayKey = weekMatches && week.today ? dateKey(week.today) : dateKey(new Date());
-  const canEditDay = (dk: string) => !locked && (isAdmin || status === 'REJECTED' || dk === todayKey);
-  const weekHasEditableDay = !locked && (isAdmin || status === 'REJECTED' || dates.includes(todayKey));
+  // AI-only mode (server-enforced, admins exempt): no manual add/edit/submit at
+  // all — the connected AI assistant is the only write path. Treat as read-only
+  // while the payload loads so controls never flash in.
+  const manualAllowed = weekMatches ? week.manualEntryEnabled : false;
+  const canEditDay = (dk: string) => manualAllowed && !locked && (isAdmin || status === 'REJECTED' || dk === todayKey);
+  const weekHasEditableDay = manualAllowed && !locked && (isAdmin || status === 'REJECTED' || dates.includes(todayKey));
   const lockReason = (dk: string) =>
-    dk > todayKey ? "Future days can't be filled in advance" : 'This day is locked — time is logged the same day (locks 11:59 PM)';
+    !manualAllowed
+      ? 'Entries are logged by your connected AI assistant — manual editing is off (see AI Integrations)'
+      : dk > todayKey ? "Future days can't be filled in advance" : 'This day is locked — time is logged the same day (locks 11:59 PM)';
 
   // ---- Build grid rows ----
   const rowMap = new Map<string, GridRow>();
@@ -156,8 +162,13 @@ const MyTimesheetPage = () => {
   };
 
   const beginEdit = (row: GridRow, dk: string) => {
-    if (!canEditDay(dk)) return;
     const cellEntries = row.cells[dk] ?? [];
+    if (!canEditDay(dk)) {
+      // Read-only cell: still open the entries dialog (view-only) so the
+      // descriptions — especially detailed AI summaries — stay readable.
+      if (cellEntries.length > 0) setMultiCell({ projectId: row.project.id, projectName: row.project.name, dk });
+      return;
+    }
     if (cellEntries.length > 1) {
       setMultiCell({ projectId: row.project.id, projectName: row.project.name, dk });
       return;
@@ -259,9 +270,11 @@ const MyTimesheetPage = () => {
   const multiEntries = multiCell
     ? entries.filter((e) => e.projectId === multiCell.projectId && dateKey(e.date) === multiCell.dk)
     : [];
+  const multiCellEditable = multiCell ? canEditDay(multiCell.dk) : false;
   useEffect(() => {
-    // Close the multi-entry dialog automatically once its cell has ≤1 entry left.
-    if (multiCell && multiEntries.length <= 1) setMultiCell(null);
+    // Close the dialog automatically once its cell has ≤1 entry left — but only
+    // in edit mode (view-only cells legitimately open it with a single entry).
+    if (multiCell && multiCellEditable && multiEntries.length <= 1) setMultiCell(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [multiEntries.length]);
 
@@ -270,7 +283,9 @@ const MyTimesheetPage = () => {
 
   return (
     <Box>
-      <PageHeader title="My Timesheet" subtitle="Log your hours, track the week and submit it for approval" />
+      <PageHeader title="My Timesheet" subtitle={manualAllowed
+        ? 'Log your hours, track the week and submit it for approval'
+        : 'Your connected AI assistant logs your work here — ask it to "fill my timesheet" at the end of the day'} />
 
       {/* Week navigator + actions */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5, flexWrap: 'wrap' }}>
@@ -292,21 +307,28 @@ const MyTimesheetPage = () => {
           <Chip icon={<TodayIcon sx={{ fontSize: 15 }} />} label="Same-day entry" size="small" sx={{ bgcolor: '#FEF3E2', color: '#B45309', fontWeight: 600, fontSize: '0.72rem' }} />
         </Tooltip>
         <Box sx={{ flex: 1 }} />
-        <Tooltip title={weekHasEditableDay ? '' : 'This week is locked — time can only be logged on the current day'} arrow disableHoverListener={weekHasEditableDay}>
-          <span>
-            <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={!weekHasEditableDay} onClick={() => setEntryDialog({ open: true, defaultDate: dates.includes(todayKey) ? todayKey : dates[0] })} sx={{ textTransform: 'none' }}>
-              Add entry
+        {manualAllowed && (
+          <>
+            <Tooltip title={weekHasEditableDay ? '' : 'This week is locked — time can only be logged on the current day'} arrow disableHoverListener={weekHasEditableDay}>
+              <span>
+                <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={!weekHasEditableDay} onClick={() => setEntryDialog({ open: true, defaultDate: dates.includes(todayKey) ? todayKey : dates[0] })} sx={{ textTransform: 'none' }}>
+                  Add entry
+                </Button>
+              </span>
+            </Tooltip>
+            <Button size="small" variant="contained" startIcon={<SendIcon />} disabled={entries.length === 0 || locked || actionBusy} onClick={handleSubmitClick} sx={{ textTransform: 'none' }}>
+              Submit week
             </Button>
-          </span>
-        </Tooltip>
-        <Button size="small" variant="contained" startIcon={<SendIcon />} disabled={entries.length === 0 || locked || actionBusy} onClick={handleSubmitClick} sx={{ textTransform: 'none' }}>
-          Submit week
-        </Button>
+          </>
+        )}
       </Box>
 
       {status === 'REJECTED' && envelope?.reviewNote && (
         <Alert severity="warning" sx={{ mb: 2.5 }}>
-          <strong>This week was rejected{envelope.reviewedBy?.name ? ` by ${envelope.reviewedBy.name}` : ''}:</strong> {envelope.reviewNote} — fix the entries below and resubmit.
+          <strong>This week was rejected{envelope.reviewedBy?.name ? ` by ${envelope.reviewedBy.name}` : ''}:</strong> {envelope.reviewNote}
+          {manualAllowed
+            ? ' — fix the entries below and resubmit.'
+            : ' — ask your AI assistant to log the corrected time for the affected days.'}
         </Alert>
       )}
 
@@ -352,7 +374,9 @@ const MyTimesheetPage = () => {
                 <Box component="tr">
                   <Box component="td" colSpan={9} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
                     <Typography variant="body2">
-                      No time logged this week — start the timer or add your first entry.
+                      {manualAllowed
+                        ? 'No time logged this week — start the timer or add your first entry.'
+                        : 'No time logged this week — ask your connected AI assistant to "fill my timesheet" at the end of the day.'}
                     </Typography>
                   </Box>
                 </Box>
@@ -385,9 +409,10 @@ const MyTimesheetPage = () => {
                         </Box>
                       );
                     }
+                    const clickable = editable || cellEntries.length > 0; // read-only cells with entries open the view dialog
                     return (
-                      <Box component="td" key={dk} sx={{ ...bodyCellSx, cursor: editable ? 'pointer' : 'default', ...(editable ? {} : { opacity: 0.55 }) }} onClick={() => beginEdit(row, dk)} title={editable || locked ? undefined : lockReason(dk)}>
-                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, minHeight: 32, px: 1, borderRadius: '8px', '&:hover': editable ? { bgcolor: '#EEF0FF' } : {} }}>
+                      <Box component="td" key={dk} sx={{ ...bodyCellSx, cursor: clickable ? 'pointer' : 'default', ...(editable ? {} : { opacity: 0.55 }) }} onClick={() => beginEdit(row, dk)} title={editable || locked ? undefined : lockReason(dk)}>
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, minHeight: 32, px: 1, borderRadius: '8px', '&:hover': clickable ? { bgcolor: '#EEF0FF' } : {} }}>
                           <Typography sx={{ fontSize: '0.875rem', fontWeight: sum > 0 ? 600 : 400, color: sum > 0 ? 'text.primary' : '#CBD5E1', fontVariantNumeric: 'tabular-nums' }}>
                             {sum > 0 ? minutesToHM(sum) : '–'}
                           </Typography>
@@ -477,13 +502,15 @@ const MyTimesheetPage = () => {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={1}>
-            This cell has several entries — edit or delete them individually.
+            {multiCellEditable
+              ? 'This cell has several entries — edit or delete them individually.'
+              : 'Logged entries for this day (read-only).'}
           </Typography>
           <List dense>
             {multiEntries.map((e) => (
               <ListItem
                 key={e.id}
-                secondaryAction={
+                secondaryAction={multiCellEditable ? (
                   <Box>
                     <IconButton size="small" onClick={() => { setMultiCell(null); setEntryDialog({ open: true, entry: e }); }}>
                       <EditIcon fontSize="small" />
@@ -492,7 +519,7 @@ const MyTimesheetPage = () => {
                       <DeleteIcon fontSize="small" />
                     </IconButton>
                   </Box>
-                }
+                ) : undefined}
               >
                 <ListItemText
                   primary={

@@ -17,22 +17,19 @@ export const getSettings: RequestHandler = async (_req, res, next) => {
 
 export const updateSettings: RequestHandler = async (req, res, next) => {
   try {
-    const { weeklyTargetHours, reminderEnabled, reminderDay, reminderHour } = req.body;
+    const { weeklyTargetHours, reminderEnabled, reminderDay, reminderHour, timezone, manualEntryEnabled } = req.body;
+    const patch = {
+      ...(weeklyTargetHours !== undefined && { weeklyTargetHours }),
+      ...(reminderEnabled !== undefined && { reminderEnabled }),
+      ...(reminderDay !== undefined && { reminderDay }),
+      ...(reminderHour !== undefined && { reminderHour }),
+      ...(timezone !== undefined && { timezone }),
+      ...(manualEntryEnabled !== undefined && { manualEntryEnabled }),
+    };
     const settings = await prisma.timesheetSettings.upsert({
       where: { id: 'singleton' },
-      update: {
-        ...(weeklyTargetHours !== undefined && { weeklyTargetHours }),
-        ...(reminderEnabled !== undefined && { reminderEnabled }),
-        ...(reminderDay !== undefined && { reminderDay }),
-        ...(reminderHour !== undefined && { reminderHour }),
-      },
-      create: {
-        id: 'singleton',
-        ...(weeklyTargetHours !== undefined && { weeklyTargetHours }),
-        ...(reminderEnabled !== undefined && { reminderEnabled }),
-        ...(reminderDay !== undefined && { reminderDay }),
-        ...(reminderHour !== undefined && { reminderHour }),
-      },
+      update: patch,
+      create: { id: 'singleton', ...patch },
     });
     success(res, settings);
   } catch (err) { next(err); }

@@ -63,6 +63,8 @@ export interface WeekGridPayload {
   holidays: Holiday[];
   /** "Today" in the ORG timezone — the only editable day (daily-lock rule). */
   today: string;
+  /** False = AI-only mode: no manual add/edit/delete/timer/submit (admins always true). */
+  manualEntryEnabled: boolean;
 }
 
 export interface ActiveTimer {
@@ -84,6 +86,8 @@ export interface TimesheetSettings {
   reminderEnabled: boolean;
   reminderDay: number;
   reminderHour: number;
+  timezone: string;
+  manualEntryEnabled: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

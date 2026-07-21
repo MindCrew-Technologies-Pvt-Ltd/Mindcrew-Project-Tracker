@@ -41,7 +41,7 @@ const timesheetService = {
 
   // ---- Admin configuration ----
   getSettings: () => axiosInstance.get('/timesheet-settings'),
-  updateSettings: (payload: { weeklyTargetHours?: number; reminderEnabled?: boolean; reminderDay?: number; reminderHour?: number }) =>
+  updateSettings: (payload: { weeklyTargetHours?: number; reminderEnabled?: boolean; reminderDay?: number; reminderHour?: number; timezone?: string; manualEntryEnabled?: boolean }) =>
     axiosInstance.put('/timesheet-settings', payload),
   listHolidays: () => axiosInstance.get('/holidays'),
   addHoliday: (payload: { date: string; name: string }) => axiosInstance.post('/holidays', payload),

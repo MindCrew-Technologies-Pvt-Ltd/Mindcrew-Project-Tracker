@@ -21,6 +21,7 @@ const TimesheetSettingsPage = () => {
   const [targetInput, setTargetInput] = useState('40');
   const [savingTarget, setSavingTarget] = useState(false);
   const [savingReminder, setSavingReminder] = useState(false);
+  const [savingMode, setSavingMode] = useState(false);
 
   const [holidayDate, setHolidayDate] = useState('');
   const [holidayName, setHolidayName] = useState('');
@@ -79,6 +80,26 @@ const TimesheetSettingsPage = () => {
       fail(err, 'Could not save the reminder settings');
     }
     setSavingReminder(false);
+  };
+
+  const saveMode = async (manualEntryEnabled: boolean) => {
+    if (!settings) return;
+    setSavingMode(true);
+    setSettings({ ...settings, manualEntryEnabled }); // optimistic
+    try {
+      const res = await timesheetService.updateSettings({ manualEntryEnabled });
+      setSettings(res.data?.data);
+      setSnack({
+        msg: manualEntryEnabled
+          ? 'Manual entry enabled — people can add and edit their own time'
+          : 'AI-only mode on — time is logged exclusively by connected AI assistants',
+        severity: 'success',
+      });
+    } catch (err: any) {
+      setSettings(settings); // revert
+      fail(err, 'Could not save the entry mode');
+    }
+    setSavingMode(false);
   };
 
   const addHoliday = async () => {
@@ -194,6 +215,30 @@ const TimesheetSettingsPage = () => {
                   </Select>
                 </FormControl>
               </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Entry mode (AI-only vs manual) */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} mb={0.5}>Entry mode</Typography>
+              <Typography variant="body2" color="text.secondary" mb={1.5}>
+                When manual entry is off (AI-only mode), time is logged exclusively by each person's
+                connected AI assistant — the Add entry, timer and Submit week controls disappear and the
+                server rejects manual writes. Admins can always edit for corrections.
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={settings?.manualEntryEnabled ?? false}
+                    disabled={savingMode}
+                    onChange={(e) => saveMode(e.target.checked)}
+                  />
+                }
+                label="Allow manual time entry"
+              />
             </CardContent>
           </Card>
         </Grid>

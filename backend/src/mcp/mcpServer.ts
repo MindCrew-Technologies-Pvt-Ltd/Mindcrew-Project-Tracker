@@ -36,9 +36,12 @@ function buildServer(user: AuthUser): McpServer {
     {
       title: 'Log work to the timesheet',
       description:
-        'Log time worked TODAY to a project in the company Project Tracker. Provide an honest duration estimate and a concise bullet summary of what was accomplished. ' +
+        'Log time worked TODAY to a project in the company Project Tracker. This is the ONLY way time enters the timesheet — users cannot add or edit entries manually. ' +
+        'When the user says "fill my timesheet", review everything worked on today across all projects/sessions, match each to a tracker project via list_projects, and log one entry per project. ' +
+        'NEVER ask the user how many hours to log — estimate honestly from the actual work sessions you observed. ' +
+        'Write a DETAILED bullet summary of concrete accomplishments (files/features/fixes), not vague phrases. ' +
         'Time can only be logged for the current day (days lock at 11:59 PM India time) — never attempt to backfill. ' +
-        'Call get_my_week first if unsure what has already been logged, to avoid double-logging the same work.',
+        'Call get_my_week first to avoid double-logging work that is already recorded.',
       inputSchema: {
         project: z.string().describe('Project name (or id) as shown by list_projects'),
         hours: z.number().int().min(0).max(24).describe('Whole hours worked'),

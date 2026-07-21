@@ -3,7 +3,7 @@ import prisma from '../config/prisma';
 import { success, error } from '../utils/response';
 import { AppError } from '../middleware/errorHandler';
 import { isoWeekOf, isoWeekDates, toUtcDateOnly, todayInOrgTz } from '../utils/isoWeek';
-import { assertWeekUnlocked, assertDateEditable, assertDayCapacity, canReadUserTime, orgTimezone } from '../utils/timesheetAccess';
+import { assertWeekUnlocked, assertDateEditable, assertDayCapacity, assertManualEntryAllowed, canReadUserTime, orgTimezone } from '../utils/timesheetAccess';
 
 const sp = (v: string | string[]): string => (Array.isArray(v) ? v[0]! : v);
 const qs = (v: unknown): string | undefined => (v && typeof v === 'string' ? v : undefined);
@@ -57,9 +57,17 @@ export const getWeekEntries: RequestHandler = async (req, res, next) => {
         where: { date: { gte: isoWeekDates(isoYear, isoWeek)[0], lte: isoWeekDates(isoYear, isoWeek)[6] } },
       }),
     ]);
-    // `today` (org timezone) drives the daily-lock UI: only that column is editable.
-    const today = todayInOrgTz(await orgTimezone());
-    success(res, { entries, week: envelope, dates: isoWeekDates(isoYear, isoWeek), holidays, today });
+    // `today` (org timezone) drives the daily-lock UI: only that column is
+    // editable. `manualEntryEnabled` tells the UI whether ANY manual writing
+    // is allowed (AI-only mode hides add/edit/submit/timer entirely).
+    const [today, settings] = await Promise.all([
+      orgTimezone().then(todayInOrgTz),
+      prisma.timesheetSettings.findUnique({ where: { id: 'singleton' }, select: { manualEntryEnabled: true } }),
+    ]);
+    success(res, {
+      entries, week: envelope, dates: isoWeekDates(isoYear, isoWeek), holidays, today,
+      manualEntryEnabled: req.user!.role === 'ADMIN' ? true : (settings?.manualEntryEnabled ?? false),
+    });
   } catch (err) { next(err); }
 };
 
@@ -71,6 +79,7 @@ export const createTimeEntry: RequestHandler = async (req, res, next) => {
     const { isoYear, isoWeek } = isoWeekOf(day);
     const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
     if (!project) return next(new AppError('Project not found', 404));
+    await assertManualEntryAllowed(req.user!);
     await assertDateEditable(day, req.user!);
     await assertWeekUnlocked(req.user!.id, isoYear, isoWeek);
     await assertDayCapacity(req.user!.id, day, totalMinutes);
@@ -91,6 +100,7 @@ export const updateTimeEntry: RequestHandler = async (req, res, next) => {
     const existing = await prisma.timeEntry.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Time entry not found', 404));
     if (existing.userId !== req.user!.id) return next(new AppError('You can only edit your own time entries', 403));
+    await assertManualEntryAllowed(req.user!);
     await assertDateEditable(existing.date, req.user!); // day of the entry itself
     await assertWeekUnlocked(existing.userId, existing.isoYear, existing.isoWeek);
 
@@ -129,6 +139,7 @@ export const deleteTimeEntry: RequestHandler = async (req, res, next) => {
     const existing = await prisma.timeEntry.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Time entry not found', 404));
     if (existing.userId !== req.user!.id) return next(new AppError('You can only delete your own time entries', 403));
+    await assertManualEntryAllowed(req.user!);
     await assertDateEditable(existing.date, req.user!);
     await assertWeekUnlocked(existing.userId, existing.isoYear, existing.isoWeek);
     await prisma.timeEntry.delete({ where: { id } });

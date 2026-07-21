@@ -9,6 +9,7 @@ interface TimesheetState {
   week: WeekGridPayload | null;
   weekLoading: boolean;
   timer: ActiveTimer | null;
+  manualEntryEnabled: boolean;
   pending: { items: PendingWeekRow[]; total: number; page: number; pageSize: number; totalPages: number };
   pendingLoading: boolean;
   myWeeks: TimesheetWeek[];
@@ -19,6 +20,7 @@ const initialState: TimesheetState = {
   week: null,
   weekLoading: false,
   timer: null,
+  manualEntryEnabled: true,
   pending: { items: [], total: 0, page: 1, pageSize: 50, totalPages: 0 },
   pendingLoading: false,
   myWeeks: [],
@@ -75,7 +77,9 @@ export const submitWeekThunk = createAsyncThunk('timesheet/submitWeek',
 
 // ---- Timer ----
 export const fetchTimerThunk = createAsyncThunk('timesheet/fetchTimer', async (_, { rejectWithValue }) => {
-  try { return (await timesheetService.getTimer()).data.data as ActiveTimer | null; }
+  try {
+    return (await timesheetService.getTimer()).data.data as { timer: ActiveTimer | null; manualEntryEnabled: boolean };
+  }
   catch (err: any) { return rejectWithValue(msg(err, 'Failed to load the timer')); }
 });
 
@@ -145,7 +149,10 @@ const timesheetSlice = createSlice({
       .addCase(fetchWeekThunk.fulfilled, (state, action) => { state.weekLoading = false; state.week = action.payload; })
       .addCase(fetchWeekThunk.rejected, (state, action) => { state.weekLoading = false; state.error = action.payload as string; })
 
-      .addCase(fetchTimerThunk.fulfilled, (state, action) => { state.timer = action.payload; })
+      .addCase(fetchTimerThunk.fulfilled, (state, action) => {
+        state.timer = action.payload.timer;
+        state.manualEntryEnabled = action.payload.manualEntryEnabled;
+      })
       .addCase(startTimerThunk.fulfilled, (state, action) => { state.timer = action.payload; })
       .addCase(pauseTimerThunk.fulfilled, (state, action) => { state.timer = action.payload; })
       .addCase(resumeTimerThunk.fulfilled, (state, action) => { state.timer = action.payload; })

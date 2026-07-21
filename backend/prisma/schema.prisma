@@ -214,12 +214,16 @@ model Holiday {
 }
 
 model TimesheetSettings {
-  id                String  @id @default("singleton")
-  weeklyTargetHours Int     @default(40)
-  reminderEnabled   Boolean @default(false)
-  reminderDay       Int     @default(1)
-  reminderHour      Int     @default(10)
-  timezone          String  @default("Asia/Kolkata")
+  id                 String  @id @default("singleton")
+  weeklyTargetHours  Int     @default(40)
+  reminderEnabled    Boolean @default(false)
+  reminderDay        Int     @default(1)
+  reminderHour       Int     @default(10)
+  timezone           String  @default("Asia/Kolkata")
+  // AI-only mode (default): time is logged exclusively by connected AI
+  // assistants; manual add/edit/delete, the timer and manual submission are
+  // blocked for non-admins so hours/descriptions can't be doctored.
+  manualEntryEnabled Boolean @default(false)
 }
 
 model ApiToken {

@@ -17,6 +17,9 @@ import { formatDate, formatDateTime } from '../utils/formatters';
 // The MCP endpoint lives on the backend host (VITE_API_URL minus the /api suffix).
 const MCP_URL = `${(import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '')}/mcp`;
 
+// Instruction-file rule for the "fill my timesheet" workflow (AI-only mode).
+const FILL_RULE = `When I say "fill my timesheet": review everything I worked on TODAY across all projects and sessions, match each piece of work to a tracker project via the project-tracker MCP tool \`list_projects\`, and call \`log_work\` once per project. NEVER ask me how many hours to log — estimate honestly from the actual work you observed. Write a DETAILED bullet summary of concrete accomplishments (files, features, fixes), not vague phrases. Call \`get_my_week\` first to avoid double-logging. Time must be logged the same day — days lock at 11:59 PM IST.`;
+
 const CodeBlock = ({ code, onCopy }: { code: string; onCopy: () => void }) => (
   <Box sx={{ position: 'relative', bgcolor: '#0F1729', color: '#E2E8F0', borderRadius: '10px', p: 2, pr: 6, fontFamily: 'monospace', fontSize: '0.78rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}>
     {code}
@@ -116,15 +119,15 @@ const IntegrationsPage = () => {
       ),
     },
     {
-      label: 'Auto-log rule',
+      label: '"Fill my timesheet" rule',
       body: (
         <>
           <Typography variant="body2" mb={1}>
-            Paste this into your assistant's instruction file (CLAUDE.md, .cursorrules, etc.) so it logs work without being asked:
+            Paste this into your assistant's instruction file (CLAUDE.md, .cursorrules, etc.). Then at the end of the day just say <em>"fill my timesheet"</em>:
           </Typography>
           <CodeBlock
-            code={`At the end of every work session, call the project-tracker MCP tool \`log_work\` once per project you worked on: give an honest time estimate (hours + minutes) and a short bullet summary of what was accomplished. Check \`get_my_week\` first to avoid double-logging. Time must be logged the same day — days lock at 11:59 PM IST.`}
-            onCopy={() => copy(`At the end of every work session, call the project-tracker MCP tool \`log_work\` once per project you worked on: give an honest time estimate (hours + minutes) and a short bullet summary of what was accomplished. Check \`get_my_week\` first to avoid double-logging. Time must be logged the same day — days lock at 11:59 PM IST.`)}
+            code={FILL_RULE}
+            onCopy={() => copy(FILL_RULE)}
           />
         </>
       ),
@@ -187,7 +190,7 @@ const IntegrationsPage = () => {
         <CardContent>
           <Typography variant="subtitle1" fontWeight={700} mb={0.5}>Connect your AI tool</Typography>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            One-time setup. Afterwards just tell your assistant <em>"log my work to Project Tracker"</em> — or add the auto-log rule so it happens at the end of every session.
+            One-time setup. Afterwards just tell your assistant <em>"fill my timesheet"</em> at the end of the day — it reviews what you worked on, matches it to tracker projects and logs the time with a detailed summary.
             {newToken ? ' Your new token is already filled into the snippets below.' : ' Generate a token above first — the snippets use a placeholder until you do.'}
           </Typography>
           <Tabs value={toolTab} onChange={(_, v) => setToolTab(v)} sx={{ mb: 2, borderBottom: '1px solid #E9EBF2' }} variant="scrollable" scrollButtons="auto">

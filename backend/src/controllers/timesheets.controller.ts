@@ -6,7 +6,7 @@ import { createNotification } from '../utils/notifications';
 import { getPaginationParams } from '../utils/pagination';
 import { AppError } from '../middleware/errorHandler';
 import { isoWeekDates } from '../utils/isoWeek';
-import { assertWeekReviewer, ownedProjectIds } from '../utils/timesheetAccess';
+import { assertWeekReviewer, assertManualEntryAllowed, ownedProjectIds } from '../utils/timesheetAccess';
 
 const sp = (v: string | string[]): string => (Array.isArray(v) ? v[0]! : v);
 const qs = (v: unknown): string | undefined => (v && typeof v === 'string' ? v : undefined);
@@ -66,9 +66,11 @@ export async function submitWeekForUser(
   return week;
 }
 
-/** Submit (or resubmit) my week for approval. */
+/** Submit (or resubmit) my week for approval. In AI-only mode weeks are
+ *  auto-submitted every Monday — manual submission is admin-only. */
 export const submitWeek: RequestHandler = async (req, res, next) => {
   try {
+    await assertManualEntryAllowed(req.user!);
     const { isoYear, isoWeek } = req.body;
     const week = await submitWeekForUser(req.user!.id, isoYear, isoWeek);
     success(res, week, 'Timesheet submitted for approval', 201);

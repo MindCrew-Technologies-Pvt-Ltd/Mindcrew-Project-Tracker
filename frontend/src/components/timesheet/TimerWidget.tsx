@@ -21,6 +21,7 @@ const INDIGO = '#4F46E5';
 const TimerWidget = () => {
   const dispatch = useAppDispatch();
   const timer = useAppSelector((s) => s.timesheet.timer);
+  const manualEntryEnabled = useAppSelector((s) => s.timesheet.manualEntryEnabled);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
@@ -129,6 +130,10 @@ const TimerWidget = () => {
       dispatch(fetchTimerThunk());
     }
   };
+
+  // AI-only mode: the timer is a manual write path, so the widget disappears
+  // entirely (a running timer, if any, stays visible so it can be stopped).
+  if (!manualEntryEnabled && !timer) return null;
 
   return (
     <>

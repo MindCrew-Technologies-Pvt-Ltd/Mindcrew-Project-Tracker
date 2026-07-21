@@ -13,6 +13,18 @@ export async function orgTimezone(): Promise<string> {
 }
 
 /**
+ * AI-only mode (the default): manual entry paths — add/edit/delete, timer,
+ * manual submit — are blocked for non-admins. Time flows in exclusively via
+ * connected AI assistants so nobody can doctor hours or descriptions.
+ */
+export async function assertManualEntryAllowed(user: AuthUser): Promise<void> {
+  if (user.role === 'ADMIN') return;
+  const settings = await prisma.timesheetSettings.findUnique({ where: { id: 'singleton' }, select: { manualEntryEnabled: true } });
+  if (settings?.manualEntryEnabled) return;
+  throw new AppError('Manual time entry is disabled — your connected AI assistant logs your work (see AI Integrations)', 403);
+}
+
+/**
  * Daily-lock rule: a day's time can only be logged/edited ON that day (org
  * timezone). Exceptions: the date's week envelope is REJECTED (the reviewer
  * sent it back for fixes), or the actor is an admin (corrections).
