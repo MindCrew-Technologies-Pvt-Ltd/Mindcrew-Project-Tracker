@@ -100,6 +100,24 @@ const IntegrationsPage = () => {
       ),
     },
     {
+      label: 'VS Code / Copilot',
+      body: (
+        <>
+          <Typography variant="body2" mb={1}>
+            For GitHub Copilot in VS Code: open the Command Palette → <strong>MCP: Add Server</strong> → HTTP, or create
+            a <code>.vscode/mcp.json</code> file with this content. Then use Copilot in agent mode and say "fill my timesheet".
+          </Typography>
+          <CodeBlock
+            code={`{\n  "servers": {\n    "project-tracker": {\n      "type": "http",\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`}
+            onCopy={() => copy(`{\n  "servers": {\n    "project-tracker": {\n      "type": "http",\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`)}
+          />
+          <Typography variant="body2" mt={1} color="text.secondary">
+            Using the Claude Code extension in VS Code instead? Follow the Claude Code tab. Cline/Continue? Follow the Cursor / Windsurf tab.
+          </Typography>
+        </>
+      ),
+    },
+    {
       label: 'Cursor / Windsurf',
       body: (
         <>
