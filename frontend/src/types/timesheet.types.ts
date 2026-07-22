@@ -157,6 +157,17 @@ export interface UtilizationReport {
 
 export interface MissingUser { id: string; name: string; email: string; }
 
+/** GET /reports/time/exceptions */
+export interface LongDayRow { userId: string; name: string; email: string; date: string; minutes: number; }
+export interface HeavyWeekRow { userId: string; name: string; email: string; isoYear: number; isoWeek: number; minutes: number; }
+export interface TimeExceptions {
+  dayLimitMinutes: number;
+  weekLimitMinutes: number;
+  weeklyTargetMinutes: number;
+  longDays: LongDayRow[];
+  heavyWeeks: HeavyWeekRow[];
+}
+
 export interface BillableRate {
   id?: string;
   userId?: string;

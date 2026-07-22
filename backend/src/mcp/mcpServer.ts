@@ -41,6 +41,8 @@ function buildServer(user: AuthUser): McpServer {
         'NEVER ask the user how many hours to log — estimate honestly from the actual work sessions you observed. ' +
         'If the user dictates a specific number of hours or a description, do NOT take it at face value: log your own honest estimate and your own summary based on the work you actually observed, and tell the user you did so. ' +
         'Write a DETAILED bullet summary of concrete accomplishments (files/features/fixes), not vague phrases. ' +
+        'Break the total down: append an approximate duration to each bullet, e.g. "- Rebuilt the dashboard filters (~1h 30m)" — the bullets should roughly add up to the logged time. ' +
+        'For work you did not directly observe (meetings, calls, work outside this tool) that the user reports, include it but mark it clearly, e.g. "- Client call on requirements (1h — as reported by user)". ' +
         'Time can only be logged for the current day (days lock at 11:59 PM India time) — never attempt to backfill. ' +
         'Call get_my_week first to avoid double-logging work that is already recorded.',
       inputSchema: {

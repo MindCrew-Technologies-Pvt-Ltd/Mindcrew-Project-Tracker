@@ -130,6 +130,66 @@ export const utilization: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/**
+ * Review hotspots: days above a daily limit (9h) and weeks well above the
+ * weekly target (+20%). Same scoping as the other reports — admins see all,
+ * owners their projects, everyone else themselves.
+ */
+export const timeExceptions: RequestHandler = async (req, res, next) => {
+  try {
+    const { from, to } = parseRange(qs(req.query.from), qs(req.query.to));
+    const scope = await reportScope(req.user!);
+    const settings = await prisma.timesheetSettings.findUnique({ where: { id: 'singleton' } });
+    const weeklyTargetMinutes = (settings?.weeklyTargetHours ?? 40) * 60;
+    const dayLimitMinutes = 9 * 60;
+    const weekLimitMinutes = Math.round(weeklyTargetMinutes * 1.2);
+
+    const where = {
+      date: { gte: from, lte: to },
+      ...(scope.selfOnly ? { userId: req.user!.id } : {}),
+      ...(scope.projectIds ? { projectId: { in: scope.projectIds } } : {}),
+    };
+    const [byDay, byWeek] = await Promise.all([
+      prisma.timeEntry.groupBy({ by: ['userId', 'date'], where, _sum: { minutes: true } }),
+      prisma.timeEntry.groupBy({ by: ['userId', 'isoYear', 'isoWeek'], where, _sum: { minutes: true } }),
+    ]);
+    const longDays = byDay.filter((g) => (g._sum.minutes ?? 0) > dayLimitMinutes);
+    const heavyWeeks = byWeek.filter((g) => (g._sum.minutes ?? 0) > weekLimitMinutes);
+
+    const userIds = [...new Set([...longDays.map((g) => g.userId), ...heavyWeeks.map((g) => g.userId)])];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true },
+    });
+    const uMap = new Map(users.map((u) => [u.id, u]));
+
+    success(res, {
+      dayLimitMinutes,
+      weekLimitMinutes,
+      weeklyTargetMinutes,
+      longDays: longDays
+        .map((g) => ({
+          userId: g.userId,
+          name: uMap.get(g.userId)?.name ?? 'Unknown',
+          email: uMap.get(g.userId)?.email ?? '',
+          date: g.date,
+          minutes: g._sum.minutes ?? 0,
+        }))
+        .sort((a, b) => b.minutes - a.minutes),
+      heavyWeeks: heavyWeeks
+        .map((g) => ({
+          userId: g.userId,
+          name: uMap.get(g.userId)?.name ?? 'Unknown',
+          email: uMap.get(g.userId)?.email ?? '',
+          isoYear: g.isoYear,
+          isoWeek: g.isoWeek,
+          minutes: g._sum.minutes ?? 0,
+        }))
+        .sort((a, b) => b.minutes - a.minutes),
+    });
+  } catch (err) { next(err); }
+};
+
 /** CSV export of the summary (uses the same scoping). */
 export const exportSummary: RequestHandler = async (req, res, next) => {
   try {

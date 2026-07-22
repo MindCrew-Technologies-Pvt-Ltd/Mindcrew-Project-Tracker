@@ -18,7 +18,7 @@ import { formatDate, formatDateTime } from '../utils/formatters';
 const MCP_URL = `${(import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '')}/mcp`;
 
 // Instruction-file rule for the "fill my timesheet" workflow (AI-only mode).
-const FILL_RULE = `When I say "fill my timesheet": review everything I worked on TODAY across all projects and sessions, match each piece of work to a tracker project via the project-tracker MCP tool \`list_projects\`, and call \`log_work\` once per project. NEVER ask me how many hours to log — estimate honestly from the actual work you observed, even if I suggest a number. Write a DETAILED bullet summary of concrete accomplishments (files, features, fixes), not vague phrases. Call \`get_my_week\` first to avoid double-logging. Time must be logged the same day — days lock at 11:59 PM IST.`;
+const FILL_RULE = `When I say "fill my timesheet": review everything I worked on TODAY across all projects and sessions, match each piece of work to a tracker project via the project-tracker MCP tool \`list_projects\`, and call \`log_work\` once per project. NEVER ask me how many hours to log — estimate honestly from the actual work you observed, even if I suggest a number. Write a DETAILED bullet summary of concrete accomplishments (files, features, fixes) with an approximate duration per bullet, e.g. "- Rebuilt dashboard filters (~1h 30m)" — bullets should roughly add up to the logged time. Mark work you were told about but did not observe, e.g. "(1h — as reported by me)". Call \`get_my_week\` first to avoid double-logging. Time must be logged the same day — days lock at 11:59 PM IST.`;
 
 const CodeBlock = ({ code, onCopy }: { code: string; onCopy: () => void }) => (
   <Box sx={{ position: 'relative', bgcolor: '#0F1729', color: '#E2E8F0', borderRadius: '10px', p: 2, pr: 6, fontFamily: 'monospace', fontSize: '0.78rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}>
@@ -86,6 +86,11 @@ const IntegrationsPage = () => {
       label: 'Claude Code',
       body: (
         <>
+          <Typography variant="body2" mb={1}>
+            Requires Claude Code on your machine — if <code>claude</code> is not found, install it first:{' '}
+            <code>curl -fsSL https://claude.ai/install.sh | bash</code> (macOS/Linux) or{' '}
+            <code>npm install -g @anthropic-ai/claude-code</code>, then restart the terminal.
+          </Typography>
           <Typography variant="body2" mb={1}>Run this once in any terminal — your token is already inside the command:</Typography>
           <CodeBlock
             code={`claude mcp add project-tracker --scope user --transport http ${MCP_URL} --header "Authorization: Bearer ${tokenPlaceholder}"`}

@@ -11,8 +11,8 @@ import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
 import timesheetService from '../../services/timesheetService';
-import { TimeSummary, UtilizationReport, SummaryGroupBy } from '../../types/timesheet.types';
-import { minutesToHM, minutesToPretty, mondayOfIsoWeek, isoWeekOf, dateKey } from '../../utils/timeFormat';
+import { TimeSummary, UtilizationReport, SummaryGroupBy, TimeExceptions } from '../../types/timesheet.types';
+import { minutesToHM, minutesToPretty, mondayOfIsoWeek, isoWeekOf, dateKey, weekLabel } from '../../utils/timeFormat';
 import { downloadBlob } from '../../utils/exportHelpers';
 import { ROUTES } from '../../constants/routes';
 
@@ -36,7 +36,7 @@ const TimeReportsPage = () => {
   const navigate = useNavigate();
 
   const thisWeekFrom = dateKey(mondayOfIsoWeek(isoWeekOf(new Date()).year, isoWeekOf(new Date()).week));
-  const [tab, setTab] = useState<'summary' | 'utilization'>('summary');
+  const [tab, setTab] = useState<'summary' | 'utilization' | 'exceptions'>('summary');
   const [from, setFrom] = useState(thisWeekFrom);
   const [to, setTo] = useState(dayjs().format('YYYY-MM-DD'));
   const [groupBy, setGroupBy] = useState<SummaryGroupBy>('project');
@@ -44,6 +44,7 @@ const TimeReportsPage = () => {
 
   const [summary, setSummary] = useState<TimeSummary | null>(null);
   const [utilization, setUtilization] = useState<UtilizationReport | null>(null);
+  const [exceptions, setExceptions] = useState<TimeExceptions | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [snack, setSnack] = useState<string | null>(null);
@@ -61,10 +62,15 @@ const TimeReportsPage = () => {
         .then((r) => setSummary(r.data?.data || null))
         .catch((err) => { setSummary(null); setSnack(err.response?.data?.message || 'Failed to load the report'); })
         .finally(() => setLoading(false));
-    } else {
+    } else if (tab === 'utilization') {
       timesheetService.utilization(from, to)
         .then((r) => setUtilization(r.data?.data || null))
         .catch((err) => { setUtilization(null); setSnack(err.response?.data?.message || 'Failed to load utilization'); })
+        .finally(() => setLoading(false));
+    } else {
+      timesheetService.exceptions(from, to)
+        .then((r) => setExceptions(r.data?.data || null))
+        .catch((err) => { setExceptions(null); setSnack(err.response?.data?.message || 'Failed to load exceptions'); })
         .finally(() => setLoading(false));
     }
   }, [tab, filters, from, to]);
@@ -151,6 +157,7 @@ const TimeReportsPage = () => {
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2.5, borderBottom: '1px solid #E9EBF2' }}>
         <Tab value="summary" label="Summary" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="utilization" label="Utilization" sx={{ textTransform: 'none', fontWeight: 600 }} />
+        <Tab value="exceptions" label="Exceptions" sx={{ textTransform: 'none', fontWeight: 600 }} />
       </Tabs>
 
       {loading ? (
@@ -207,7 +214,7 @@ const TimeReportsPage = () => {
             </Card>
           </>
         )
-      ) : (
+      ) : tab === 'utilization' ? (
         !utilization || utilization.rows.length === 0 ? (
           <EmptyState title="No utilization data" description="Nobody logged time in this range." />
         ) : (
@@ -270,6 +277,93 @@ const TimeReportsPage = () => {
               </Box>
             </Box>
           </Card>
+        )
+      ) : (
+        !exceptions || (exceptions.longDays.length === 0 && exceptions.heavyWeeks.length === 0) ? (
+          <EmptyState
+            title="No exceptions in this range"
+            description={exceptions
+              ? `All logged time is within normal limits (day ≤ ${minutesToPretty(exceptions.dayLimitMinutes)}, week ≤ ${minutesToPretty(exceptions.weekLimitMinutes)}).`
+              : 'All logged time is within normal limits.'}
+          />
+        ) : (
+          <>
+            <Card sx={{ p: 0, mb: 2.5, overflowX: 'auto' }}>
+              <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #E9EBF2' }}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Long days
+                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                    over {minutesToPretty(exceptions.dayLimitMinutes)} logged in a single day — worth a look at the entry descriptions
+                  </Typography>
+                </Typography>
+              </Box>
+              {exceptions.longDays.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 2.5 }}>None in this range.</Typography>
+              ) : (
+                <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
+                  <Box component="thead">
+                    <Box component="tr">
+                      <Box component="th" sx={thSx}>Person</Box>
+                      <Box component="th" sx={thSx}>Day</Box>
+                      <Box component="th" sx={{ ...thSx, textAlign: 'right' }}>Logged</Box>
+                      <Box component="th" sx={{ ...thSx, textAlign: 'right' }}>Over by</Box>
+                    </Box>
+                  </Box>
+                  <Box component="tbody">
+                    {exceptions.longDays.map((r) => (
+                      <Box component="tr" key={`${r.userId}|${r.date}`} sx={{ '&:hover': { bgcolor: '#F7F8FD' } }}>
+                        <Box component="td" sx={tdSx}>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary' }}>{r.name}</Typography>
+                          <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{r.email}</Typography>
+                        </Box>
+                        <Box component="td" sx={tdSx}>{dayjs(dateKey(r.date)).format('ddd, MMM D, YYYY')}</Box>
+                        <Box component="td" sx={{ ...tdSx, textAlign: 'right', fontWeight: 700, color: '#B91C1C', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(r.minutes)}</Box>
+                        <Box component="td" sx={{ ...tdSx, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(r.minutes - exceptions.dayLimitMinutes)}</Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Card>
+
+            <Card sx={{ p: 0, overflowX: 'auto' }}>
+              <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #E9EBF2' }}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Heavy weeks
+                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                    over {minutesToPretty(exceptions.weekLimitMinutes)} in a week (target {minutesToPretty(exceptions.weeklyTargetMinutes)} + 20%)
+                  </Typography>
+                </Typography>
+              </Box>
+              {exceptions.heavyWeeks.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 2.5 }}>None in this range.</Typography>
+              ) : (
+                <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
+                  <Box component="thead">
+                    <Box component="tr">
+                      <Box component="th" sx={thSx}>Person</Box>
+                      <Box component="th" sx={thSx}>Week</Box>
+                      <Box component="th" sx={{ ...thSx, textAlign: 'right' }}>Logged</Box>
+                      <Box component="th" sx={{ ...thSx, textAlign: 'right' }}>Over target by</Box>
+                    </Box>
+                  </Box>
+                  <Box component="tbody">
+                    {exceptions.heavyWeeks.map((r) => (
+                      <Box component="tr" key={`${r.userId}|${r.isoYear}|${r.isoWeek}`} sx={{ '&:hover': { bgcolor: '#F7F8FD' } }}>
+                        <Box component="td" sx={tdSx}>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary' }}>{r.name}</Typography>
+                          <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{r.email}</Typography>
+                        </Box>
+                        <Box component="td" sx={tdSx}>{weekLabel(r.isoYear, r.isoWeek)}</Box>
+                        <Box component="td" sx={{ ...tdSx, textAlign: 'right', fontWeight: 700, color: '#B91C1C', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(r.minutes)}</Box>
+                        <Box component="td" sx={{ ...tdSx, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(r.minutes - exceptions.weeklyTargetMinutes)}</Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Card>
+          </>
         )
       )}
 

@@ -14,7 +14,7 @@ import {
 import {
   submitWeek, myWeeks, pendingWeeks, getWeekDetail, approveWeek, rejectWeek, reopenWeek, missingWeek,
 } from '../controllers/timesheets.controller';
-import { timeSummary, utilization, exportSummary } from '../controllers/timeReports.controller';
+import { timeSummary, utilization, exportSummary, timeExceptions } from '../controllers/timeReports.controller';
 import {
   getSettings, updateSettings, listHolidays, addHoliday, deleteHoliday, listRates, setRate,
 } from '../controllers/timesheetAdmin.controller';
@@ -52,6 +52,7 @@ router.put('/timesheets/:id/reopen', reopenWeek);
 router.get('/reports/time/summary', timeSummary);
 router.get('/reports/time/utilization', utilization);
 router.get('/reports/time/export', exportSummary);
+router.get('/reports/time/exceptions', timeExceptions);
 
 // Admin configuration
 router.get('/timesheet-settings', requireAdmin, getSettings);

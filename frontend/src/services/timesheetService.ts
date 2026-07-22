@@ -40,6 +40,7 @@ const timesheetService = {
   utilization: (from: string, to: string) => axiosInstance.get('/reports/time/utilization', { params: { from, to } }),
   exportCsv: (params: SummaryFilters) =>
     axiosInstance.get('/reports/time/export', { params: { ...params, format: 'csv' }, responseType: 'blob' }),
+  exceptions: (from: string, to: string) => axiosInstance.get('/reports/time/exceptions', { params: { from, to } }),
 
   // ---- Admin configuration ----
   getSettings: () => axiosInstance.get('/timesheet-settings'),
