@@ -112,16 +112,18 @@ const IntegrationsPage = () => {
             onCopy={() => copy(`{\n  "servers": {\n    "project-tracker": {\n      "type": "http",\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`)}
           />
           <Typography variant="body2" mt={1} color="text.secondary">
-            Using the Claude Code extension in VS Code instead? Follow the Claude Code tab. Cline/Continue? Follow the Cursor / Windsurf tab.
+            Using the Claude Code extension in VS Code instead? Follow the Claude Code tab. Cline/Continue? Follow the Cursor tab.
           </Typography>
         </>
       ),
     },
     {
-      label: 'Cursor / Windsurf',
+      label: 'Cursor',
       body: (
         <>
-          <Typography variant="body2" mb={1}>Add to the editor's MCP settings (<code>mcp.json</code>):</Typography>
+          <Typography variant="body2" mb={1}>
+            Add to Cursor's MCP settings (<code>.cursor/mcp.json</code> or Settings → MCP). Note the key is <code>"url"</code> — then fully restart Cursor:
+          </Typography>
           <CodeBlock
             code={`{\n  "mcpServers": {\n    "project-tracker": {\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`}
             onCopy={() => copy(`{\n  "mcpServers": {\n    "project-tracker": {\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`)}
@@ -130,10 +132,26 @@ const IntegrationsPage = () => {
       ),
     },
     {
-      label: 'Antigravity / Gemini',
+      label: 'Windsurf / Antigravity',
       body: (
         <>
-          <Typography variant="body2" mb={1}>In the MCP configuration, add an HTTP server:</Typography>
+          <Typography variant="body2" mb={1}>
+            Add to the MCP config (<code>mcp_config.json</code> / Installed MCP Servers → Open MCP Config). These editors use <code>"serverUrl"</code>, not url/httpUrl:
+          </Typography>
+          <CodeBlock
+            code={`{\n  "mcpServers": {\n    "project-tracker": {\n      "serverUrl": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`}
+            onCopy={() => copy(`{\n  "mcpServers": {\n    "project-tracker": {\n      "serverUrl": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`)}
+          />
+        </>
+      ),
+    },
+    {
+      label: 'Gemini CLI',
+      body: (
+        <>
+          <Typography variant="body2" mb={1}>
+            Add to <code>~/.gemini/settings.json</code>. Gemini CLI uses <code>"httpUrl"</code>:
+          </Typography>
           <CodeBlock
             code={`{\n  "mcpServers": {\n    "project-tracker": {\n      "httpUrl": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`}
             onCopy={() => copy(`{\n  "mcpServers": {\n    "project-tracker": {\n      "httpUrl": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer ${tokenPlaceholder}" }\n    }\n  }\n}`)}
