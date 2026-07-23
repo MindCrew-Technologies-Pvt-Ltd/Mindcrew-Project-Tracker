@@ -44,6 +44,7 @@ function buildServer(user: AuthUser): McpServer {
         'Break the total down: append an approximate duration to each bullet, e.g. "- Rebuilt the dashboard filters (~1h 30m)" — the bullets should roughly add up to the logged time. ' +
         'For work you did not directly observe (meetings, calls, work outside this tool) that the user reports, include it but mark it clearly, e.g. "- Client call on requirements (1h — as reported by user)". ' +
         'Time can only be logged for the current day (days lock at 11:59 PM India time) — never attempt to backfill. ' +
+        'Count ONLY work done since midnight today: if your session spans multiple days, exclude earlier days\' work (it should have been logged on those days). The server rejects totals that exceed the time actually elapsed today. ' +
         'Call get_my_week first to avoid double-logging work that is already recorded.',
       inputSchema: {
         project: z.string().describe('Project name (or id) as shown by list_projects'),

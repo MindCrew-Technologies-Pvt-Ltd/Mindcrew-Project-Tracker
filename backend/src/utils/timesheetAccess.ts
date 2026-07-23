@@ -53,8 +53,24 @@ export async function assertDayCapacity(userId: string, date: Date, minutes: num
     where: { userId, date, ...(excludeEntryId ? { id: { not: excludeEntryId } } : {}) },
     _sum: { minutes: true },
   });
-  if ((agg._sum.minutes ?? 0) + minutes > MAX_DAY_MINUTES) {
+  const dayTotal = (agg._sum.minutes ?? 0) + minutes;
+  if (dayTotal > MAX_DAY_MINUTES) {
     throw new AppError('This would exceed 24 hours for that day', 400);
+  }
+  // Physical limit for TODAY: you cannot have worked more time than has
+  // actually elapsed since midnight (org timezone). Stops an AI (or anyone)
+  // from logging a "full day" at 2 PM by counting yesterday's work as today's.
+  const tz = await orgTimezone();
+  if (date.getTime() === todayInOrgTz(tz).getTime()) {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+    const [h, m] = parts.split(':').map(Number);
+    const elapsedMinutes = h * 60 + m;
+    if (dayTotal > elapsedMinutes) {
+      throw new AppError(
+        `Too many hours for today: the day is only ${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m old and this would make today's total ${Math.floor(dayTotal / 60)}h ${dayTotal % 60}m. Only log time actually worked today — earlier days' work should have been logged on those days.`,
+        400,
+      );
+    }
   }
 }
 

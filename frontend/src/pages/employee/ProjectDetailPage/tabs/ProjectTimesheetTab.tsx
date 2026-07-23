@@ -87,6 +87,7 @@ const ProjectTimesheetTab = ({ project }: Props) => {
                     {e.source === 'AI_AGENT' && <Chip label="AI" size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#EEF0FF', color: '#4338CA', border: '1px solid #DFE2FA' }} />}
                     {e.source === 'TIMER' && <Chip label="Timer" size="small" sx={{ height: 18, fontSize: '0.65rem' }} />}
                     {e.billable && <Chip label="Billable" size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#E9F9EF', color: '#15803D' }} />}
+                    <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>logged at {dayjs(e.createdAt).format('h:mm A')}</Typography>
                     <Box sx={{ flex: 1 }} />
                     <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(e.minutes)}</Typography>
                   </Box>
