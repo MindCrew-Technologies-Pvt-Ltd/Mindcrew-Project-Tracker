@@ -47,14 +47,18 @@ The backend `validate()` middleware runs Joi with `stripUnknown: true`
 
 ### AI work-log (`POST /api/integrations/work-log`, MCP `log_work`)
 - **Required:** project (min 1), hours (0–24), minutes (0–59), summary (min 3)
-- **Optional:** billable
+- **Optional:** billable; started (`"HH:MM"` 24h org time — when the AI first
+  observed the user active today; agents are told to ALWAYS send it)
 - Joi only — consumed by AI agents/scripts, not browser forms, so there is
   deliberately **no Yup mirror** for this schema.
 - Server-side plausibility cap: for non-admins, today's logged total may not
-  exceed the time elapsed since the org **workday start**
-  (`TimesheetSettings.workdayStartHour`, default 8 = 08:00 org time, admin-set
-  0–12 on Timesheet Settings). Enforced in `assertDayCapacity`, applies to the
-  AI path AND manual entries/timer; admin corrections are exempt.
+  exceed the time elapsed since the day's **work start** — the earliest
+  AI-reported `started` across today's entries (stored as
+  `TimeEntry.workStartedHm`, shown to admins on Daily Timesheets), or, when no
+  start was reported, `TimesheetSettings.workdayStartHour` (default 8 = 08:00
+  org time, admin-set 0–12 on Timesheet Settings). Enforced in
+  `assertDayCapacity`, applies to the AI path AND manual entries/timer; admin
+  corrections are exempt. `started` may not be in the future.
 
 ### Edit request
 - **Required:** reason (min 10)

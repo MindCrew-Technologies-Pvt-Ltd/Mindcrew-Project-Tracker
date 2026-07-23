@@ -16,6 +16,8 @@ export interface TimeEntry {
   isoYear: number;
   isoWeek: number;
   source: TimeEntrySource;
+  /** "HH:MM" org time the AI observed the user's first activity of the day (AI entries only). */
+  workStartedHm?: string | null;
   createdAt: string;
   updatedAt: string;
   project: ProjectRef;

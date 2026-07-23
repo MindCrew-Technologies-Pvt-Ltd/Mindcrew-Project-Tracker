@@ -141,6 +141,11 @@ const DailyTimesheetsPage = () => {
                       {e.source === 'AI_AGENT' && <Chip label="AI" size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#EEF0FF', color: '#4338CA', border: '1px solid #DFE2FA' }} />}
                       {e.source === 'TIMER' && <Chip label="Timer" size="small" sx={{ height: 18, fontSize: '0.65rem' }} />}
                       {e.billable && <Chip label="Billable" size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#E9F9EF', color: '#15803D' }} />}
+                      {e.workStartedHm && (
+                        <Tooltip title="First activity the AI observed that day — the day's total is capped at time elapsed since this" arrow>
+                          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>started {e.workStartedHm}</Typography>
+                        </Tooltip>
+                      )}
                       <Tooltip title="When this entry was created" arrow>
                         <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>logged at {dayjs(e.createdAt).format('h:mm A')}</Typography>
                       </Tooltip>

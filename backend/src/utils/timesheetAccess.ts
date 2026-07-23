@@ -47,11 +47,17 @@ export async function assertDateEditable(date: Date, user: AuthUser): Promise<vo
   );
 }
 
+const HM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const hmToMin = (hm: string) => Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5));
+
 /**
  * Reject if adding `minutes` to the user's existing total for `date` exceeds
- * 24h, or (for non-admin actors) exceeds the time elapsed in today's workday.
+ * 24h, or (for non-admin actors) exceeds the time elapsed since the day's
+ * work start: the earliest AI-reported start ("HH:MM" org time — `startedHm`
+ * on this call or `workStartedHm` on today's existing entries), falling back
+ * to settings.workdayStartHour when no start was ever reported.
  */
-export async function assertDayCapacity(userId: string, date: Date, minutes: number, excludeEntryId?: string, actor?: AuthUser): Promise<void> {
+export async function assertDayCapacity(userId: string, date: Date, minutes: number, excludeEntryId?: string, actor?: AuthUser, startedHm?: string | null): Promise<void> {
   const agg = await prisma.timeEntry.aggregate({
     where: { userId, date, ...(excludeEntryId ? { id: { not: excludeEntryId } } : {}) },
     _sum: { minutes: true },
@@ -62,10 +68,11 @@ export async function assertDayCapacity(userId: string, date: Date, minutes: num
   }
   if (actor?.role === 'ADMIN') return; // admins may correct beyond the elapsed cap
   // Plausibility limit for TODAY: the day's total may not exceed the time
-  // elapsed since the org WORKDAY START (settings.workdayStartHour, default
-  // 08:00, org timezone). Capping against midnight let a "full 8h day" through
-  // at 2 PM because 14h had already elapsed; capping against the workday start
-  // rejects it (at 4 PM with an 8:00 start, at most 8h can be on the books).
+  // elapsed since the day's work START. The start adapts per day: the AI
+  // reports when it first observed the user active (someone starting at 2 PM
+  // can only log ~4h by 6 PM; a 9 AM starter can log 9h). Without any reported
+  // start, fall back to settings.workdayStartHour (default 08:00 org time) —
+  // capping against midnight let a "full 8h day" through at 2 PM.
   const settings = await prisma.timesheetSettings.findUnique({
     where: { id: 'singleton' }, select: { timezone: true, workdayStartHour: true },
   });
@@ -73,11 +80,24 @@ export async function assertDayCapacity(userId: string, date: Date, minutes: num
   if (date.getTime() === todayInOrgTz(tz).getTime()) {
     const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
     const [h, m] = parts.split(':').map(Number);
-    const startHour = settings?.workdayStartHour ?? 8;
-    const elapsedMinutes = Math.max(0, h * 60 + m - startHour * 60);
+    const nowMin = h * 60 + m;
+    if (startedHm != null) {
+      if (!HM_RE.test(startedHm)) throw new AppError('started must be "HH:MM" 24-hour org time, e.g. "09:15"', 400);
+      if (hmToMin(startedHm) > nowMin) throw new AppError('started cannot be in the future', 400);
+    }
+    const prevStart = await prisma.timeEntry.aggregate({
+      where: { userId, date, workStartedHm: { not: null }, ...(excludeEntryId ? { id: { not: excludeEntryId } } : {}) },
+      _min: { workStartedHm: true }, // zero-padded "HH:MM" sorts chronologically
+    });
+    const reported = [startedHm, prevStart._min.workStartedHm].filter((s): s is string => !!s).map(hmToMin);
+    const startMin = reported.length ? Math.min(...reported) : (settings?.workdayStartHour ?? 8) * 60;
+    const startLabel = reported.length
+      ? `work started at ${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`
+      : `the workday starts at ${String(settings?.workdayStartHour ?? 8).padStart(2, '0')}:00 org time`;
+    const elapsedMinutes = Math.max(0, nowMin - startMin);
     if (dayTotal > elapsedMinutes) {
       throw new AppError(
-        `Too many hours for today: only ${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m of the workday has elapsed (it starts at ${String(startHour).padStart(2, '0')}:00 org time) and this would make today's total ${Math.floor(dayTotal / 60)}h ${dayTotal % 60}m. Log only time ACTIVELY worked today, re-estimated honestly — do not retry with the maximum the server will accept.`,
+        `Too many hours for today: ${startLabel}, so only ${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m has elapsed, and this would make today's total ${Math.floor(dayTotal / 60)}h ${dayTotal % 60}m. Log only time ACTIVELY worked today, re-estimated honestly — do not retry with the maximum the server will accept.`,
         400,
       );
     }

@@ -215,5 +215,7 @@ export const workLogSchema = Joi.object({
   hours: Joi.number().integer().min(0).max(24).required(),
   minutes: Joi.number().integer().min(0).max(59).required(),
   summary: Joi.string().min(3).required(),
+  started: Joi.string().pattern(/^([01]\d|2[0-3]):[0-5]\d$/).optional()
+    .messages({ 'string.pattern.base': 'started must be "HH:MM" 24-hour org time, e.g. "09:15"' }),
   billable: Joi.boolean().optional(),
 });

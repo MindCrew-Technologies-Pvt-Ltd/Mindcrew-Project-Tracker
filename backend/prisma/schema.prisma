@@ -151,6 +151,10 @@ model TimeEntry {
   isoYear     Int
   isoWeek     Int
   source      String   @default("MANUAL")
+  // "HH:MM" org-time wall clock the AI reported as the user's FIRST observed
+  // activity of the day. Today's total is capped at time elapsed since the
+  // earliest reported start (fallback: workdayStartHour). Null for manual/timer.
+  workStartedHm String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

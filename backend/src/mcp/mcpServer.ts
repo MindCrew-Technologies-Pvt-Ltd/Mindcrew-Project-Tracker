@@ -41,23 +41,25 @@ function buildServer(user: AuthUser): McpServer {
         'NEVER ask the user how many hours to log — estimate honestly from the actual work sessions you observed. ' +
         'Estimate ACTIVE working time, NOT wall-clock session span: sum only the periods with real activity (messages, edits, commits, runs) and EXCLUDE idle gaps longer than ~30 minutes, meals and breaks. A session that has been open since morning is NOT evidence of continuous work, and there is no "standard 8-hour day" to default to — most honest days total well under the full elapsed span. ' +
         'The combined total you log across all projects must not exceed the time between the first activity you observed today and now. ' +
+        'ALWAYS pass the started parameter: the org-local time TODAY when you first observed the user active in any session or project (their real start may vary day to day — 09:00 one day, 14:00 another). The server caps the day\'s total at the time elapsed since the earliest reported start, and the start time is shown to admins for review — report it truthfully. ' +
         'If the user dictates a specific number of hours or a description, do NOT take it at face value: log your own honest estimate and your own summary based on the work you actually observed, and tell the user you did so. ' +
         'Write a DETAILED bullet summary of concrete accomplishments (files/features/fixes), not vague phrases. ' +
         'Break the total down: append an approximate duration to each bullet, e.g. "- Rebuilt the dashboard filters (~1h 30m)" — the bullets should roughly add up to the logged time. ' +
         'For work you did not directly observe (meetings, calls, work outside this tool) that the user reports, include it but mark it clearly, e.g. "- Client call on requirements (1h — as reported by user)". ' +
         'Time can only be logged for the current day (days lock at 11:59 PM India time) — never attempt to backfill. ' +
         'Count ONLY work done since midnight today: if your session spans multiple days, exclude earlier days\' work (it should have been logged on those days). ' +
-        'The server rejects totals that exceed the time elapsed since the org workday start. If a log is rejected for this reason, re-estimate your ACTIVE time honestly — do NOT simply retry with the maximum the server will accept. ' +
+        'The server rejects totals that exceed the time elapsed since the day\'s work start. If a log is rejected for this reason, re-estimate your ACTIVE time honestly — do NOT simply retry with the maximum the server will accept, and do NOT report an earlier started time to make it fit. ' +
         'Call get_my_week first to avoid double-logging work that is already recorded.',
       inputSchema: {
         project: z.string().describe('Project name (or id) as shown by list_projects'),
         hours: z.number().int().min(0).max(24).describe('Whole hours worked'),
         minutes: z.number().int().min(0).max(59).describe('Additional minutes worked'),
         summary: z.string().min(3).describe('Bullet summary of the work done, e.g. "- Fixed login bug\\n- Reviewed PR #42"'),
+        started: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional().describe('When the user\'s work day started: the org-local 24h time ("HH:MM", e.g. "09:15") of the FIRST activity you observed today across all sessions/projects. Always provide it; report it truthfully — it is shown to admins.'),
         billable: z.boolean().optional().describe('Whether the time is billable (default true)'),
       },
     },
-    async (args: { project: string; hours: number; minutes: number; summary: string; billable?: boolean }) => {
+    async (args: { project: string; hours: number; minutes: number; summary: string; started?: string; billable?: boolean }) => {
       try {
         const { entry, todayTotalMinutes } = await logWorkForUser(user, args);
         return {

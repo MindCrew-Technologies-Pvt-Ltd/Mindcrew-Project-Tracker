@@ -45,7 +45,7 @@ export async function resolveProject(ref: string) {
 /** Create a same-day AI work-log entry. Shared by REST and the MCP tool. */
 export async function logWorkForUser(
   user: AuthUser,
-  input: { project: string; hours: number; minutes: number; summary: string; billable?: boolean },
+  input: { project: string; hours: number; minutes: number; summary: string; billable?: boolean; started?: string },
 ) {
   const totalMinutes = input.hours * 60 + input.minutes;
   if (totalMinutes < 1) throw new AppError('Entry must be at least 1 minute', 400);
@@ -55,12 +55,12 @@ export async function logWorkForUser(
   const { isoYear, isoWeek } = isoWeekOf(today);
   await assertDateEditable(today, user); // trivially true, but keeps one rule-source
   await assertWeekUnlocked(user.id, isoYear, isoWeek);
-  await assertDayCapacity(user.id, today, totalMinutes);
+  await assertDayCapacity(user.id, today, totalMinutes, undefined, undefined, input.started ?? null);
   const entry = await prisma.timeEntry.create({
     data: {
       userId: user.id, projectId: project.id, date: today, minutes: totalMinutes,
       description: input.summary, billable: input.billable ?? true,
-      isoYear, isoWeek, source: 'AI_AGENT',
+      isoYear, isoWeek, source: 'AI_AGENT', workStartedHm: input.started ?? null,
     },
     include: { project: { select: { id: true, name: true } } },
   });
@@ -100,8 +100,8 @@ export const getProjects: RequestHandler = async (req, res, next) => {
 
 export const postWorkLog: RequestHandler = async (req, res, next) => {
   try {
-    const { project, hours, minutes, summary, billable } = req.body;
-    const result = await logWorkForUser(req.user!, { project, hours, minutes, summary, billable });
+    const { project, hours, minutes, summary, billable, started } = req.body;
+    const result = await logWorkForUser(req.user!, { project, hours, minutes, summary, billable, started });
     success(res, result, 'Work logged', 201);
   } catch (err) { next(err); }
 };
