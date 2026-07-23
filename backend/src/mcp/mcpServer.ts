@@ -49,7 +49,9 @@ function buildServer(user: AuthUser): McpServer {
         'Time can only be logged for the current day (days lock at 11:59 PM India time) — never attempt to backfill. ' +
         'Count ONLY work done since midnight today: if your session spans multiple days, exclude earlier days\' work (it should have been logged on those days). ' +
         'The server rejects totals that exceed the time elapsed since the day\'s work start. If a log is rejected for this reason, re-estimate your ACTIVE time honestly — do NOT simply retry with the maximum the server will accept, and do NOT report an earlier started time to make it fit. ' +
-        'Call get_my_week first to avoid double-logging work that is already recorded.',
+        'Call get_my_week first to avoid double-logging work that is already recorded. ' +
+        'PARALLEL SESSIONS: entries already logged today may come from OTHER AI sessions running at the same time as yours. The same clock time must never be counted twice — if today\'s logged entries overlap your active window, claim only this project\'s fair share of the shared time (attention was split) and say so in the summary, instead of logging your full window on top. ' +
+        'SHOW YOUR MATH: end the summary with a "Time basis:" line giving the arithmetic behind the total — your observed active blocks with clock times and what you excluded, e.g. "Time basis: active 12:10-13:40 and 14:20-16:05 (idle gaps and breaks excluded, 45m overlap shared with another session) = 2h 30m". An entry whose basis does not add up is easy for reviewers to spot.',
       inputSchema: {
         project: z.string().describe('Project name (or id) as shown by list_projects'),
         hours: z.number().int().min(0).max(24).describe('Whole hours worked'),
