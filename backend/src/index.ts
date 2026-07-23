@@ -4,6 +4,7 @@ import app from './app';
 import { PORT } from './config/env';
 import { startCronJobs } from './cron/weeklyReminder';
 import { startAutoSubmitJob } from './cron/autoSubmit';
+import { startDailyReminderJob } from './cron/dailyReminder';
 import logger from './config/logger';
 import prisma from './config/prisma';
 
@@ -42,6 +43,9 @@ async function main() {
   // Timesheet auto-submit is workflow (daily-lock model), not a reminder email —
   // it always runs.
   startAutoSubmitJob();
+  // Daily timesheet reminder is in-app only (no email), controlled by the
+  // admin toggle in Timesheet Settings — safe to always register.
+  startDailyReminderJob();
 }
 
 main().catch((err) => { logger.error('Failed to start:', err); process.exit(1); });

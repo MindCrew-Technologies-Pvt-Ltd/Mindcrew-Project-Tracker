@@ -10,8 +10,6 @@ import PageHeader from '../../components/common/PageHeader';
 import timesheetService from '../../services/timesheetService';
 import { TimesheetSettings, Holiday, RateUser } from '../../types/timesheet.types';
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
 const TimesheetSettingsPage = () => {
   const [settings, setSettings] = useState<TimesheetSettings | null>(null);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -174,13 +172,14 @@ const TimesheetSettingsPage = () => {
           </Card>
         </Grid>
 
-        {/* Reminders */}
+        {/* Daily reminder */}
         <Grid item xs={12} md={6}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight={700} mb={0.5}>Weekly reminders</Typography>
+              <Typography variant="subtitle1" fontWeight={700} mb={0.5}>Daily reminder</Typography>
               <Typography variant="body2" color="text.secondary" mb={1.5}>
-                Nudge people who haven't submitted their week. Reminder emails also require the global email switch.
+                Anyone with no time logged for the day gets an in-app nudge to say "fill my timesheet"
+                before the 11:59 PM lock. Sent every day at this hour (org time); holidays are skipped.
               </Typography>
               <FormControlLabel
                 control={
@@ -190,23 +189,14 @@ const TimesheetSettingsPage = () => {
                     onChange={(e) => saveReminder({ reminderEnabled: e.target.checked })}
                   />
                 }
-                label="Send weekly reminders"
+                label="Send daily reminders"
                 sx={{ mb: 1.5 }}
               />
               <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <FormControl size="small" sx={{ minWidth: 140 }} disabled={!settings?.reminderEnabled || savingReminder}>
-                  <InputLabel>Day</InputLabel>
-                  <Select
-                    value={settings?.reminderDay ?? 1} label="Day"
-                    onChange={(e) => saveReminder({ reminderDay: Number(e.target.value) })}
-                  >
-                    {DAYS.map((d, i) => <MenuItem key={d} value={i}>{d}</MenuItem>)}
-                  </Select>
-                </FormControl>
                 <FormControl size="small" sx={{ minWidth: 120 }} disabled={!settings?.reminderEnabled || savingReminder}>
                   <InputLabel>Hour</InputLabel>
                   <Select
-                    value={settings?.reminderHour ?? 9} label="Hour"
+                    value={settings?.reminderHour ?? 19} label="Hour"
                     onChange={(e) => saveReminder({ reminderHour: Number(e.target.value) })}
                   >
                     {Array.from({ length: 24 }, (_, h) => (
