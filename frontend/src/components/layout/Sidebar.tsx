@@ -25,8 +25,10 @@ const employeeNav = [
 
 // Employees log/see their own time; admins never fill a timesheet — they get
 // the daily review view instead of My Timesheet.
+// end: NavLink matches by prefix, so /timesheet would also light up on
+// /timesheet/approvals etc. without exact matching.
 const timesheetNav = [
-  { label: 'My Timesheet', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET },
+  { label: 'My Timesheet', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET, end: true },
   { label: 'Approvals', icon: <FactCheckIcon fontSize="small" />, to: ROUTES.TIMESHEET_APPROVALS },
   { label: 'Time Reports', icon: <InsightsIcon fontSize="small" />, to: ROUTES.TIMESHEET_REPORTS },
   { label: 'AI Integrations', icon: <AiIcon fontSize="small" />, to: ROUTES.INTEGRATIONS },
@@ -90,11 +92,12 @@ interface ContentProps { onClose?: () => void; collapsed: boolean; onToggleColla
 const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) => {
   const { isAdmin } = useAuth();
 
-  const NavItem = ({ item }: { item: { label: string; icon: React.ReactNode; to: string } }) => {
+  const NavItem = ({ item }: { item: { label: string; icon: React.ReactNode; to: string; end?: boolean } }) => {
     const btn = (
       <ListItemButton
         component={NavLink}
         to={item.to}
+        end={item.end}
         onClick={onClose}
         sx={navItemSx(collapsed)}
       >

@@ -9,6 +9,8 @@ interface ProjectsState {
   pagination: { total: number; page: number; pageSize: number; totalPages: number };
   loading: boolean;
   error: string | null;
+  /** requestId of the newest list fetch — older responses arriving late are dropped. */
+  latestListRequestId: string | null;
 }
 
 const initialState: ProjectsState = {
@@ -18,6 +20,7 @@ const initialState: ProjectsState = {
   pagination: { total: 0, page: 1, pageSize: 10, totalPages: 0 },
   loading: false,
   error: null,
+  latestListRequestId: null,
 };
 
 export const fetchProjectsThunk = createAsyncThunk('projects/fetchAll', async (filters: ProjectFilters, { rejectWithValue }) => {
@@ -54,9 +57,18 @@ const projectsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProjectsThunk.pending, (state) => { state.loading = true; state.error = null; })
-      .addCase(fetchProjectsThunk.fulfilled, (state, action) => { state.loading = false; state.list = action.payload.data; state.pagination = { total: action.payload.total, page: action.payload.page, pageSize: action.payload.pageSize, totalPages: action.payload.totalPages }; })
-      .addCase(fetchProjectsThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
+      // The list page can fire overlapping fetches (filter effects settling on
+      // mount, My Projects → All Projects). Only the newest request may write,
+      // or a slow stale response overwrites the correct list/pagination.
+      .addCase(fetchProjectsThunk.pending, (state, action) => { state.loading = true; state.error = null; state.latestListRequestId = action.meta.requestId; })
+      .addCase(fetchProjectsThunk.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.latestListRequestId) return;
+        state.loading = false; state.list = action.payload.data; state.pagination = { total: action.payload.total, page: action.payload.page, pageSize: action.payload.pageSize, totalPages: action.payload.totalPages };
+      })
+      .addCase(fetchProjectsThunk.rejected, (state, action) => {
+        if (action.meta.requestId !== state.latestListRequestId) return;
+        state.loading = false; state.error = action.payload as string;
+      })
       .addCase(fetchProjectByIdThunk.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchProjectByIdThunk.fulfilled, (state, action) => { state.loading = false; state.currentProject = action.payload; })
       .addCase(fetchProjectByIdThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
