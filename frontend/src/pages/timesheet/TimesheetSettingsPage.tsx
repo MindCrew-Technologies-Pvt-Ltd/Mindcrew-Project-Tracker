@@ -100,6 +100,21 @@ const TimesheetSettingsPage = () => {
     setSavingMode(false);
   };
 
+  const saveWorkdayStart = async (workdayStartHour: number) => {
+    if (!settings) return;
+    setSavingMode(true);
+    setSettings({ ...settings, workdayStartHour }); // optimistic
+    try {
+      const res = await timesheetService.updateSettings({ workdayStartHour });
+      setSettings(res.data?.data);
+      setSnack({ msg: `Workday start saved — today's total is now capped from ${String(workdayStartHour).padStart(2, '0')}:00`, severity: 'success' });
+    } catch (err: any) {
+      setSettings(settings); // revert
+      fail(err, 'Could not save the workday start');
+    }
+    setSavingMode(false);
+  };
+
   const addHoliday = async () => {
     if (!holidayDate || holidayName.trim().length < 2) {
       setSnack({ msg: 'Pick a date and give the holiday a name (min 2 characters)', severity: 'error' });
@@ -229,6 +244,31 @@ const TimesheetSettingsPage = () => {
                 }
                 label="Allow manual time entry"
               />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Workday start (anti-overcount cap) */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} mb={0.5}>Workday start</Typography>
+              <Typography variant="body2" color="text.secondary" mb={1.5}>
+                Nobody's logged total for today can exceed the time elapsed since this hour (org time).
+                With an 08:00 start, at 4 PM at most 8h can be on the books — a full day can no longer
+                appear at mid-day. Admin corrections are exempt.
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 140 }} disabled={savingMode}>
+                <InputLabel>Starts at</InputLabel>
+                <Select
+                  value={settings?.workdayStartHour ?? 8} label="Starts at"
+                  onChange={(e) => saveWorkdayStart(Number(e.target.value))}
+                >
+                  {Array.from({ length: 13 }, (_, h) => (
+                    <MenuItem key={h} value={h}>{String(h).padStart(2, '0')}:00</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </CardContent>
           </Card>
         </Grid>

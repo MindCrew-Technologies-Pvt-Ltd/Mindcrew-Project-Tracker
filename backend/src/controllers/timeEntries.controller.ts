@@ -111,7 +111,7 @@ export const createTimeEntry: RequestHandler = async (req, res, next) => {
     await assertManualEntryAllowed(req.user!);
     await assertDateEditable(day, req.user!);
     await assertWeekUnlocked(req.user!.id, isoYear, isoWeek);
-    await assertDayCapacity(req.user!.id, day, totalMinutes);
+    await assertDayCapacity(req.user!.id, day, totalMinutes, undefined, req.user!);
     const entry = await prisma.timeEntry.create({
       data: {
         userId: req.user!.id, projectId, date: day, minutes: totalMinutes,
@@ -142,7 +142,7 @@ export const updateTimeEntry: RequestHandler = async (req, res, next) => {
     }
     const newMinutes = hours !== undefined && minutes !== undefined ? hours * 60 + minutes : existing.minutes;
     if (newMinutes < 1) { error(res, 'Entry must be at least 1 minute', 400); return; }
-    await assertDayCapacity(existing.userId, newDay, newMinutes, id);
+    await assertDayCapacity(existing.userId, newDay, newMinutes, id, req.user!);
     if (projectId !== undefined) {
       const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
       if (!project) return next(new AppError('Project not found', 404));

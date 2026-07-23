@@ -195,6 +195,7 @@ export const timesheetSettingsSchema = Joi.object({
   reminderHour: Joi.number().integer().min(0).max(23).optional(),
   timezone: Joi.string().min(3).optional(),
   manualEntryEnabled: Joi.boolean().optional(),
+  workdayStartHour: Joi.number().integer().min(0).max(12).optional(),
 });
 
 export const holidaySchema = Joi.object({

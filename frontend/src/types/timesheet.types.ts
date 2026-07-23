@@ -99,6 +99,7 @@ export interface TimesheetSettings {
   reminderHour: number;
   timezone: string;
   manualEntryEnabled: boolean;
+  workdayStartHour: number;
   createdAt?: string;
   updatedAt?: string;
 }

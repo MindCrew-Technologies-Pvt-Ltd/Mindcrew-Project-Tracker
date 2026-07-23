@@ -47,8 +47,11 @@ export async function assertDateEditable(date: Date, user: AuthUser): Promise<vo
   );
 }
 
-/** Reject if adding `minutes` to the user's existing total for `date` exceeds 24h. */
-export async function assertDayCapacity(userId: string, date: Date, minutes: number, excludeEntryId?: string): Promise<void> {
+/**
+ * Reject if adding `minutes` to the user's existing total for `date` exceeds
+ * 24h, or (for non-admin actors) exceeds the time elapsed in today's workday.
+ */
+export async function assertDayCapacity(userId: string, date: Date, minutes: number, excludeEntryId?: string, actor?: AuthUser): Promise<void> {
   const agg = await prisma.timeEntry.aggregate({
     where: { userId, date, ...(excludeEntryId ? { id: { not: excludeEntryId } } : {}) },
     _sum: { minutes: true },
@@ -57,17 +60,24 @@ export async function assertDayCapacity(userId: string, date: Date, minutes: num
   if (dayTotal > MAX_DAY_MINUTES) {
     throw new AppError('This would exceed 24 hours for that day', 400);
   }
-  // Physical limit for TODAY: you cannot have worked more time than has
-  // actually elapsed since midnight (org timezone). Stops an AI (or anyone)
-  // from logging a "full day" at 2 PM by counting yesterday's work as today's.
-  const tz = await orgTimezone();
+  if (actor?.role === 'ADMIN') return; // admins may correct beyond the elapsed cap
+  // Plausibility limit for TODAY: the day's total may not exceed the time
+  // elapsed since the org WORKDAY START (settings.workdayStartHour, default
+  // 08:00, org timezone). Capping against midnight let a "full 8h day" through
+  // at 2 PM because 14h had already elapsed; capping against the workday start
+  // rejects it (at 4 PM with an 8:00 start, at most 8h can be on the books).
+  const settings = await prisma.timesheetSettings.findUnique({
+    where: { id: 'singleton' }, select: { timezone: true, workdayStartHour: true },
+  });
+  const tz = settings?.timezone || 'Asia/Kolkata';
   if (date.getTime() === todayInOrgTz(tz).getTime()) {
     const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
     const [h, m] = parts.split(':').map(Number);
-    const elapsedMinutes = h * 60 + m;
+    const startHour = settings?.workdayStartHour ?? 8;
+    const elapsedMinutes = Math.max(0, h * 60 + m - startHour * 60);
     if (dayTotal > elapsedMinutes) {
       throw new AppError(
-        `Too many hours for today: the day is only ${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m old and this would make today's total ${Math.floor(dayTotal / 60)}h ${dayTotal % 60}m. Only log time actually worked today — earlier days' work should have been logged on those days.`,
+        `Too many hours for today: only ${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m of the workday has elapsed (it starts at ${String(startHour).padStart(2, '0')}:00 org time) and this would make today's total ${Math.floor(dayTotal / 60)}h ${dayTotal % 60}m. Log only time ACTIVELY worked today, re-estimated honestly — do not retry with the maximum the server will accept.`,
         400,
       );
     }

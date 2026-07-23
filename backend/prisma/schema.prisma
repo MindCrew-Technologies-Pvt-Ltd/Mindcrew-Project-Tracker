@@ -224,6 +224,10 @@ model TimesheetSettings {
   // assistants; manual add/edit/delete, the timer and manual submission are
   // blocked for non-admins so hours/descriptions can't be doctored.
   manualEntryEnabled Boolean @default(false)
+  // Anti-overcount cap: today's logged total may not exceed the time elapsed
+  // since this hour (org timezone). 8 = 08:00. Midnight-based capping let a
+  // "full 8h day" through at 2 PM because 14h had already elapsed.
+  workdayStartHour   Int     @default(8)
 }
 
 model ApiToken {

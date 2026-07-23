@@ -50,6 +50,11 @@ The backend `validate()` middleware runs Joi with `stripUnknown: true`
 - **Optional:** billable
 - Joi only — consumed by AI agents/scripts, not browser forms, so there is
   deliberately **no Yup mirror** for this schema.
+- Server-side plausibility cap: for non-admins, today's logged total may not
+  exceed the time elapsed since the org **workday start**
+  (`TimesheetSettings.workdayStartHour`, default 8 = 08:00 org time, admin-set
+  0–12 on Timesheet Settings). Enforced in `assertDayCapacity`, applies to the
+  AI path AND manual entries/timer; admin corrections are exempt.
 
 ### Edit request
 - **Required:** reason (min 10)
