@@ -3,7 +3,7 @@ import { authenticate, requireAdmin } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
   createTimeEntrySchema, updateTimeEntrySchema, timerStartSchema,
-  submitWeekSchema, rejectWeekSchema, timesheetSettingsSchema, holidaySchema, billableRateSchema,
+  submitWeekSchema, rejectWeekSchema, reviewWeekSchema, timesheetSettingsSchema, holidaySchema, billableRateSchema,
 } from '../validations/schemas';
 import {
   getTimeEntries, getWeekEntries, getProjectTimeEntries, createTimeEntry, updateTimeEntry, deleteTimeEntry,
@@ -13,6 +13,7 @@ import {
 } from '../controllers/timer.controller';
 import {
   submitWeek, myWeeks, pendingWeeks, getWeekDetail, approveWeek, rejectWeek, reopenWeek, missingWeek,
+  dailyAllUsers, reviewWeek,
 } from '../controllers/timesheets.controller';
 import { timeSummary, utilization, exportSummary, timeExceptions } from '../controllers/timeReports.controller';
 import {
@@ -43,6 +44,9 @@ router.post('/timesheets/submit', validate(submitWeekSchema), submitWeek);
 router.get('/timesheets/mine', myWeeks);
 router.get('/timesheets/pending', pendingWeeks);
 router.get('/timesheets/missing', missingWeek);
+// Admin daily review — both must be declared BEFORE the '/timesheets/:id' catch-all.
+router.get('/timesheets/daily', requireAdmin, dailyAllUsers);
+router.post('/timesheets/review', requireAdmin, validate(reviewWeekSchema), reviewWeek);
 router.get('/timesheets/:id', getWeekDetail);
 router.put('/timesheets/:id/approve', approveWeek);
 router.put('/timesheets/:id/reject', validate(rejectWeekSchema), rejectWeek);

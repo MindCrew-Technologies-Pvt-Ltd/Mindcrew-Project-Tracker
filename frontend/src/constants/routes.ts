@@ -19,6 +19,7 @@ export const ROUTES = {
   INTEGRATIONS: '/integrations',
   SEARCH: '/search',
   TIMESHEET: '/timesheet',
+  TIMESHEET_DAILY: '/timesheet/daily',
   TIMESHEET_APPROVALS: '/timesheet/approvals',
   TIMESHEET_REPORTS: '/timesheet/reports',
   TIMESHEET_SETTINGS: '/timesheet/settings',

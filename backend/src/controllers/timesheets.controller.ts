@@ -5,7 +5,7 @@ import { logActivity } from '../utils/activityLogger';
 import { createNotification } from '../utils/notifications';
 import { getPaginationParams } from '../utils/pagination';
 import { AppError } from '../middleware/errorHandler';
-import { isoWeekDates } from '../utils/isoWeek';
+import { isoWeekDates, isoWeekOf, toUtcDateOnly } from '../utils/isoWeek';
 import { assertWeekReviewer, assertManualEntryAllowed, ownedProjectIds } from '../utils/timesheetAccess';
 
 const sp = (v: string | string[]): string => (Array.isArray(v) ? v[0]! : v);
@@ -209,6 +209,107 @@ export const reopenWeek: RequestHandler = async (req, res, next) => {
       type: 'TIMESHEET', relatedId: id,
     });
     success(res, updated);
+  } catch (err) { next(err); }
+};
+
+/**
+ * Admin-only: everyone's entries for one calendar day, grouped per user, with
+ * that day's week envelope so the admin can approve/reject from the daily view.
+ * Also lists active non-admin users with nothing logged that day.
+ */
+export const dailyAllUsers: RequestHandler = async (req, res, next) => {
+  try {
+    const dateRaw = qs(req.query.date);
+    if (!dateRaw) return next(new AppError('date is required (YYYY-MM-DD)', 400));
+    const day = toUtcDateOnly(dateRaw);
+    if (isNaN(day.getTime())) return next(new AppError('Invalid date', 400));
+    const { isoYear, isoWeek } = isoWeekOf(day);
+
+    const entries = await prisma.timeEntry.findMany({
+      where: { date: day },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        project: { select: { id: true, name: true } },
+      },
+    });
+    const userIds = [...new Set(entries.map((e) => e.userId))];
+    const envelopes = await prisma.timesheetWeek.findMany({
+      where: { isoYear, isoWeek, userId: { in: userIds } },
+      include: { reviewedBy: { select: { id: true, name: true } } },
+    });
+    const envMap = new Map(envelopes.map((w) => [w.userId, w]));
+
+    const byUser = new Map<string, { user: { id: string; name: string; email: string }; entries: typeof entries; totalMinutes: number }>();
+    for (const e of entries) {
+      const row = byUser.get(e.userId) ?? { user: e.user, entries: [] as typeof entries, totalMinutes: 0 };
+      row.entries.push(e);
+      row.totalMinutes += e.minutes;
+      byUser.set(e.userId, row);
+    }
+    const rows = [...byUser.values()]
+      .map((r) => ({ ...r, week: envMap.get(r.user.id) ?? null }))
+      .sort((a, b) => a.user.name.localeCompare(b.user.name));
+
+    const activeUsers = await prisma.user.findMany({
+      where: { isActive: true, role: { not: 'ADMIN' } },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' },
+    });
+    const loggedSet = new Set(userIds);
+    const missing = activeUsers.filter((u) => !loggedSet.has(u.id));
+
+    success(res, { date: day, isoYear, isoWeek, rows, missing });
+  } catch (err) { next(err); }
+};
+
+/**
+ * Admin-only: approve or reject a user's week directly (by user + week, no
+ * prior submission required — the envelope is created if it doesn't exist).
+ * Rejecting reopens the week on the user's side with the note shown.
+ */
+export const reviewWeek: RequestHandler = async (req, res, next) => {
+  try {
+    const { userId, isoYear, isoWeek, action, note } = req.body as
+      { userId: string; isoYear: number; isoWeek: number; action: 'approve' | 'reject'; note?: string };
+    const target = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true } });
+    if (!target) return next(new AppError('User not found', 404));
+    const entries = await prisma.timeEntry.findMany({ where: { userId, isoYear, isoWeek } });
+    if (entries.length === 0) return next(new AppError('This week has no time entries to review', 400));
+    const existing = await prisma.timesheetWeek.findUnique({
+      where: { userId_isoYear_isoWeek: { userId, isoYear, isoWeek } },
+    });
+    const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
+    if (existing?.status === newStatus) {
+      return next(new AppError(`This week is already ${newStatus.toLowerCase()}`, 409));
+    }
+    const totalMinutes = entries.reduce((s, e) => s + e.minutes, 0);
+    const week = await prisma.timesheetWeek.upsert({
+      where: { userId_isoYear_isoWeek: { userId, isoYear, isoWeek } },
+      update: {
+        status: newStatus, totalMinutes,
+        reviewedById: req.user!.id, reviewedAt: new Date(),
+        reviewNote: action === 'reject' ? note : null,
+      },
+      create: {
+        userId, isoYear, isoWeek, status: newStatus, totalMinutes,
+        submittedAt: new Date(),
+        reviewedById: req.user!.id, reviewedAt: new Date(),
+        reviewNote: action === 'reject' ? note : null,
+      },
+    });
+    await logActivity({
+      userId: req.user!.id, action: action === 'approve' ? 'APPROVE' : 'REJECT', module: 'TIMESHEET',
+      description: `${action === 'approve' ? 'Approved' : 'Rejected'} timesheet ${weekLabel(isoYear, isoWeek)} of ${target.name}${note ? `: ${note}` : ''}`,
+    });
+    await createNotification({
+      userId, type: 'TIMESHEET', relatedId: week.id,
+      title: action === 'approve' ? 'Timesheet approved' : 'Timesheet rejected',
+      message: action === 'approve'
+        ? `Your timesheet for ${weekLabel(isoYear, isoWeek)} was approved.`
+        : `Your timesheet for ${weekLabel(isoYear, isoWeek)} was rejected: "${note}". Ask your AI assistant to log the corrected time.`,
+    });
+    success(res, week);
   } catch (err) { next(err); }
 };
 

@@ -25,6 +25,7 @@ import ChangePasswordPage from '../pages/employee/ChangePasswordPage';
 import SearchPage from '../pages/employee/SearchPage';
 
 import MyTimesheetPage from '../pages/timesheet/MyTimesheetPage';
+import DailyTimesheetsPage from '../pages/timesheet/DailyTimesheetsPage';
 import ApprovalsPage from '../pages/timesheet/ApprovalsPage';
 import TimeReportsPage from '../pages/timesheet/TimeReportsPage';
 import TimesheetSettingsPage from '../pages/timesheet/TimesheetSettingsPage';
@@ -80,6 +81,7 @@ const AppRouter = () => (
         <Route path="/admin/edit-requests" element={<EditRequestsPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
         <Route path="/timesheet/settings" element={<TimesheetSettingsPage />} />
+        <Route path="/timesheet/daily" element={<DailyTimesheetsPage />} />
       </Route>
     </Route>
 

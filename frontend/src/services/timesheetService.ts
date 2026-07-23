@@ -34,6 +34,9 @@ const timesheetService = {
   approve: (id: string) => axiosInstance.put(`/timesheets/${id}/approve`),
   reject: (id: string, note: string) => axiosInstance.put(`/timesheets/${id}/reject`, { note }),
   reopen: (id: string) => axiosInstance.put(`/timesheets/${id}/reopen`),
+  getDaily: (date: string) => axiosInstance.get('/timesheets/daily', { params: { date } }),
+  reviewWeek: (payload: { userId: string; isoYear: number; isoWeek: number; action: 'approve' | 'reject'; note?: string }) =>
+    axiosInstance.post('/timesheets/review', payload),
 
   // ---- Reports ----
   summary: (params: SummaryFilters) => axiosInstance.get('/reports/time/summary', { params }),

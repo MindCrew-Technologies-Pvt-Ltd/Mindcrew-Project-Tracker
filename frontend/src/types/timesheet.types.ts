@@ -157,6 +157,21 @@ export interface UtilizationReport {
 
 export interface MissingUser { id: string; name: string; email: string; }
 
+/** GET /timesheets/daily (admin) */
+export interface DailyUserRow {
+  user: { id: string; name: string; email: string };
+  entries: TimeEntry[];
+  totalMinutes: number;
+  week: TimesheetWeek | null;
+}
+export interface DailyTimesheets {
+  date: string;
+  isoYear: number;
+  isoWeek: number;
+  rows: DailyUserRow[];
+  missing: { id: string; name: string; email: string }[];
+}
+
 /** GET /reports/time/exceptions */
 export interface LongDayRow { userId: string; name: string; email: string; date: string; minutes: number; }
 export interface HeavyWeekRow { userId: string; name: string; email: string; isoYear: number; isoWeek: number; minutes: number; }

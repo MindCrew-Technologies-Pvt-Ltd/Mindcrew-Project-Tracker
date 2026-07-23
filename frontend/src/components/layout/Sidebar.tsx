@@ -23,10 +23,17 @@ const employeeNav = [
   { label: 'All Projects', icon: <FolderCopyIcon fontSize="small" />, to: ROUTES.PROJECTS },
 ];
 
-// Shown to everyone — the backend scopes what each role can see
-// (owners get their approval queue, employees see self-scoped reports).
+// Employees log/see their own time; admins never fill a timesheet — they get
+// the daily review view instead of My Timesheet.
 const timesheetNav = [
   { label: 'My Timesheet', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET },
+  { label: 'Approvals', icon: <FactCheckIcon fontSize="small" />, to: ROUTES.TIMESHEET_APPROVALS },
+  { label: 'Time Reports', icon: <InsightsIcon fontSize="small" />, to: ROUTES.TIMESHEET_REPORTS },
+  { label: 'AI Integrations', icon: <AiIcon fontSize="small" />, to: ROUTES.INTEGRATIONS },
+];
+
+const adminTimesheetNav = [
+  { label: 'Daily Timesheets', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET_DAILY },
   { label: 'Approvals', icon: <FactCheckIcon fontSize="small" />, to: ROUTES.TIMESHEET_APPROVALS },
   { label: 'Time Reports', icon: <InsightsIcon fontSize="small" />, to: ROUTES.TIMESHEET_REPORTS },
   { label: 'AI Integrations', icon: <AiIcon fontSize="small" />, to: ROUTES.INTEGRATIONS },
@@ -177,7 +184,7 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
             TIMESHEET
           </Typography>
         )}
-        {timesheetNav.map((item) => <NavItem key={item.to} item={item} />)}
+        {(isAdmin ? adminTimesheetNav : timesheetNav).map((item) => <NavItem key={item.to} item={item} />)}
 
         {isAdmin && (
           <>

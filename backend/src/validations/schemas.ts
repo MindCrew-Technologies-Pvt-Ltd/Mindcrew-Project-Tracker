@@ -175,6 +175,19 @@ export const rejectWeekSchema = Joi.object({
   note: Joi.string().min(3).required().messages({ 'string.min': 'A rejection note is required' }),
 });
 
+// Admin daily-review action (approve needs no note; reject requires one).
+export const reviewWeekSchema = Joi.object({
+  userId: Joi.string().required(),
+  isoYear: Joi.number().integer().min(2020).max(2100).required(),
+  isoWeek: Joi.number().integer().min(1).max(53).required(),
+  action: Joi.string().valid('approve', 'reject').required(),
+  note: Joi.when('action', {
+    is: 'reject',
+    then: Joi.string().min(3).required().messages({ 'string.min': 'A rejection note is required' }),
+    otherwise: Joi.string().allow('', null).optional(),
+  }),
+});
+
 export const timesheetSettingsSchema = Joi.object({
   weeklyTargetHours: Joi.number().integer().min(1).max(100).optional(),
   reminderEnabled: Joi.boolean().optional(),
