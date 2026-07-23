@@ -13,7 +13,7 @@ import { ROUTES } from '../../constants/routes';
 interface Props { onMenuClick: () => void; sidebarWidth?: number; }
 
 const Topbar = ({ onMenuClick, sidebarWidth = 248 }: Props) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -54,7 +54,8 @@ const Topbar = ({ onMenuClick, sidebarWidth = 248 }: Props) => {
 
         <Box sx={{ flex: 1 }} />
 
-        <TimerWidget />
+        {/* Admins never fill a timesheet, so the timer is hidden for them. */}
+        {!isAdmin && <TimerWidget />}
 
         <NotificationBell />
 

@@ -251,7 +251,7 @@ const ApprovalsPage = () => {
       <PageHeader title="Timesheet Approvals" subtitle="Track your own submissions and review your project members' weeks" />
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2.5, borderBottom: '1px solid #E9EBF2' }}>
-        <Tab value="mine" label="My submissions" sx={{ textTransform: 'none', fontWeight: 600 }} />
+        {!isAdmin && <Tab value="mine" label="My submissions" sx={{ textTransform: 'none', fontWeight: 600 }} />}
         <Tab value="pending" label="Pending review" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="reviewed" label="Reviewed" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="missing" label="Missing" sx={{ textTransform: 'none', fontWeight: 600 }} />
