@@ -84,6 +84,14 @@ enum LeaveStatus {
   REJECTED
 }
 
+enum AvailabilityStatus {
+  FULLY_AVAILABLE
+  PARTIALLY_AVAILABLE
+  IN_TRAINING
+  ON_LEAVE
+  BUSY
+}
+
 model User {
   id                  String    @id @default(cuid())
   name                String
@@ -121,6 +129,7 @@ model User {
   apiTokens        ApiToken[]
   leaveRequests    LeaveRequest[]  @relation("LeaveRequester")
   reviewedLeaves   LeaveRequest[]  @relation("LeaveReviewer")
+  dailyAvailability DailyAvailability[]
 }
 
 model Project {
@@ -386,4 +395,19 @@ model LeaveRequest {
 
   user       User  @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
   reviewedBy User? @relation("LeaveReviewer", fields: [reviewedById], references: [id])
+}
+
+model DailyAvailability {
+  id        String             @id @default(cuid())
+  userId    String
+  date      DateTime           // The date this update is for (date-only, time ignored)
+  status    AvailabilityStatus @default(FULLY_AVAILABLE)
+  note      String?            // What did the employee work on / plan to do
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // One update per user per day
+  @@index([date])
 }

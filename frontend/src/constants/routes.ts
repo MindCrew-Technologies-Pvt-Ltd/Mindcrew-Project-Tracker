@@ -32,4 +32,5 @@ export const ROUTES = {
   ADMIN_PROJECT_DETAIL: (id: string) => `/admin/projects/${id}`,
   ADMIN_EDIT_REQUESTS: '/admin/edit-requests',
   ADMIN_REPORTS: '/admin/reports',
+  AVAILABILITY: '/availability',
 } as const;

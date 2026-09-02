@@ -16,6 +16,7 @@ import EventNoteIcon from '@mui/icons-material/esm/EventNote';
 import TuneIcon from '@mui/icons-material/esm/Tune';
 import AiIcon from '@mui/icons-material/esm/SmartToyOutlined';
 import GroupIcon from '@mui/icons-material/esm/Group';
+import PersonSearchIcon from '@mui/icons-material/esm/PersonSearch';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -30,6 +31,7 @@ const employeeNav = [
   { label: 'My Projects', icon: <FolderIcon fontSize="small" />, to: ROUTES.MY_PROJECTS },
   { label: 'All Projects', icon: <FolderCopyIcon fontSize="small" />, to: ROUTES.PROJECTS },
   { label: 'Leaves & WFH', icon: <EventNoteIcon fontSize="small" />, to: ROUTES.LEAVES },
+  { label: 'Available Resources', icon: <PersonSearchIcon fontSize="small" />, to: ROUTES.AVAILABILITY },
 ];
 
 // Employees log/see their own time; admins never fill a timesheet — they get
