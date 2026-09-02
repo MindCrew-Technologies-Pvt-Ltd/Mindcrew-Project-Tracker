@@ -147,23 +147,23 @@ export default function LeaveManagementPage() {
 
       <TabPanel value={tabIndex} index={0}>
         {/* Stats Grid */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid container spacing={2} sx={{ mb: 4 }}>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-              <Typography variant="h6">Total Leaves</Typography>
-              <Typography variant="h3" fontWeight="bold">{totalFull}</Typography>
+            <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+              <Typography variant="subtitle1">Total Leaves</Typography>
+              <Typography variant="h4" fontWeight="bold">{totalFull}</Typography>
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'warning.light', color: 'warning.contrastText' }}>
-              <Typography variant="h6">Half Days</Typography>
-              <Typography variant="h3" fontWeight="bold">{totalHalf}</Typography>
+            <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+              <Typography variant="subtitle1">Half Days</Typography>
+              <Typography variant="h4" fontWeight="bold">{totalHalf}</Typography>
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
-              <Typography variant="h6">WFH Days</Typography>
-              <Typography variant="h3" fontWeight="bold">{totalWfh}</Typography>
+            <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
+              <Typography variant="subtitle1">WFH Days</Typography>
+              <Typography variant="h4" fontWeight="bold">{totalWfh}</Typography>
             </Paper>
           </Grid>
         </Grid>

@@ -108,7 +108,7 @@ export const createTimeEntry: RequestHandler = async (req, res, next) => {
     const { isoYear, isoWeek } = isoWeekOf(day);
     const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
     if (!project) return next(new AppError('Project not found', 404));
-    await assertManualEntryAllowed(req.user!);
+    // await assertManualEntryAllowed(req.user!);
     await assertDateEditable(day, req.user!);
     await assertWeekUnlocked(req.user!.id, isoYear, isoWeek);
     await assertDayCapacity(req.user!.id, day, totalMinutes, undefined, req.user!);
@@ -129,7 +129,7 @@ export const updateTimeEntry: RequestHandler = async (req, res, next) => {
     const existing = await prisma.timeEntry.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Time entry not found', 404));
     if (existing.userId !== req.user!.id) return next(new AppError('You can only edit your own time entries', 403));
-    await assertManualEntryAllowed(req.user!);
+    // await assertManualEntryAllowed(req.user!);
     await assertDateEditable(existing.date, req.user!); // day of the entry itself
     await assertWeekUnlocked(existing.userId, existing.isoYear, existing.isoWeek);
 
@@ -168,7 +168,7 @@ export const deleteTimeEntry: RequestHandler = async (req, res, next) => {
     const existing = await prisma.timeEntry.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Time entry not found', 404));
     if (existing.userId !== req.user!.id) return next(new AppError('You can only delete your own time entries', 403));
-    await assertManualEntryAllowed(req.user!);
+    // await assertManualEntryAllowed(req.user!);
     await assertDateEditable(existing.date, req.user!);
     await assertWeekUnlocked(existing.userId, existing.isoYear, existing.isoWeek);
     await prisma.timeEntry.delete({ where: { id } });

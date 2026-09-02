@@ -83,10 +83,9 @@ const MyTimesheetPage = () => {
   const holidays = weekMatches ? week.holidays : [];
   const holiday = holidays.find((h) => dateKey(h.date) === selected);
   const todayKey = weekMatches && week.today ? dateKey(week.today) : dayjs().format('YYYY-MM-DD');
-  // AI-only mode (server-enforced, admins exempt): treat as read-only while
-  // loading so controls never flash in.
-  const manualAllowed = weekMatches ? week.manualEntryEnabled : false;
-  const canEdit = manualAllowed && !locked && (isAdmin || status === 'REJECTED' || selected === todayKey);
+  // AI-only mode is relaxed here, manual entry is always allowed.
+  const manualAllowed = true;
+  const canEdit = !locked && (isAdmin || status === 'REJECTED' || selected === todayKey);
 
   const weekEntries = weekMatches ? week.entries : [];
   const dayEntries = weekEntries
@@ -128,9 +127,7 @@ const MyTimesheetPage = () => {
 
   return (
     <Box>
-      <PageHeader title="My Timesheet" subtitle={manualAllowed
-        ? 'Log your hours day by day'
-        : 'Your connected AI assistant logs your work here — ask it to "fill my timesheet" at the end of the day'} />
+      <PageHeader title="My Timesheet" subtitle={'Log your hours day by day, or ask your connected AI assistant to "fill my timesheet" at the end of the day.'} />
 
       {/* Day navigator */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5, flexWrap: 'wrap' }}>
@@ -159,7 +156,7 @@ const MyTimesheetPage = () => {
         <Box sx={{ flex: 1 }} />
         {canEdit && (
           <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => setEntryDialog({ open: true })} sx={{ textTransform: 'none' }}>
-            Add entry
+            Manual Fill
           </Button>
         )}
       </Box>
