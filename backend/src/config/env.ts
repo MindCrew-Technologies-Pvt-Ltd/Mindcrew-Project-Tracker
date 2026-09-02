@@ -49,3 +49,9 @@ export const SMTP_FROM = getEnv('SMTP_FROM', 'noreply@projecttracker.com');
 export const FIREBASE_PROJECT_ID = process.env['FIREBASE_PROJECT_ID'];
 export const FIREBASE_CLIENT_EMAIL = process.env['FIREBASE_CLIENT_EMAIL'];
 export const FIREBASE_PRIVATE_KEY = process.env['FIREBASE_PRIVATE_KEY']?.replace(/\\n/g, '\n');
+
+// Web Push VAPID keys (Native push notifications without Firebase)
+export const VAPID_PUBLIC_KEY = getEnv('VAPID_PUBLIC_KEY', '');
+export const VAPID_PRIVATE_KEY = getEnv('VAPID_PRIVATE_KEY', '');
+export const VAPID_EMAIL = getEnv('VAPID_EMAIL', 'mailto:admin@mindcrew.com');
+

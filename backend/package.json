@@ -19,6 +19,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/client": "^5.22.0",
+    "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
@@ -35,6 +36,7 @@
     "node-cron": "^4.5.0",
     "nodemailer": "^9.0.1",
     "prisma": "^5.22.0",
+    "web-push": "^3.6.7",
     "winston": "^3.19.0",
     "zod": "^4.4.3"
   },

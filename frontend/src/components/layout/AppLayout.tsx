@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import Sidebar, { DRAWER_WIDTH, DRAWER_WIDTH_COLLAPSED } from './Sidebar';
 import Topbar from './Topbar';
+import NotificationBanner from '../common/NotificationBanner';
 
 const AppLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -33,6 +34,8 @@ const AppLayout = () => {
         }}
       >
         <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }} />
+        {/* Notification permission banner — shows once after login */}
+        <NotificationBanner />
         <Outlet />
       </Box>
     </Box>

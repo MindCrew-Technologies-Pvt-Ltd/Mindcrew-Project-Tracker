@@ -5,6 +5,7 @@ import { PORT } from './config/env';
 import { startCronJobs } from './cron/weeklyReminder';
 import { startAutoSubmitJob } from './cron/autoSubmit';
 import { startDailyReminderJob } from './cron/dailyReminder';
+import { startTimesheetReminderCron } from './cron/timesheetReminder';
 import logger from './config/logger';
 import prisma from './config/prisma';
 
@@ -46,6 +47,8 @@ async function main() {
   // Daily timesheet reminder is in-app only (no email), controlled by the
   // admin toggle in Timesheet Settings — safe to always register.
   startDailyReminderJob();
+  // Daily 6:00 PM IST push notification reminder to fill timesheet
+  startTimesheetReminderCron();
 }
 
 main().catch((err) => { logger.error('Failed to start:', err); process.exit(1); });

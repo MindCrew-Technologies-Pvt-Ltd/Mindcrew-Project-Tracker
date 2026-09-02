@@ -98,6 +98,7 @@ model User {
   role                Role      @default(EMPLOYEE)
   isActive            Boolean   @default(true)
   fcmToken            String?
+  pushSubscription    String?   // JSON string of Web Push subscription object
   lastLoginAt         DateTime?
   passwordResetToken  String?
   passwordResetExpiry DateTime?

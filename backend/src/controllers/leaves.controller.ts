@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { success, error } from '../utils/response';
 import { LeaveType, LeaveStatus } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
+import { sendWebPushNotification, sendWebPushToMany } from '../services/webPush.service';
 
 const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 
@@ -20,6 +21,27 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
         status: 'PENDING'
       }
     });
+
+    // Notify all reporting managers about the new request
+    const employee = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { name: true, employeeId: true, managerEmployeeIds: true },
+    });
+
+    if (employee && employee.managerEmployeeIds.length > 0) {
+      const managers = await (prisma.user.findMany as any)({
+        where: { employeeId: { in: employee.managerEmployeeIds }, pushSubscription: { not: null } },
+        select: { pushSubscription: true },
+      }) as Array<{ pushSubscription: string }>;
+      const subs = managers.map((m) => m.pushSubscription).filter(Boolean);
+      const typeLabel = type === 'FULL_DAY' ? 'Full Day Leave' : type === 'HALF_DAY' ? 'Half Day Leave' : 'WFH';
+      await sendWebPushToMany(subs, {
+        title: '📋 New Leave Request',
+        body: `${employee.name} has requested ${typeLabel}. Please review it.`,
+        tag: `leave-request-${leave.id}`,
+        url: '/leaves',
+      });
+    }
     
     success(res, leave, 'Leave request submitted successfully', 201);
   } catch (err) { next(err); }
@@ -99,6 +121,22 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
         reviewedAt: new Date()
       }
     });
+
+    // Notify the employee that their request was reviewed
+    const employee = await (prisma.user.findUnique as any)({
+      where: { id: leave.userId },
+      select: { name: true, pushSubscription: true },
+    }) as { name: string; pushSubscription: string | null } | null;
+    if (employee?.pushSubscription) {
+      const emoji = status === 'APPROVED' ? '✅' : '❌';
+      const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : 'WFH';
+      await sendWebPushNotification(employee.pushSubscription, {
+        title: `${emoji} ${typeLabel} ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
+        body: `Your ${typeLabel} request from ${new Date(leave.startDate).toLocaleDateString('en-IN')} has been ${status.toLowerCase()}.`,
+        tag: `leave-status-${leave.id}`,
+        url: '/leaves',
+      });
+    }
 
     success(res, updatedLeave, `Leave request ${status.toLowerCase()} successfully`);
   } catch (err) { next(err); }
