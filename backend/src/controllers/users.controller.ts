@@ -157,7 +157,7 @@ export const assignReportee: RequestHandler = async (req, res, next) => {
 
     if (!reportee.managerEmployeeIds.includes(currentUser.employeeId)) {
       await prisma.user.update({
-        where: { employeeId },
+        where: { id: reportee.id },
         data: { managerEmployeeIds: { push: currentUser.employeeId } }
       });
       await logActivity({ userId: req.user!.id, action: 'UPDATE', module: 'USER', description: `Assigned employee ${employeeId} to their team` });
