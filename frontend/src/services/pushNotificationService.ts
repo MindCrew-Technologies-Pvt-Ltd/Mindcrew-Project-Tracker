@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axiosInstance';
 
 // VITE_API_URL already includes /api (e.g. https://xxx.railway.app/api)
 const API = (import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api').replace(/\/$/, '') + '/push';
@@ -34,7 +34,7 @@ export async function requestNotificationPermission(): Promise<
 
   try {
     // Fetch the VAPID public key from our backend
-    const keyRes = await axios.get(`${API}/vapid-public-key`, { withCredentials: true });
+    const keyRes = await axiosInstance.get(`${API}/vapid-public-key`);
     const vapidPublicKey: string = keyRes.data?.data?.publicKey;
     if (!vapidPublicKey) return 'unsupported';
 
@@ -46,7 +46,7 @@ export async function requestNotificationPermission(): Promise<
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       // Remove any old subscription from DB
-      await axios.delete(`${API}/unsubscribe`, { withCredentials: true }).catch(() => {});
+      await axiosInstance.delete(`${API}/unsubscribe`).catch(() => {});
       return 'denied';
     }
 
@@ -57,7 +57,7 @@ export async function requestNotificationPermission(): Promise<
     });
 
     // Save subscription to our backend
-    await axios.post(`${API}/subscribe`, { subscription }, { withCredentials: true });
+    await axiosInstance.post(`${API}/subscribe`, { subscription });
 
     console.log('[Push] Successfully subscribed to push notifications');
     return 'subscribed';
@@ -92,7 +92,7 @@ export async function unsubscribeFromPush(): Promise<void> {
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       await subscription.unsubscribe();
-      await axios.delete(`${API}/unsubscribe`, { withCredentials: true });
+      await axiosInstance.delete(`${API}/unsubscribe`);
       console.log('[Push] Unsubscribed from push notifications');
     }
   } catch (err) {

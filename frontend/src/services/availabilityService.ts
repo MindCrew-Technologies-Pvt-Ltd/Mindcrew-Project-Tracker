@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axiosInstance';
 
 // VITE_API_URL already includes /api (e.g. https://xxx.railway.app/api)
 const API = (import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api').replace(/\/$/, '') + '/availability';
@@ -36,19 +36,16 @@ export interface UpsertPayload {
 
 const availabilityService = {
   upsert: (data: UpsertPayload) =>
-    axios.post<{ data: DailyAvailability }>(API, data, { withCredentials: true }),
+    axiosInstance.post<{ data: DailyAvailability }>(API, data),
 
   getMyHistory: () =>
-    axios.get<{ data: DailyAvailability[] }>(`${API}/me`, { withCredentials: true }),
+    axiosInstance.get<{ data: DailyAvailability[] }>(`${API}/me`),
 
   getToday: () =>
-    axios.get<{ data: DailyAvailability | null }>(`${API}/today`, { withCredentials: true }),
+    axiosInstance.get<{ data: DailyAvailability | null }>(`${API}/today`),
 
   getAll: (params?: { date?: string; status?: string }) =>
-    axios.get<{ data: DailyAvailability[] }>(`${API}/all`, {
-      params,
-      withCredentials: true,
-    }),
+    axiosInstance.get<{ data: DailyAvailability[] }>(`${API}/all`, { params }),
 };
 
 export default availabilityService;
