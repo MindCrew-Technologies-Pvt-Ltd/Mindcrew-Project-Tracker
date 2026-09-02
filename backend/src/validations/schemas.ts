@@ -35,12 +35,20 @@ export const loginSchema = Joi.object({
   rememberMe: Joi.boolean().optional(),
 });
 
+// Employee IDs are strictly numbers in the business logic, but stored as Strings
+// in the DB for Prisma. This rule accepts numbers (like 299) or numeric strings
+// (like "299") and ensures it's always cast to a string for the DB.
+const employeeIdRule = Joi.alternatives().try(
+  Joi.string().pattern(/^\d+$/).messages({ 'string.pattern.base': 'Employee ID must be a number' }),
+  Joi.number().integer().positive().messages({ 'number.base': 'Employee ID must be a number' })
+).custom((v) => String(v));
+
 const JOB_ROLE_VALUES = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA'] as const;
 
 export const signupSchema = Joi.object({
   name: Joi.string().min(2).required().messages({ 'string.min': 'Name must be at least 2 characters' }),
   email: Joi.string().email().required(),
-  employeeId: Joi.string().required().messages({ 'any.required': 'Employee ID is required' }),
+  employeeId: employeeIdRule.required().messages({ 'any.required': 'Employee ID is required' }),
   phone: optionalPhone,
   department: Joi.string().allow('').optional(),
   designation: Joi.string().allow('').optional(),
@@ -135,9 +143,9 @@ export const adminResetPasswordSchema = Joi.object({
 export const updateUserSchema = Joi.object({
   name: Joi.string().optional(), phone: Joi.string().allow('').optional(),
   department: Joi.string().allow('').optional(), designation: Joi.string().allow('').optional(),
-  employeeId: Joi.string().allow('').optional(),
+  employeeId: employeeIdRule.allow('', null).optional(),
   jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
-  managerEmployeeIds: Joi.array().items(Joi.string()).optional(),
+  managerEmployeeIds: Joi.array().items(employeeIdRule).optional(),
   role: Joi.string().valid('ADMIN', 'EMPLOYEE').optional(), isActive: Joi.boolean().optional(),
 });
 
@@ -146,9 +154,9 @@ export const updateProfileSchema = Joi.object({
   phone: optionalPhone,
   department: Joi.string().allow('').optional(),
   designation: Joi.string().allow('').optional(),
-  employeeId: Joi.string().allow('').optional(),
+  employeeId: employeeIdRule.allow('', null).optional(),
   jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
-  managerEmployeeIds: Joi.array().items(Joi.string()).optional(),
+  managerEmployeeIds: Joi.array().items(employeeIdRule).optional(),
 });
 
 export const paginationSchema = Joi.object({
