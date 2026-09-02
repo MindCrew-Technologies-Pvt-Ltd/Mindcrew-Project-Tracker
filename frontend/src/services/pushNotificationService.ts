@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
-const API = `${BASE}/api`;
+// VITE_API_URL already includes /api (e.g. https://xxx.railway.app/api)
+const API = (import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api').replace(/\/$/, '') + '/push';
 
 /**
  * Convert a URL-safe base64 string to a Uint8Array.
@@ -34,7 +34,7 @@ export async function requestNotificationPermission(): Promise<
 
   try {
     // Fetch the VAPID public key from our backend
-    const keyRes = await axios.get(`${API}/push/vapid-public-key`, { withCredentials: true });
+    const keyRes = await axios.get(`${API}/vapid-public-key`, { withCredentials: true });
     const vapidPublicKey: string = keyRes.data?.data?.publicKey;
     if (!vapidPublicKey) return 'unsupported';
 
@@ -46,7 +46,7 @@ export async function requestNotificationPermission(): Promise<
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       // Remove any old subscription from DB
-      await axios.delete(`${API}/push/unsubscribe`, { withCredentials: true }).catch(() => {});
+      await axios.delete(`${API}/unsubscribe`, { withCredentials: true }).catch(() => {});
       return 'denied';
     }
 
@@ -57,7 +57,7 @@ export async function requestNotificationPermission(): Promise<
     });
 
     // Save subscription to our backend
-    await axios.post(`${API}/push/subscribe`, { subscription }, { withCredentials: true });
+    await axios.post(`${API}/subscribe`, { subscription }, { withCredentials: true });
 
     console.log('[Push] Successfully subscribed to push notifications');
     return 'subscribed';
@@ -92,7 +92,7 @@ export async function unsubscribeFromPush(): Promise<void> {
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       await subscription.unsubscribe();
-      await axios.delete(`${API}/push/unsubscribe`, { withCredentials: true });
+      await axios.delete(`${API}/unsubscribe`, { withCredentials: true });
       console.log('[Push] Unsubscribed from push notifications');
     }
   } catch (err) {

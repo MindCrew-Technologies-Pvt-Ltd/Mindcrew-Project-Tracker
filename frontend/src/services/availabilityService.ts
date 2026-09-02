@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
-const API = `${BASE}/api/availability`;
+// VITE_API_URL already includes /api (e.g. https://xxx.railway.app/api)
+const API = (import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api').replace(/\/$/, '') + '/availability';
 
 export type AvailabilityStatus =
   | 'FULLY_AVAILABLE'
