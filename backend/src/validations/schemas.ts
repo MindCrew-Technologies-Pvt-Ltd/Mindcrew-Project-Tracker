@@ -21,11 +21,10 @@ const password = Joi.string()
 
 // Mirrors frontend `optionalPhone`: optional, but if present must start with a
 // country code (+) and contain at least 10 digits.
-const optionalPhone = Joi.string()
+const requiredPhone = Joi.string()
   .pattern(/^\+(?:[\s-]?\d){10,}$/)
-  .allow('', null)
-  .optional()
-  .messages({ 'string.pattern.base': 'Enter a valid phone with country code, e.g. +91 9876543210' });
+  .required()
+  .messages({ 'string.pattern.base': 'Enter a valid phone with country code, e.g. +91 9876543210', 'any.required': 'Phone number is required' });
 
 // ---- Auth (mirrors loginSchema / signupSchema / forgot / reset / change) ----
 
@@ -49,10 +48,10 @@ export const signupSchema = Joi.object({
   name: Joi.string().min(2).required().messages({ 'string.min': 'Name must be at least 2 characters' }),
   email: Joi.string().email().required(),
   employeeId: employeeIdRule.required().messages({ 'any.required': 'Employee ID is required' }),
-  phone: optionalPhone,
-  department: Joi.string().allow('').optional(),
-  designation: Joi.string().allow('').optional(),
-  jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
+  phone: requiredPhone,
+  department: Joi.string().required().messages({ 'any.required': 'Department is required', 'string.empty': 'Department is required' }),
+  designation: Joi.string().required().messages({ 'any.required': 'Designation is required', 'string.empty': 'Designation is required' }),
+  jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).min(1).required().messages({ 'array.min': 'Select at least one job role', 'any.required': 'Job role is required' }),
   password,
   confirmPassword: Joi.string().valid(Joi.ref('password')).required()
     .messages({ 'any.only': 'Passwords must match', 'any.required': 'Confirm password is required' }),
@@ -150,13 +149,13 @@ export const updateUserSchema = Joi.object({
 });
 
 export const updateProfileSchema = Joi.object({
-  name: Joi.string().min(2).optional(),
-  phone: optionalPhone,
-  department: Joi.string().allow('').optional(),
-  designation: Joi.string().allow('').optional(),
-  employeeId: employeeIdRule.allow('', null).optional(),
-  jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
-  managerEmployeeIds: Joi.array().items(employeeIdRule).optional(),
+  name: Joi.string().min(2).required(),
+  phone: requiredPhone,
+  department: Joi.string().required(),
+  designation: Joi.string().required(),
+  employeeId: employeeIdRule.required(),
+  jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).min(1).required(),
+  managerEmployeeIds: Joi.array().items(employeeIdRule).min(1).required(),
 });
 
 export const paginationSchema = Joi.object({

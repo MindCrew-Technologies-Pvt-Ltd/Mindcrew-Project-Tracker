@@ -76,9 +76,9 @@ const SignupPage = () => {
 
       <TextField label="Full Name" fullWidth margin="normal" autoFocus error={!!errors.name} helperText={errors.name?.message} {...register('name')} />
       <TextField label="Email Address" fullWidth margin="normal" autoComplete="email" error={!!errors.email} helperText={errors.email?.message} {...register('email')} />
-      <TextField label="Employee ID" fullWidth margin="normal" placeholder="e.g. EMP-001" error={!!errors.employeeId} helperText={errors.employeeId?.message} {...register('employeeId')} />
+      <TextField label="Employee ID" fullWidth required margin="normal" placeholder="e.g. 299" error={!!errors.employeeId} helperText={errors.employeeId?.message} {...register('employeeId')} />
       <TextField
-        label="Phone Number (optional)" fullWidth margin="normal" placeholder="+91 9876543210"
+        label="Phone Number" fullWidth required margin="normal" placeholder="+91 9876543210"
         inputProps={{ inputMode: 'tel', maxLength: 20 }}
         error={!!errors.phone} helperText={errors.phone?.message || 'Include country code, 10–15 digits'}
         {...register('phone')} onChange={handlePhoneChange}
@@ -86,10 +86,10 @@ const SignupPage = () => {
 
       <Grid container spacing={2} sx={{ mt: 0 }}>
         <Grid item xs={12} sm={6}>
-          <TextField label="Department (optional)" fullWidth margin="normal" error={!!errors.department} helperText={errors.department?.message} {...register('department')} />
+          <TextField label="Department" fullWidth required margin="normal" error={!!errors.department} helperText={errors.department?.message} {...register('department')} />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField label="Designation (optional)" fullWidth margin="normal" error={!!errors.designation} helperText={errors.designation?.message} {...register('designation')} />
+          <TextField label="Designation" fullWidth required margin="normal" error={!!errors.designation} helperText={errors.designation?.message} {...register('designation')} />
         </Grid>
       </Grid>
 
@@ -126,10 +126,12 @@ const SignupPage = () => {
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Job Roles (optional)"
+                required={(field.value || []).length === 0}
+                label="Job Roles"
                 margin="normal"
                 placeholder="Select your roles"
-                helperText="You can select multiple roles"
+                helperText={errors.jobRoles?.message || "You can select multiple roles"}
+                error={!!errors.jobRoles}
               />
             )}
           />

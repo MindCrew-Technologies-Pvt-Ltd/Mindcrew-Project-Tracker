@@ -13,25 +13,25 @@ export const loginSchema = yup.object({
   rememberMe: yup.boolean(),
 });
 
-const optionalPhone = yup.string()
+const requiredPhone = yup.string()
   .transform((value, original) => (original === '' ? undefined : value))
   .test('phone-format', 'Enter a valid phone with country code, e.g. +91 9876543210', (value) => {
-    if (!value) return true; // optional — empty is fine
+    if (!value) return false; // required
     if (!value.trim().startsWith('+')) return false; // must include country code
     const digits = value.replace(/\D/g, '').length;
     return digits >= 10 && digits <= 15; // between 10 and 15 digits (E.164 max)
   })
-  .optional();
+  .required('Phone is required');
 
 export const JOB_ROLE_OPTIONS = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA'] as const;
 
 export const signupSchema = yup.object({
   name: yup.string().min(2, 'Name must be at least 2 characters').required('Full name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
-  phone: optionalPhone,
-  department: yup.string().optional(),
-  designation: yup.string().optional(),
-  jobRoles: yup.array().of(yup.string().oneOf([...JOB_ROLE_OPTIONS])).optional(),
+  phone: requiredPhone,
+  department: yup.string().required('Department is required'),
+  designation: yup.string().required('Designation is required'),
+  jobRoles: yup.array().of(yup.string().oneOf([...JOB_ROLE_OPTIONS])).min(1, 'Select at least one job role').required('Job roles are required'),
   password: passwordRules,
   confirmPassword: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
 });

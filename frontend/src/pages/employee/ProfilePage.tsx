@@ -199,22 +199,22 @@ const ProfilePage = () => {
               <Box component="form" onSubmit={handleSubmit(onSubmit)}>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <TextField label="Full Name" fullWidth {...register('name')} />
+                    <TextField label="Full Name" fullWidth required {...register('name', { required: true })} />
                   </Grid>
                   <Grid item xs={12}>
                     <TextField label="Email" fullWidth value={user?.email || ''} disabled helperText="Email cannot be changed" />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField label="Phone" fullWidth placeholder="+91 9876543210" {...register('phone')} />
+                    <TextField label="Phone" fullWidth required placeholder="+91 9876543210" {...register('phone', { required: true })} />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField label="Employee ID" fullWidth placeholder="e.g. EMP-001" {...register('employeeId')} />
+                    <TextField label="Employee ID" fullWidth required placeholder="e.g. 299" {...register('employeeId', { required: true })} />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField label="Department" fullWidth {...register('department')} />
+                    <TextField label="Department" fullWidth required {...register('department', { required: true })} />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField label="Designation" fullWidth {...register('designation')} />
+                    <TextField label="Designation" fullWidth required {...register('designation', { required: true })} />
                   </Grid>
 
                   {/* ---- Job Roles Multi-Select ---- */}
@@ -265,6 +265,7 @@ const ProfilePage = () => {
                           renderInput={(params) => (
                             <TextField
                               {...params}
+                              required={(field.value || []).length === 0}
                               label="Job Roles"
                               placeholder="Select your roles"
                               helperText="You can select multiple roles — e.g. Developer + Manager"
@@ -284,16 +285,16 @@ const ProfilePage = () => {
                         <Autocomplete
                           multiple
                           options={managers}
-                          getOptionLabel={(option) => `${option.name} (${option.employeeId})`}
+                          getOptionLabel={(option) => option.name}
                           disableCloseOnSelect
                           value={managers.filter(m => (field.value || []).includes(m.employeeId!))}
-                          onChange={(_, newValue) => field.onChange(newValue.map(v => v.employeeId))}
+                          onChange={(_, newValue) => field.onChange(newValue.map(v => String(v.employeeId)))}
                           renderOption={(props, option, { selected }) => {
                             const { key, ...rest } = props as any;
                             return (
                               <li key={key} {...rest}>
                                 <Checkbox icon={icon} checkedIcon={checkedIcon} style={{ marginRight: 8 }} checked={selected} />
-                                {option.name} ({option.employeeId})
+                                {option.name}
                               </li>
                             );
                           }}
@@ -303,7 +304,7 @@ const ProfilePage = () => {
                               return <Chip key={key} label={option.name} size="small" sx={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', fontWeight: 500, '& .MuiChip-deleteIcon': { color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#fff' } } }} {...tagProps} />;
                             })
                           }
-                          renderInput={(params) => <TextField {...params} label="Reporting Managers" placeholder="Select your reporting managers" helperText="You can select multiple managers" />}
+                          renderInput={(params) => <TextField {...params} required={(field.value || []).length === 0} label="Reporting Managers" placeholder="Select your reporting managers" helperText="You can select multiple managers" />}
                         />
                       )}
                     />
