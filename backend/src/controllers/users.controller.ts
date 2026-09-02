@@ -53,7 +53,7 @@ export const updateUser: RequestHandler = async (req, res, next) => {
     if (department !== undefined) data.department = department;
     if (designation !== undefined) data.designation = designation;
     if (employeeId !== undefined) {
-      const existingEmployeeId = await prisma.user.findUnique({ where: { employeeId } });
+      const existingEmployeeId = await prisma.user.findFirst({ where: { employeeId } });
       if (existingEmployeeId && existingEmployeeId.id !== id) { error(res, 'Employee ID already in use', 409); return; }
       data.employeeId = employeeId;
     }
@@ -150,7 +150,7 @@ export const assignReportee: RequestHandler = async (req, res, next) => {
       error(res, 'Only managers can assign reportees', 403); return;
     }
 
-    const reportee = await prisma.user.findUnique({ where: { employeeId } });
+    const reportee = await prisma.user.findFirst({ where: { employeeId } });
     if (!reportee) {
       error(res, 'Employee not found', 404); return;
     }

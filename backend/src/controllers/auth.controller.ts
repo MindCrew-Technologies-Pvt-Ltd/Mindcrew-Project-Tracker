@@ -12,7 +12,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction): P
     if (existing) { error(res, 'Email already in use', 409); return; }
     // Check if employeeId is already taken
     if (employeeId) {
-      const existingEmployeeId = await prisma.user.findUnique({ where: { employeeId } });
+      const existingEmployeeId = await prisma.user.findFirst({ where: { employeeId } });
       if (existingEmployeeId) { error(res, 'Employee ID already in use', 409); return; }
     }
     const passwordHash = await hashPassword(password);
@@ -114,7 +114,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     if (designation !== undefined) data.designation = designation;
     if (employeeId !== undefined) {
        // Validate uniqueness if changing
-       const existingEmployeeId = await prisma.user.findUnique({ where: { employeeId } });
+       const existingEmployeeId = await prisma.user.findFirst({ where: { employeeId } });
        if (existingEmployeeId && existingEmployeeId.id !== req.user!.id) { error(res, 'Employee ID already in use', 409); return; }
        data.employeeId = employeeId;
     }

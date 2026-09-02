@@ -80,7 +80,7 @@ model User {
   phone               String?
   department          String?
   designation         String?
-  employeeId          String?   @unique
+  employeeId          String?
   jobRoles            String[]
   managerEmployeeIds  String[]  @default([])
   role                Role      @default(EMPLOYEE)
