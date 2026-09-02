@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
 import { Grid, Card, CardContent, Typography, Box } from '@mui/material';
-import { Folder as FolderIcon, PlayCircle as PlayCircleIcon, CheckCircle as CheckCircleIcon, EditNote as EditNoteIcon, People as PeopleIcon, PauseCircle as PauseCircleIcon, Warning as WarningIcon } from '@mui/icons-material';
+import FolderIcon from '@mui/icons-material/esm/Folder';
+import PlayCircleIcon from '@mui/icons-material/esm/PlayCircle';
+import CheckCircleIcon from '@mui/icons-material/esm/CheckCircle';
+import EditNoteIcon from '@mui/icons-material/esm/EditNote';
+import PeopleIcon from '@mui/icons-material/esm/People';
+import PauseCircleIcon from '@mui/icons-material/esm/PauseCircle';
+import WarningIcon from '@mui/icons-material/esm/Warning';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProjectsThunk } from '../../store/slices/projectsSlice';

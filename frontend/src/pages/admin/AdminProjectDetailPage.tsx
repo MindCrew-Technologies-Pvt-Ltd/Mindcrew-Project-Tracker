@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Tabs, Tab, Button, Alert, CircularProgress, Menu, MenuItem, Divider } from '@mui/material';
-import { Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
+import EditIcon from '@mui/icons-material/esm/Edit';
+import MoreVertIcon from '@mui/icons-material/esm/MoreVert';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProjectByIdThunk, deleteProjectThunk, archiveProjectThunk } from '../../store/slices/projectsSlice';

@@ -23,12 +23,15 @@ const optionalPhone = yup.string()
   })
   .optional();
 
+export const JOB_ROLE_OPTIONS = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA'] as const;
+
 export const signupSchema = yup.object({
   name: yup.string().min(2, 'Name must be at least 2 characters').required('Full name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
   phone: optionalPhone,
   department: yup.string().optional(),
   designation: yup.string().optional(),
+  jobRoles: yup.array().of(yup.string().oneOf([...JOB_ROLE_OPTIONS])).optional(),
   password: passwordRules,
   confirmPassword: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
 });

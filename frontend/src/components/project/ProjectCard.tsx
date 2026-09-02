@@ -1,5 +1,8 @@
 import { Card, CardContent, CardActions, Typography, Box, Chip, Button, IconButton, Tooltip } from '@mui/material';
-import { CalendarToday as CalendarTodayIcon, Person as PersonIcon, Visibility as ViewIcon, DeleteOutline as DeleteIcon } from '@mui/icons-material';
+import CalendarTodayIcon from '@mui/icons-material/esm/CalendarToday';
+import PersonIcon from '@mui/icons-material/esm/Person';
+import ViewIcon from '@mui/icons-material/esm/Visibility';
+import DeleteIcon from '@mui/icons-material/esm/DeleteOutline';
 import { useNavigate } from 'react-router-dom';
 import { Project } from '../../types/project.types';
 import ProjectStatusChip from './ProjectStatusChip';

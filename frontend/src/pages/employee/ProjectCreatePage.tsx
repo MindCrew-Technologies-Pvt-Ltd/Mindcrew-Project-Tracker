@@ -6,7 +6,9 @@ import {
   FormHelperText, Chip, Typography, Alert, CircularProgress, Card, CardContent,
   IconButton, Tooltip, Autocomplete, FormControlLabel, Checkbox,
 } from '@mui/material';
-import { Add as AddIcon, Close as CloseIcon, ImageOutlined as ImageIcon } from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/esm/Add';
+import CloseIcon from '@mui/icons-material/esm/Close';
+import ImageIcon from '@mui/icons-material/esm/ImageOutlined';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';

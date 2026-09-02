@@ -80,6 +80,7 @@ model User {
   phone               String?
   department          String?
   designation         String?
+  jobRoles            String[]
   role                Role      @default(EMPLOYEE)
   isActive            Boolean   @default(true)
   fcmToken            String?

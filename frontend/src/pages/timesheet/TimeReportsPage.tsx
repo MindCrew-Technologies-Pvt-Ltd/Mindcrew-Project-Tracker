@@ -3,7 +3,8 @@ import {
   Box, Card, Typography, Button, TextField, FormControl, InputLabel, Select, MenuItem,
   Tabs, Tab, LinearProgress, CircularProgress, Snackbar, Alert, Tooltip,
 } from '@mui/material';
-import { FileDownloadOutlined as ExportIcon, SettingsOutlined as SettingsIcon } from '@mui/icons-material';
+import ExportIcon from '@mui/icons-material/esm/FileDownloadOutlined';
+import SettingsIcon from '@mui/icons-material/esm/SettingsOutlined';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
 import dayjs from 'dayjs';

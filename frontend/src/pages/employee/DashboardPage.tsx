@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { Grid, Card, CardContent, Typography, Box, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
-import { Folder as FolderIcon, CheckCircle as CheckCircleIcon, PlayCircle as PlayCircleIcon, Warning as WarningIcon } from '@mui/icons-material';
+import FolderIcon from '@mui/icons-material/esm/Folder';
+import CheckCircleIcon from '@mui/icons-material/esm/CheckCircle';
+import PlayCircleIcon from '@mui/icons-material/esm/PlayCircle';
+import WarningIcon from '@mui/icons-material/esm/Warning';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';

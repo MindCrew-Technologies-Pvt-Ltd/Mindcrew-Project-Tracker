@@ -3,11 +3,12 @@ import {
   Box, Card, CardContent, Typography, IconButton, Button, Tooltip, Alert, Snackbar,
   TextField, CircularProgress, Chip,
 } from '@mui/material';
-import {
-  ChevronLeft as PrevIcon, ChevronRight as NextIcon,
-  Add as AddIcon, EditOutlined as EditIcon, DeleteOutline as DeleteIcon,
-  TodayOutlined as TodayIcon,
-} from '@mui/icons-material';
+import PrevIcon from '@mui/icons-material/esm/ChevronLeft';
+import NextIcon from '@mui/icons-material/esm/ChevronRight';
+import AddIcon from '@mui/icons-material/esm/Add';
+import EditIcon from '@mui/icons-material/esm/EditOutlined';
+import DeleteIcon from '@mui/icons-material/esm/DeleteOutline';
+import TodayIcon from '@mui/icons-material/esm/TodayOutlined';
 import dayjs from 'dayjs';
 import PageHeader from '../../components/common/PageHeader';
 import TimeEntryDialog from '../../components/timesheet/TimeEntryDialog';

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography, Snackbar, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip } from '@mui/material';
-import { CheckCircleOutline as ApproveIcon, HighlightOff as RejectIcon, RemoveCircleOutline as RevokeIcon } from '@mui/icons-material';
+import ApproveIcon from '@mui/icons-material/esm/CheckCircleOutline';
+import RejectIcon from '@mui/icons-material/esm/HighlightOff';
+import RevokeIcon from '@mui/icons-material/esm/RemoveCircleOutline';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchEditRequestsThunk, approveEditRequestThunk, rejectEditRequestThunk, revokeEditRequestThunk } from '../../store/slices/editRequestsSlice';

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Grid, Button, MenuItem, Select, FormControl, InputLabel, ToggleButtonGroup, ToggleButton, Pagination, Skeleton, Snackbar, Alert, Typography, Avatar, IconButton, Tooltip } from '@mui/material';
-import { GridView as GridViewIcon, List as ListIcon, Visibility as ViewIcon, DeleteOutline as DeleteIcon } from '@mui/icons-material';
+import GridViewIcon from '@mui/icons-material/esm/GridView';
+import ListIcon from '@mui/icons-material/esm/List';
+import ViewIcon from '@mui/icons-material/esm/Visibility';
+import DeleteIcon from '@mui/icons-material/esm/DeleteOutline';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';

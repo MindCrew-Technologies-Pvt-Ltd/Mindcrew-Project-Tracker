@@ -1,5 +1,5 @@
 import { Box, Card, CardContent, Typography, List, ListItem, ListItemText, Button, Divider, Chip, IconButton } from '@mui/material';
-import { DoneAll as DoneAllIcon } from '@mui/icons-material';
+import DoneAllIcon from '@mui/icons-material/esm/DoneAll';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 // import { useAppSelector } from '../../hooks/useAppSelector';
 import { markAsReadThunk, markAllAsReadThunk } from '../../store/slices/notificationsSlice';

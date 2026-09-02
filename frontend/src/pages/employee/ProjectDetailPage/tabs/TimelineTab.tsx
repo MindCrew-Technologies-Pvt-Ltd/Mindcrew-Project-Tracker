@@ -1,5 +1,5 @@
 import { Box, Typography, Paper } from '@mui/material';
-import { FiberManualRecord as FiberManualRecordIcon } from '@mui/icons-material';
+import FiberManualRecordIcon from '@mui/icons-material/esm/FiberManualRecord';
 import { Project } from '../../../../types/project.types';
 import { formatDateTime } from '../../../../utils/formatters';
 

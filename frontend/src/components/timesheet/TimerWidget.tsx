@@ -3,10 +3,11 @@ import {
   Box, Button, IconButton, Popover, TextField, Switch, FormControlLabel, Autocomplete,
   Typography, Tooltip, Menu, MenuItem, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
-import {
-  PlayArrow as PlayIcon, Pause as PauseIcon, Stop as StopIcon, MoreVert as MoreIcon,
-  AccessTime as TimerIcon,
-} from '@mui/icons-material';
+import PlayIcon from '@mui/icons-material/esm/PlayArrow';
+import PauseIcon from '@mui/icons-material/esm/Pause';
+import StopIcon from '@mui/icons-material/esm/Stop';
+import MoreIcon from '@mui/icons-material/esm/MoreVert';
+import TimerIcon from '@mui/icons-material/esm/AccessTime';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import {

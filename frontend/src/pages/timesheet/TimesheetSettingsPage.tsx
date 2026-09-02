@@ -4,7 +4,9 @@ import {
   FormControl, InputLabel, Select, MenuItem, IconButton, Tooltip, Snackbar, Alert,
   CircularProgress, Grid, Avatar, InputAdornment,
 } from '@mui/material';
-import { DeleteOutline as DeleteIcon, Add as AddIcon, Save as SaveIcon } from '@mui/icons-material';
+import DeleteIcon from '@mui/icons-material/esm/DeleteOutline';
+import AddIcon from '@mui/icons-material/esm/Add';
+import SaveIcon from '@mui/icons-material/esm/Save';
 import dayjs from 'dayjs';
 import PageHeader from '../../components/common/PageHeader';
 import timesheetService from '../../services/timesheetService';

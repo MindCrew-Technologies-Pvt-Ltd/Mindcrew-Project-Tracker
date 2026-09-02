@@ -1,16 +1,22 @@
 import { useState, ChangeEvent } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { TextField, Button, Box, Typography, Alert, IconButton, InputAdornment, Grid, CircularProgress } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { TextField, Button, Box, Typography, Alert, IconButton, InputAdornment, Grid, CircularProgress, Autocomplete, Checkbox, Chip } from '@mui/material';
+import Visibility from '@mui/icons-material/esm/Visibility';
+import VisibilityOff from '@mui/icons-material/esm/VisibilityOff';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/esm/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/esm/CheckBox';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { signupThunk, clearError } from '../../store/slices/authSlice';
-import { signupSchema } from '../../utils/validators';
+import { signupSchema, JOB_ROLE_OPTIONS } from '../../utils/validators';
 import { ROUTES } from '../../constants/routes';
 
-interface FormData { name: string; email: string; phone?: string; department?: string; designation?: string; password: string; confirmPassword: string; }
+interface FormData { name: string; email: string; phone?: string; department?: string; designation?: string; jobRoles?: string[]; password: string; confirmPassword: string; }
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 const SignupPage = () => {
   const dispatch = useAppDispatch();
@@ -20,8 +26,9 @@ const SignupPage = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, control, formState: { errors } } = useForm<FormData>({
     resolver: yupResolver(signupSchema) as any,
+    defaultValues: { jobRoles: [] },
   });
 
   // Allow only digits, spaces, hyphens and a single leading + in the phone field
@@ -42,6 +49,7 @@ const SignupPage = () => {
       ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
       ...(data.department?.trim() ? { department: data.department.trim() } : {}),
       ...(data.designation?.trim() ? { designation: data.designation.trim() } : {}),
+      ...(data.jobRoles?.length ? { jobRoles: data.jobRoles } : {}),
     };
     const result = await dispatch(signupThunk(payload));
     if (signupThunk.fulfilled.match(result)) {
@@ -82,6 +90,49 @@ const SignupPage = () => {
           <TextField label="Designation (optional)" fullWidth margin="normal" error={!!errors.designation} helperText={errors.designation?.message} {...register('designation')} />
         </Grid>
       </Grid>
+
+      <Controller
+        name="jobRoles"
+        control={control}
+        render={({ field }) => (
+          <Autocomplete
+            multiple
+            options={[...JOB_ROLE_OPTIONS]}
+            disableCloseOnSelect
+            value={field.value || []}
+            onChange={(_, newValue) => field.onChange(newValue)}
+            renderOption={(props, option, { selected }) => {
+              const { key, ...rest } = props as any;
+              return (
+                <li key={key} {...rest}>
+                  <Checkbox
+                    icon={icon}
+                    checkedIcon={checkedIcon}
+                    style={{ marginRight: 8 }}
+                    checked={selected}
+                  />
+                  {option}
+                </li>
+              );
+            }}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                return <Chip key={key} label={option} size="small" color="primary" variant="outlined" {...tagProps} />;
+              })
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Job Roles (optional)"
+                margin="normal"
+                placeholder="Select your roles"
+                helperText="You can select multiple roles"
+              />
+            )}
+          />
+        )}
+      />
 
       <TextField
         label="Password" fullWidth margin="normal" type={showPassword ? 'text' : 'password'}

@@ -1,5 +1,8 @@
 import { AppBar, Toolbar, IconButton, Typography, Box, Avatar, Menu, MenuItem, Divider, Tooltip } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle as AccountCircleIcon, Logout as LogoutIcon, Lock as LockIcon } from '@mui/icons-material';
+import MenuIcon from '@mui/icons-material/esm/Menu';
+import AccountCircleIcon from '@mui/icons-material/esm/AccountCircle';
+import LogoutIcon from '@mui/icons-material/esm/Logout';
+import LockIcon from '@mui/icons-material/esm/Lock';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { } from './Sidebar';

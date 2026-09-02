@@ -1,5 +1,5 @@
 import { Box, Paper, Typography, Button } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/esm/ArrowBack';
 import { Outlet, useNavigate } from 'react-router-dom';
 import BrandMark from '../common/BrandMark';
 import { ROUTES } from '../../constants/routes';

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Button, FormControl, InputLabel, Select, MenuItem, TextField, Divider, CircularProgress } from '@mui/material';
-import { Download as DownloadIcon, Assessment as AssessmentIcon } from '@mui/icons-material';
+import DownloadIcon from '@mui/icons-material/esm/Download';
+import AssessmentIcon from '@mui/icons-material/esm/Assessment';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { generateReportThunk, exportReportThunk } from '../../store/slices/reportsSlice';

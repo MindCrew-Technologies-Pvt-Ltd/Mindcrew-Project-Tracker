@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Typography, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip, Snackbar, Alert } from '@mui/material';
-import { Visibility as ViewIcon, DeleteOutline as DeleteIcon } from '@mui/icons-material';
+import ViewIcon from '@mui/icons-material/esm/Visibility';
+import DeleteIcon from '@mui/icons-material/esm/DeleteOutline';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';

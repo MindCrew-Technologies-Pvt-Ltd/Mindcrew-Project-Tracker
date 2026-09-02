@@ -1,5 +1,5 @@
 import { TextField, InputAdornment } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/esm/Search';
 
 interface Props { value: string; onChange: (v: string) => void; placeholder?: string; fullWidth?: boolean; }
 

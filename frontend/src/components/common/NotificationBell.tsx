@@ -1,5 +1,5 @@
 import { IconButton, Badge, Popover, Box, Typography, List, ListItemButton, ListItemText, Button, Divider, CircularProgress } from '@mui/material';
-import { Notifications as NotificationsIcon } from '@mui/icons-material';
+import NotificationsIcon from '@mui/icons-material/esm/Notifications';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';

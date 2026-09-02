@@ -4,10 +4,11 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar, CircularProgress,
   Tabs, Tab, List, ListItem, ListItemText,
 } from '@mui/material';
-import {
-  ContentCopy as CopyIcon, DeleteOutline as RevokeIcon, Add as AddIcon,
-  SmartToyOutlined as AiIcon, CheckCircleOutline as CheckIcon,
-} from '@mui/icons-material';
+import CopyIcon from '@mui/icons-material/esm/ContentCopy';
+import RevokeIcon from '@mui/icons-material/esm/DeleteOutline';
+import AddIcon from '@mui/icons-material/esm/Add';
+import AiIcon from '@mui/icons-material/esm/SmartToyOutlined';
+import CheckIcon from '@mui/icons-material/esm/CheckCircleOutline';
 import PageHeader from '../components/common/PageHeader';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import EmptyState from '../components/common/EmptyState';

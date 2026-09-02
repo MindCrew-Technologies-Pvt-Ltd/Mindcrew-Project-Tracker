@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction, IconButton, Chip, Typography, Divider, Alert } from '@mui/material';
-import { InsertDriveFile as InsertDriveFileIcon, Image as ImageFileIcon, Download as DownloadIcon, Delete as DeleteIcon, Visibility as ViewIcon } from '@mui/icons-material';
+import InsertDriveFileIcon from '@mui/icons-material/esm/InsertDriveFile';
+import ImageFileIcon from '@mui/icons-material/esm/Image';
+import DownloadIcon from '@mui/icons-material/esm/Download';
+import DeleteIcon from '@mui/icons-material/esm/Delete';
+import ViewIcon from '@mui/icons-material/esm/Visibility';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { fetchDocumentsThunk, uploadDocumentThunk, deleteDocumentThunk, clearDocumentsError } from '../../../../store/slices/documentsSlice';

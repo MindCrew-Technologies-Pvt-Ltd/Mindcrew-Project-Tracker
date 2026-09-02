@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { Inbox as InboxIcon } from '@mui/icons-material';
+import InboxIcon from '@mui/icons-material/esm/Inbox';
 import { ReactNode } from 'react';
 
 interface Props { title?: string; description?: string; action?: ReactNode; icon?: ReactNode; }

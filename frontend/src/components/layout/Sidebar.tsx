@@ -1,13 +1,19 @@
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, Typography, Divider, Tooltip, IconButton } from '@mui/material';
 import { NavLink } from 'react-router-dom';
 import BrandMark from '../common/BrandMark';
-import {
-  Dashboard as DashboardIcon, Folder as FolderIcon, FolderCopy as FolderCopyIcon, People as PeopleIcon,
-  Assessment as AssessmentIcon, EditNote as EditNoteIcon,
-  ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon,
-  AccessTime as AccessTimeIcon, FactCheck as FactCheckIcon, Insights as InsightsIcon,
-  Tune as TuneIcon, SmartToyOutlined as AiIcon,
-} from '@mui/icons-material';
+import DashboardIcon from '@mui/icons-material/esm/Dashboard';
+import FolderIcon from '@mui/icons-material/esm/Folder';
+import FolderCopyIcon from '@mui/icons-material/esm/FolderCopy';
+import PeopleIcon from '@mui/icons-material/esm/People';
+import AssessmentIcon from '@mui/icons-material/esm/Assessment';
+import EditNoteIcon from '@mui/icons-material/esm/EditNote';
+import ChevronLeftIcon from '@mui/icons-material/esm/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/esm/ChevronRight';
+import AccessTimeIcon from '@mui/icons-material/esm/AccessTime';
+import FactCheckIcon from '@mui/icons-material/esm/FactCheck';
+import InsightsIcon from '@mui/icons-material/esm/Insights';
+import TuneIcon from '@mui/icons-material/esm/Tune';
+import AiIcon from '@mui/icons-material/esm/SmartToyOutlined';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../hooks/useAuth';
 

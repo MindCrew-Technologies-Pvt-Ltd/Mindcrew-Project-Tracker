@@ -10,6 +10,7 @@ export interface SignupPayload {
   phone?: string;
   department?: string;
   designation?: string;
+  jobRoles?: string[];
   password: string;
   confirmPassword: string;
 }

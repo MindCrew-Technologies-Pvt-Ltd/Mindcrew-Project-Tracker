@@ -1,5 +1,7 @@
 import { Box, Button, Typography, Stack } from '@mui/material';
-import { Login as LoginIcon, PersonAdd as PersonAddIcon, AdminPanelSettings as AdminIcon } from '@mui/icons-material';
+import LoginIcon from '@mui/icons-material/esm/Login';
+import PersonAddIcon from '@mui/icons-material/esm/PersonAdd';
+import AdminIcon from '@mui/icons-material/esm/AdminPanelSettings';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import BrandMark from '../../components/common/BrandMark';

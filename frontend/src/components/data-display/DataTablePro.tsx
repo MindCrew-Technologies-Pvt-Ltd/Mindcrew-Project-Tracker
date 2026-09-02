@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Box, Card, Checkbox, Pagination, Button } from '@mui/material';
-import { ArrowUpward as ArrowUpIcon, ArrowDownward as ArrowDownIcon, DeleteOutline as DeleteIcon } from '@mui/icons-material';
+import ArrowUpIcon from '@mui/icons-material/esm/ArrowUpward';
+import ArrowDownIcon from '@mui/icons-material/esm/ArrowDownward';
+import DeleteIcon from '@mui/icons-material/esm/DeleteOutline';
 import LoadingSpinner from '../common/LoadingSpinner';
 import EmptyState from '../common/EmptyState';
 

@@ -46,5 +46,5 @@ export const apiTokenLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.headers.authorization?.slice(-24) ?? req.ip ?? 'anon',
+  keyGenerator: (req) => req.headers.authorization?.slice(-24) ?? (req.ip ? req.ip.replace(/:/g, '_') : 'anon'),
 });

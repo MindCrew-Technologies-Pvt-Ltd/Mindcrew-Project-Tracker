@@ -35,12 +35,15 @@ export const loginSchema = Joi.object({
   rememberMe: Joi.boolean().optional(),
 });
 
+const JOB_ROLE_VALUES = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA'] as const;
+
 export const signupSchema = Joi.object({
   name: Joi.string().min(2).required().messages({ 'string.min': 'Name must be at least 2 characters' }),
   email: Joi.string().email().required(),
   phone: optionalPhone,
   department: Joi.string().allow('').optional(),
   designation: Joi.string().allow('').optional(),
+  jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
   password,
   confirmPassword: Joi.string().valid(Joi.ref('password')).required()
     .messages({ 'any.only': 'Passwords must match', 'any.required': 'Confirm password is required' }),
@@ -131,7 +134,16 @@ export const adminResetPasswordSchema = Joi.object({
 export const updateUserSchema = Joi.object({
   name: Joi.string().optional(), phone: Joi.string().allow('').optional(),
   department: Joi.string().allow('').optional(), designation: Joi.string().allow('').optional(),
+  jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
   role: Joi.string().valid('ADMIN', 'EMPLOYEE').optional(), isActive: Joi.boolean().optional(),
+});
+
+export const updateProfileSchema = Joi.object({
+  name: Joi.string().min(2).optional(),
+  phone: optionalPhone,
+  department: Joi.string().allow('').optional(),
+  designation: Joi.string().allow('').optional(),
+  jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
 });
 
 export const paginationSchema = Joi.object({

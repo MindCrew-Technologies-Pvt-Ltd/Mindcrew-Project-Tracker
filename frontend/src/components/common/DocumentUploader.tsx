@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Box, Typography, LinearProgress, Chip, Select, MenuItem, FormControl, InputLabel, Button } from '@mui/material';
-import { CloudUpload as CloudUploadIcon, InsertDriveFile as InsertDriveFileIcon } from '@mui/icons-material';
+import CloudUploadIcon from '@mui/icons-material/esm/CloudUpload';
+import InsertDriveFileIcon from '@mui/icons-material/esm/InsertDriveFile';
 import { DocumentCategory } from '../../types/document.types';
 import { DOCUMENT_CATEGORY_LABELS } from '../../constants/status';
 

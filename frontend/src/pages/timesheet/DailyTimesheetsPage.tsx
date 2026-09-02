@@ -3,10 +3,10 @@ import {
   Box, Card, Typography, IconButton, Button, Tooltip, Alert, Snackbar,
   TextField, CircularProgress, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
-import {
-  ChevronLeft as PrevIcon, ChevronRight as NextIcon,
-  CheckCircleOutline as ApproveIcon, HighlightOff as RejectIcon,
-} from '@mui/icons-material';
+import PrevIcon from '@mui/icons-material/esm/ChevronLeft';
+import NextIcon from '@mui/icons-material/esm/ChevronRight';
+import ApproveIcon from '@mui/icons-material/esm/CheckCircleOutline';
+import RejectIcon from '@mui/icons-material/esm/HighlightOff';
 import dayjs from 'dayjs';
 import PageHeader from '../../components/common/PageHeader';
 import timesheetService from '../../services/timesheetService';

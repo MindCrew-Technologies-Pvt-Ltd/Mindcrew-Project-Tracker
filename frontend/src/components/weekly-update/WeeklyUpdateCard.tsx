@@ -1,5 +1,6 @@
 import { Card, CardContent, Typography, Box, Chip, LinearProgress, Grid, Divider, Collapse, Button } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon } from '@mui/icons-material';
+import ExpandMoreIcon from '@mui/icons-material/esm/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/esm/ExpandLess';
 import { useState } from 'react';
 import { WeeklyUpdate } from '../../types/weeklyUpdate.types';
 

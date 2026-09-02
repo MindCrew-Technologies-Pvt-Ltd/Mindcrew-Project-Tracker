@@ -4,10 +4,11 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
   CircularProgress, Divider, ToggleButtonGroup, ToggleButton, List, ListItem, ListItemText,
 } from '@mui/material';
-import {
-  Visibility as ViewIcon, Check as ApproveIcon, Close as RejectIcon,
-  LockOpen as ReopenIcon, Celebration as CelebrationIcon,
-} from '@mui/icons-material';
+import ViewIcon from '@mui/icons-material/esm/Visibility';
+import ApproveIcon from '@mui/icons-material/esm/Check';
+import RejectIcon from '@mui/icons-material/esm/Close';
+import ReopenIcon from '@mui/icons-material/esm/LockOpen';
+import CelebrationIcon from '@mui/icons-material/esm/Celebration';
 import dayjs from 'dayjs';
 import PageHeader from '../../components/common/PageHeader';
 import DataTablePro, { Column } from '../../components/data-display/DataTablePro';

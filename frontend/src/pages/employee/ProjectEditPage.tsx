@@ -7,7 +7,10 @@ import {
   Chip, Typography, Alert, CircularProgress, Card, CardContent,
   IconButton, Tooltip, Autocomplete, FormControlLabel, Checkbox,
 } from '@mui/material';
-import { Add as AddIcon, Close as CloseIcon, ImageOutlined as ImageIcon, InsertPhoto as ExistingImageIcon } from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/esm/Add';
+import CloseIcon from '@mui/icons-material/esm/Close';
+import ImageIcon from '@mui/icons-material/esm/ImageOutlined';
+import ExistingImageIcon from '@mui/icons-material/esm/InsertPhoto';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProjectByIdThunk, updateProjectThunk } from '../../store/slices/projectsSlice';

@@ -1,5 +1,7 @@
 import { Grid, Card, CardContent, Typography, Box, Chip, Link, Divider } from '@mui/material';
-import { GitHub as GitHubIcon, OpenInNew as OpenInNewIcon, PlayCircleOutline as PlayIcon } from '@mui/icons-material';
+import GitHubIcon from '@mui/icons-material/esm/GitHub';
+import OpenInNewIcon from '@mui/icons-material/esm/OpenInNew';
+import PlayIcon from '@mui/icons-material/esm/PlayCircleOutline';
 import { Project } from '../../../../types/project.types';
 import { formatDate } from '../../../../utils/formatters';
 

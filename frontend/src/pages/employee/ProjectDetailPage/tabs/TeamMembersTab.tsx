@@ -3,7 +3,8 @@ import {
   Box, List, ListItem, ListItemAvatar, ListItemText, ListItemSecondaryAction, Avatar, Chip, Typography,
   Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField, Alert,
 } from '@mui/material';
-import { PersonAdd as PersonAddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import PersonAddIcon from '@mui/icons-material/esm/PersonAdd';
+import DeleteIcon from '@mui/icons-material/esm/Delete';
 import projectsService from '../../../../services/projectsService';
 import { Project } from '../../../../types/project.types';
 import EmptyState from '../../../../components/common/EmptyState';
