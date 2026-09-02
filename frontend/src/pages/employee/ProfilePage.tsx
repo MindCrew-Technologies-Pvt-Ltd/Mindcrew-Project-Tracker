@@ -19,7 +19,7 @@ import authService from '../../services/authService';
 import PageHeader from '../../components/common/PageHeader';
 import { JOB_ROLE_OPTIONS } from '../../utils/validators';
 
-interface FormData { name: string; phone: string; department: string; designation: string; jobRoles: string[]; }
+interface FormData { name: string; phone: string; department: string; designation: string; employeeId: string; jobRoles: string[]; }
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -68,6 +68,7 @@ const ProfilePage = () => {
       phone: user.phone,
       department: user.department,
       designation: user.designation,
+      employeeId: user.employeeId || '',
       jobRoles: user.jobRoles ?? [],
     });
   }, [user, reset]);
@@ -81,6 +82,7 @@ const ProfilePage = () => {
         phone: data.phone,
         department: data.department,
         designation: data.designation,
+        employeeId: data.employeeId,
         jobRoles: data.jobRoles,
       });
       await dispatch(fetchMeThunk());
@@ -168,6 +170,7 @@ const ProfilePage = () => {
             </Typography>
             <Divider sx={{ mb: 1 }} />
             <InfoRow icon={<BadgeIcon fontSize="small" />} label="User ID" value={user?.id || ''} copyable />
+            <InfoRow icon={<BadgeIcon fontSize="small" />} label="Employee ID" value={user?.employeeId || ''} copyable />
             <InfoRow icon={<EmailIcon fontSize="small" />} label="Email" value={user?.email || ''} copyable />
             <InfoRow icon={<PhoneIcon fontSize="small" />} label="Phone" value={user?.phone || ''} copyable />
             <InfoRow icon={<PersonIcon fontSize="small" />} label="System Role" value={user?.role || ''} />
@@ -192,8 +195,11 @@ const ProfilePage = () => {
                   <Grid item xs={12}>
                     <TextField label="Email" fullWidth value={user?.email || ''} disabled helperText="Email cannot be changed" />
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid item xs={12} sm={6}>
                     <TextField label="Phone" fullWidth placeholder="+91 9876543210" {...register('phone')} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField label="Employee ID" fullWidth placeholder="e.g. EMP-001" {...register('employeeId')} />
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField label="Department" fullWidth {...register('department')} />

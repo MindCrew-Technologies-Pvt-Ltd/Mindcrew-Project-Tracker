@@ -13,7 +13,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction): P
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: { name, email, passwordHash, phone, department, designation, jobRoles: jobRoles ?? [] },
-      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, jobRoles: true, role: true, isActive: true, createdAt: true },
+      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, createdAt: true },
     });
     const tokens = generateTokens({ id: user.id, email: user.email, role: user.role });
     success(res, { user, ...tokens }, 'Account created', 201);
@@ -43,7 +43,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, jobRoles: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
+      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
     });
     if (!user) { error(res, 'User not found', 404); return; }
     success(res, user);
@@ -101,17 +101,18 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 
 export const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, phone, department, designation, jobRoles } = req.body;
+    const { name, phone, department, designation, employeeId, jobRoles } = req.body;
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
     if (phone !== undefined) data.phone = phone;
     if (department !== undefined) data.department = department;
     if (designation !== undefined) data.designation = designation;
+    if (employeeId !== undefined) data.employeeId = employeeId;
     if (jobRoles !== undefined) data.jobRoles = jobRoles;
     const user = await prisma.user.update({
       where: { id: req.user!.id },
       data,
-      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, jobRoles: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
+      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
     });
     success(res, user, 'Profile updated');
   } catch (err) { next(err); }

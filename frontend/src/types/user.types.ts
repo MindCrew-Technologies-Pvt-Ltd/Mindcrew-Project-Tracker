@@ -7,6 +7,7 @@ export interface User {
   phone: string;
   department: string;
   designation: string;
+  employeeId?: string;
   jobRoles: string[];
   role: UserRole;
   isActive: boolean;
@@ -30,5 +31,6 @@ export interface UpdateUserPayload {
   phone?: string;
   department?: string;
   designation?: string;
+  employeeId?: string;
   jobRoles?: string[];
 }

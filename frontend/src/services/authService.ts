@@ -10,7 +10,7 @@ const authService = {
   resetPassword: (payload: ResetPasswordPayload) => axiosInstance.post('/auth/reset-password', { token: payload.otp, password: payload.newPassword }),
   changePassword: (payload: ChangePasswordPayload) => axiosInstance.post('/auth/change-password', payload),
   refreshToken: (refreshToken: string) => axiosInstance.post('/auth/refresh-token', { refreshToken }),
-  updateProfile: (payload: { name?: string; phone?: string; department?: string; designation?: string; jobRoles?: string[] }) => axiosInstance.put('/auth/profile', payload),
+  updateProfile: (payload: { name?: string; phone?: string; department?: string; designation?: string; employeeId?: string; jobRoles?: string[] }) => axiosInstance.put('/auth/profile', payload),
 };
 
 export default authService;

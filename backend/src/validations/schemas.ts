@@ -134,6 +134,7 @@ export const adminResetPasswordSchema = Joi.object({
 export const updateUserSchema = Joi.object({
   name: Joi.string().optional(), phone: Joi.string().allow('').optional(),
   department: Joi.string().allow('').optional(), designation: Joi.string().allow('').optional(),
+  employeeId: Joi.string().allow('').optional(),
   jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
   role: Joi.string().valid('ADMIN', 'EMPLOYEE').optional(), isActive: Joi.boolean().optional(),
 });
@@ -143,6 +144,7 @@ export const updateProfileSchema = Joi.object({
   phone: optionalPhone,
   department: Joi.string().allow('').optional(),
   designation: Joi.string().allow('').optional(),
+  employeeId: Joi.string().allow('').optional(),
   jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
 });
 
