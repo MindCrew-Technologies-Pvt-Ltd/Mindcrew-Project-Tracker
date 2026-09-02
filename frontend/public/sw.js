@@ -23,6 +23,12 @@ self.addEventListener('push', function (event) {
 
   event.waitUntil(
     self.registration.showNotification(payload.title || 'ProjectTracker', options)
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: 'REFRESH_DATA' });
+        }
+      })
   );
 });
 

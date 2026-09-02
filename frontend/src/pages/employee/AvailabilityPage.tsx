@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import availabilityService, { AvailabilityStatus, DailyAvailability } from '../../services/availabilityService';
 import PageHeader from '../../components/common/PageHeader';
 
@@ -73,6 +74,7 @@ const EmployeeView = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+  useAutoRefresh(fetchData);
 
   const handleSave = async () => {
     setSaving(true);
@@ -245,6 +247,7 @@ const ManagerAdminView = () => {
   };
 
   useEffect(() => { fetchAll(); }, [selectedDate, statusFilter]);
+  useAutoRefresh(fetchAll);
 
   const statusCounts = Object.fromEntries(
     Object.keys(STATUS_CONFIG).map((s) => [s, records.filter(r => r.status === s).length])

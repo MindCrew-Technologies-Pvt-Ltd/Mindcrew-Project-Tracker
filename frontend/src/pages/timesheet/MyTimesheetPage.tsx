@@ -14,6 +14,7 @@ import PageHeader from '../../components/common/PageHeader';
 import TimeEntryDialog from '../../components/timesheet/TimeEntryDialog';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useAuth } from '../../hooks/useAuth';
 import {
   fetchWeekThunk, createEntryThunk, updateEntryThunk, deleteEntryThunk,
@@ -73,6 +74,7 @@ const MyTimesheetPage = () => {
     dispatch(fetchWeekThunk({ isoYear: wkRef.year, isoWeek: wkRef.week }));
   }, [dispatch, wkRef.year, wkRef.week]);
   useEffect(() => { loadWeek(); }, [loadWeek]);
+  useAutoRefresh(loadWeek);
 
   // Only trust the payload once it belongs to the selected date's week.
   const wDates = weekDates(wkRef.year, wkRef.week).map(dateKey);

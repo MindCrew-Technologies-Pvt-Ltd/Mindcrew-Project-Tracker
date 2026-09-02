@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import leavesService from '../../services/leavesService';
 import { LeaveRequest, LeaveType, LeaveStatus } from '../../types/leave.types';
 import dayjs from 'dayjs';
@@ -80,6 +81,8 @@ export default function LeaveManagementPage() {
   useEffect(() => {
     fetchData();
   }, [isManager]);
+
+  useAutoRefresh(fetchData);
 
   const handleSubmit = async () => {
     try {
