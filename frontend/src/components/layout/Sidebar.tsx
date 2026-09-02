@@ -12,6 +12,7 @@ import ChevronRightIcon from '@mui/icons-material/esm/ChevronRight';
 import AccessTimeIcon from '@mui/icons-material/esm/AccessTime';
 import FactCheckIcon from '@mui/icons-material/esm/FactCheck';
 import InsightsIcon from '@mui/icons-material/esm/Insights';
+import EventNoteIcon from '@mui/icons-material/esm/EventNote';
 import TuneIcon from '@mui/icons-material/esm/Tune';
 import AiIcon from '@mui/icons-material/esm/SmartToyOutlined';
 import GroupIcon from '@mui/icons-material/esm/Group';
@@ -28,6 +29,7 @@ const employeeNav = [
   { label: 'My Dashboard', icon: <DashboardIcon fontSize="small" />, to: ROUTES.DASHBOARD },
   { label: 'My Projects', icon: <FolderIcon fontSize="small" />, to: ROUTES.MY_PROJECTS },
   { label: 'All Projects', icon: <FolderCopyIcon fontSize="small" />, to: ROUTES.PROJECTS },
+  { label: 'Leaves & WFH', icon: <EventNoteIcon fontSize="small" />, to: ROUTES.LEAVES },
 ];
 
 // Employees log/see their own time; admins never fill a timesheet — they get

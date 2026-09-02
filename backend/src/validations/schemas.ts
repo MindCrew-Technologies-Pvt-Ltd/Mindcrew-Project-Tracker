@@ -158,6 +158,14 @@ export const paginationSchema = Joi.object({
 
 // ---- Timesheet module (mirrors frontend timesheet schemas; see VALIDATION_CONTRACT.md) ----
 
+
+export const createLeaveRequestSchema = Joi.object({
+  type: Joi.string().valid('FULL_DAY', 'HALF_DAY', 'WFH').required(),
+  startDate: Joi.date().iso().required(),
+  endDate: Joi.date().iso().min(Joi.ref('startDate')).required(),
+  reason: Joi.string().max(500).allow('', null).optional(),
+});
+
 export const createTimeEntrySchema = Joi.object({
   projectId: Joi.string().required(),
   date: Joi.date().required(),

@@ -72,6 +72,18 @@ enum EditRequestStatus {
   REVOKED
 }
 
+enum LeaveType {
+  FULL_DAY
+  HALF_DAY
+  WFH
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id                  String    @id @default(cuid())
   name                String
@@ -106,6 +118,8 @@ model User {
   activeTimer      ActiveTimer?
   billableRate     BillableRate?
   apiTokens        ApiToken[]
+  leaveRequests    LeaveRequest[]  @relation("LeaveRequester")
+  reviewedLeaves   LeaveRequest[]  @relation("LeaveReviewer")
 }
 
 model Project {
@@ -354,4 +368,21 @@ model ActivityLog {
   createdAt   DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  userId       String
+  type         LeaveType
+  startDate    DateTime
+  endDate      DateTime
+  reason       String?
+  status       LeaveStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user       User  @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("LeaveReviewer", fields: [reviewedById], references: [id])
 }

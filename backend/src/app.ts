@@ -24,6 +24,7 @@ import integrationsRoutes from './routes/integrations.routes';
 import apiTokensRoutes from './routes/apiTokens.routes';
 import adminRoutes from './routes/admin.routes';
 import usersRoutes from './routes/users.routes';
+import leavesRoutes from './routes/leaves.routes';
 import mcpRouter from './mcp/mcpServer';
 
 const app = express();
@@ -53,6 +54,7 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectsRoutes);
+app.use('/api/leaves', leavesRoutes);
 app.use('/api', weeklyUpdatesRoutes);
 app.use('/api', documentsRoutes);
 app.use('/api/notifications', notificationsRoutes);

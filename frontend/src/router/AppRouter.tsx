@@ -22,6 +22,7 @@ import WeeklyUpdateEditPage from '../pages/employee/WeeklyUpdateEditPage';
 import NotificationsPage from '../pages/employee/NotificationsPage';
 import ProfilePage from '../pages/employee/ProfilePage';
 import MyTeamPage from '../pages/employee/MyTeamPage';
+import LeaveManagementPage from '../pages/employee/LeaveManagementPage';
 import ChangePasswordPage from '../pages/employee/ChangePasswordPage';
 import SearchPage from '../pages/employee/SearchPage';
 
@@ -65,6 +66,7 @@ const AppRouter = () => (
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/my-team" element={<MyTeamPage />} />
+        <Route path="/leaves" element={<LeaveManagementPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/timesheet" element={<MyTimesheetPage />} />
