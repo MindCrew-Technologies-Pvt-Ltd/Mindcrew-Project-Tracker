@@ -41,14 +41,16 @@ export const getMyLeaveRequests: RequestHandler = async (req, res, next) => {
 export const getTeamLeaveRequests: RequestHandler = async (req, res, next) => {
   try {
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
-    if (!currentUser?.employeeId) {
+    const isAdmin = currentUser?.role === 'ADMIN';
+
+    if (!isAdmin && !currentUser?.employeeId) {
       success(res, []);
       return;
     }
 
     const teamLeaves = await prisma.leaveRequest.findMany({
-      where: {
-        user: { managerEmployeeIds: { has: currentUser.employeeId } }
+      where: isAdmin ? {} : {
+        user: { managerEmployeeIds: { has: currentUser!.employeeId } }
       },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -67,7 +69,9 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
     const { status } = req.body; // 'APPROVED' | 'REJECTED'
 
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
-    if (!currentUser?.employeeId) {
+    const isAdmin = currentUser?.role === 'ADMIN';
+
+    if (!isAdmin && !currentUser?.employeeId) {
       error(res, 'You need an Employee ID to approve leaves', 400); return;
     }
 
@@ -78,8 +82,8 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
 
     if (!leave) return next(new AppError('Leave request not found', 404));
 
-    // Ensure the current user is a manager of the requester
-    if (!leave.user.managerEmployeeIds.includes(currentUser.employeeId) && currentUser.role !== 'ADMIN') {
+    // Ensure the current user is an admin or a manager of the requester
+    if (!isAdmin && !leave.user.managerEmployeeIds.includes(currentUser!.employeeId!)) {
       error(res, 'You are not authorized to approve this leave request', 403); return;
     }
 

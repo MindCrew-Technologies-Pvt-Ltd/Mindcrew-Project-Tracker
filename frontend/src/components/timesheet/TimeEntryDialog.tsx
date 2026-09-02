@@ -108,12 +108,19 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocke
               control={control}
               render={({ field }) => (
                 <Autocomplete
+                  freeSolo
                   options={options}
                   loading={projectsLoading}
-                  getOptionLabel={(o) => o.name}
-                  isOptionEqualToValue={(o, v) => o.id === v.id}
-                  value={options.find((p) => p.id === field.value) || null}
-                  onChange={(_, v) => field.onChange(v?.id || '')}
+                  getOptionLabel={(o) => typeof o === 'string' ? o : o.name}
+                  isOptionEqualToValue={(o, v) => (typeof o === 'string' ? o : o.id) === (typeof v === 'string' ? v : v.id)}
+                  value={options.find((p) => p.id === field.value) || field.value || null}
+                  onChange={(_, v) => {
+                    if (typeof v === 'string') {
+                      field.onChange(v);
+                    } else {
+                      field.onChange(v?.id || '');
+                    }
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}

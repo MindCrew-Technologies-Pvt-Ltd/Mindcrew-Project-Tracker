@@ -184,10 +184,14 @@ const MyTimesheetPage = () => {
           </Box>
         ) : (
           <Box>
-            {dayEntries.map((e, i) => (
+            {dayEntries.map((e, i) => {
+              const isCustom = e.project.name === 'Miscellaneous' && e.description?.startsWith('Custom Project: ');
+              const displayProjectName = isCustom ? e.description!.split('\n')[0].replace('Custom Project: ', '') : e.project.name;
+              const displayDescription = isCustom ? e.description!.split('\n\n').slice(1).join('\n\n') : e.description;
+              return (
               <Box key={e.id} sx={{ px: 2.5, py: 2, borderBottom: i < dayEntries.length - 1 ? '1px solid #EEF0F5' : 'none', '&:hover': { bgcolor: '#F7F8FD' } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>{e.project.name}</Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>{displayProjectName}</Typography>
                   {e.source === 'AI_AGENT' && <Chip label="AI" size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#EEF0FF', color: '#4338CA', border: '1px solid #DFE2FA' }} />}
                   {e.source === 'TIMER' && <Chip label="Timer" size="small" sx={{ height: 18, fontSize: '0.65rem' }} />}
                   {e.billable && <Chip label="Billable" size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#E9F9EF', color: '#15803D' }} />}
@@ -205,10 +209,10 @@ const MyTimesheetPage = () => {
                   )}
                 </Box>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.75, whiteSpace: 'pre-line' }}>
-                  {e.description || 'No description'}
+                  {displayDescription || 'No description'}
                 </Typography>
               </Box>
-            ))}
+            )})}
             {/* Day total footer */}
             <Box sx={{ display: 'flex', alignItems: 'center', px: 2.5, py: 1.5, bgcolor: '#F8FAFC', borderTop: '1px solid #EEF0F5' }}>
               <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Day total</Typography>

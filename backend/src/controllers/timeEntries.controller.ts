@@ -106,16 +106,29 @@ export const createTimeEntry: RequestHandler = async (req, res, next) => {
     const day = toUtcDateOnly(date);
     const totalMinutes = hours * 60 + minutes;
     const { isoYear, isoWeek } = isoWeekOf(day);
-    const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
-    if (!project) return next(new AppError('Project not found', 404));
+    let finalProjectId = projectId;
+    let finalDescription = description;
+    let project = await prisma.project.findUnique({ where: { id: finalProjectId }, select: { id: true } });
+    
+    if (!project) {
+      let miscProject = await prisma.project.findFirst({ where: { name: 'Miscellaneous' }, select: { id: true } });
+      if (!miscProject) {
+        miscProject = await prisma.project.create({
+          data: { name: 'Miscellaneous', ownerId: req.user!.id, status: 'ACTIVE' },
+          select: { id: true }
+        });
+      }
+      finalProjectId = miscProject.id;
+      finalDescription = `Custom Project: ${projectId}\n\n${description || ''}`.trim();
+    }
     // await assertManualEntryAllowed(req.user!);
     await assertDateEditable(day, req.user!);
     await assertWeekUnlocked(req.user!.id, isoYear, isoWeek);
     await assertDayCapacity(req.user!.id, day, totalMinutes, undefined, req.user!);
     const entry = await prisma.timeEntry.create({
       data: {
-        userId: req.user!.id, projectId, date: day, minutes: totalMinutes,
-        description, billable: billable ?? true, isoYear, isoWeek, source: 'MANUAL',
+        userId: req.user!.id, projectId: finalProjectId, date: day, minutes: totalMinutes,
+        description: finalDescription, billable: billable ?? true, isoYear, isoWeek, source: 'MANUAL',
       },
       include: { project: { select: { id: true, name: true } } },
     });
@@ -143,17 +156,30 @@ export const updateTimeEntry: RequestHandler = async (req, res, next) => {
     const newMinutes = hours !== undefined && minutes !== undefined ? hours * 60 + minutes : existing.minutes;
     if (newMinutes < 1) { error(res, 'Entry must be at least 1 minute', 400); return; }
     await assertDayCapacity(existing.userId, newDay, newMinutes, id, req.user!);
-    if (projectId !== undefined) {
-      const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
-      if (!project) return next(new AppError('Project not found', 404));
+    let finalProjectId = projectId;
+    let finalDescription = description;
+
+    if (finalProjectId !== undefined) {
+      const project = await prisma.project.findUnique({ where: { id: finalProjectId }, select: { id: true } });
+      if (!project) {
+        let miscProject = await prisma.project.findFirst({ where: { name: 'Miscellaneous' }, select: { id: true } });
+        if (!miscProject) {
+          miscProject = await prisma.project.create({
+            data: { name: 'Miscellaneous', ownerId: req.user!.id, status: 'ACTIVE' },
+            select: { id: true }
+          });
+        }
+        finalProjectId = miscProject.id;
+        finalDescription = `Custom Project: ${projectId}\n\n${description || ''}`.trim();
+      }
     }
     const entry = await prisma.timeEntry.update({
       where: { id },
       data: {
-        ...(projectId !== undefined && { projectId }),
+        ...(finalProjectId !== undefined && { projectId: finalProjectId }),
         ...(date !== undefined && { date: newDay, isoYear, isoWeek }),
         minutes: newMinutes,
-        ...(description !== undefined && { description }),
+        ...(finalDescription !== undefined && { description: finalDescription }),
         ...(billable !== undefined && { billable }),
       },
       include: { project: { select: { id: true, name: true } } },
