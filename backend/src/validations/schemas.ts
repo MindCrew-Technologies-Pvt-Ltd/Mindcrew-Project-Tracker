@@ -40,6 +40,7 @@ const JOB_ROLE_VALUES = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry
 export const signupSchema = Joi.object({
   name: Joi.string().min(2).required().messages({ 'string.min': 'Name must be at least 2 characters' }),
   email: Joi.string().email().required(),
+  employeeId: Joi.string().required().messages({ 'any.required': 'Employee ID is required' }),
   phone: optionalPhone,
   department: Joi.string().allow('').optional(),
   designation: Joi.string().allow('').optional(),
@@ -136,6 +137,7 @@ export const updateUserSchema = Joi.object({
   department: Joi.string().allow('').optional(), designation: Joi.string().allow('').optional(),
   employeeId: Joi.string().allow('').optional(),
   jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
+  managerEmployeeIds: Joi.array().items(Joi.string()).optional(),
   role: Joi.string().valid('ADMIN', 'EMPLOYEE').optional(), isActive: Joi.boolean().optional(),
 });
 
@@ -146,6 +148,7 @@ export const updateProfileSchema = Joi.object({
   designation: Joi.string().allow('').optional(),
   employeeId: Joi.string().allow('').optional(),
   jobRoles: Joi.array().items(Joi.string().valid(...JOB_ROLE_VALUES)).optional(),
+  managerEmployeeIds: Joi.array().items(Joi.string()).optional(),
 });
 
 export const paginationSchema = Joi.object({

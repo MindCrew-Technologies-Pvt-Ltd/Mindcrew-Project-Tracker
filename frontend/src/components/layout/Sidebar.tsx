@@ -14,6 +14,7 @@ import FactCheckIcon from '@mui/icons-material/esm/FactCheck';
 import InsightsIcon from '@mui/icons-material/esm/Insights';
 import TuneIcon from '@mui/icons-material/esm/Tune';
 import AiIcon from '@mui/icons-material/esm/SmartToyOutlined';
+import GroupIcon from '@mui/icons-material/esm/Group';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -96,7 +97,7 @@ const navItemSx = (collapsed: boolean) => ({
 interface ContentProps { onClose?: () => void; collapsed: boolean; onToggleCollapse: () => void; }
 
 const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) => {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const NavItem = ({ item }: { item: { label: string; icon: React.ReactNode; to: string; end?: boolean } }) => {
     const btn = (
@@ -186,6 +187,10 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
         )}
 
         {employeeNav.map((item) => <NavItem key={item.to} item={item} />)}
+
+        {user?.jobRoles?.includes('Manager') && (
+          <NavItem key={ROUTES.MY_TEAM} item={{ label: 'My Team', icon: <GroupIcon fontSize="small" />, to: ROUTES.MY_TEAM }} />
+        )}
 
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }} />
         {!collapsed && (

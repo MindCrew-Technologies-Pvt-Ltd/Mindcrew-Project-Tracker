@@ -8,6 +8,9 @@ const usersService = {
   deactivateUser: (id: string) => axiosInstance.put(`/admin/users/${id}/deactivate`),
   resetUserPassword: (id: string, newPassword: string) => axiosInstance.put(`/admin/users/${id}/reset-password`, { newPassword }),
   deleteUser: (id: string) => axiosInstance.delete(`/admin/users/${id}`),
+  getManagers: () => axiosInstance.get('/users/managers'),
+  getMyTeam: () => axiosInstance.get('/users/my-team'),
+  assignReportee: (employeeId: string) => axiosInstance.put('/users/assign-reportee', { employeeId }),
 };
 
 export default usersService;

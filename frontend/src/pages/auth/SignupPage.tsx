@@ -13,7 +13,7 @@ import { signupThunk, clearError } from '../../store/slices/authSlice';
 import { signupSchema, JOB_ROLE_OPTIONS } from '../../utils/validators';
 import { ROUTES } from '../../constants/routes';
 
-interface FormData { name: string; email: string; phone?: string; department?: string; designation?: string; jobRoles?: string[]; password: string; confirmPassword: string; }
+interface FormData { name: string; email: string; employeeId: string; phone?: string; department?: string; designation?: string; jobRoles?: string[]; password: string; confirmPassword: string; }
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -44,6 +44,7 @@ const SignupPage = () => {
     const payload = {
       name: data.name.trim(),
       email: data.email.trim(),
+      employeeId: data.employeeId.trim(),
       password: data.password,
       confirmPassword: data.confirmPassword,
       ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
@@ -75,6 +76,7 @@ const SignupPage = () => {
 
       <TextField label="Full Name" fullWidth margin="normal" autoFocus error={!!errors.name} helperText={errors.name?.message} {...register('name')} />
       <TextField label="Email Address" fullWidth margin="normal" autoComplete="email" error={!!errors.email} helperText={errors.email?.message} {...register('email')} />
+      <TextField label="Employee ID" fullWidth margin="normal" placeholder="e.g. EMP-001" error={!!errors.employeeId} helperText={errors.employeeId?.message} {...register('employeeId')} />
       <TextField
         label="Phone Number (optional)" fullWidth margin="normal" placeholder="+91 9876543210"
         inputProps={{ inputMode: 'tel', maxLength: 20 }}

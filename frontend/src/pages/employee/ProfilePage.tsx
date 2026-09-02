@@ -16,10 +16,12 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchMeThunk } from '../../store/slices/authSlice';
 import authService from '../../services/authService';
+import usersService from '../../services/usersService';
+import { User } from '../../types/user.types';
 import PageHeader from '../../components/common/PageHeader';
 import { JOB_ROLE_OPTIONS } from '../../utils/validators';
 
-interface FormData { name: string; phone: string; department: string; designation: string; employeeId: string; jobRoles: string[]; }
+interface FormData { name: string; phone: string; department: string; designation: string; employeeId: string; jobRoles: string[]; managerEmployeeIds: string[]; }
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -59,8 +61,13 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [managers, setManagers] = useState<User[]>([]);
 
   const { register, handleSubmit, reset, control } = useForm<FormData>();
+
+  useEffect(() => {
+    usersService.getManagers().then(res => setManagers(res.data.data)).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (user) reset({
@@ -70,6 +77,7 @@ const ProfilePage = () => {
       designation: user.designation,
       employeeId: user.employeeId || '',
       jobRoles: user.jobRoles ?? [],
+      managerEmployeeIds: user.managerEmployeeIds ?? [],
     });
   }, [user, reset]);
 
@@ -84,6 +92,7 @@ const ProfilePage = () => {
         designation: data.designation,
         employeeId: data.employeeId,
         jobRoles: data.jobRoles,
+        managerEmployeeIds: data.managerEmployeeIds,
       });
       await dispatch(fetchMeThunk());
       setSuccess(true);
@@ -261,6 +270,40 @@ const ProfilePage = () => {
                               helperText="You can select multiple roles — e.g. Developer + Manager"
                             />
                           )}
+                        />
+                      )}
+                    />
+                  </Grid>
+
+                  {/* ---- Reporting Managers Multi-Select ---- */}
+                  <Grid item xs={12}>
+                    <Controller
+                      name="managerEmployeeIds"
+                      control={control}
+                      render={({ field }) => (
+                        <Autocomplete
+                          multiple
+                          options={managers}
+                          getOptionLabel={(option) => `${option.name} (${option.employeeId})`}
+                          disableCloseOnSelect
+                          value={managers.filter(m => (field.value || []).includes(m.employeeId!))}
+                          onChange={(_, newValue) => field.onChange(newValue.map(v => v.employeeId))}
+                          renderOption={(props, option, { selected }) => {
+                            const { key, ...rest } = props as any;
+                            return (
+                              <li key={key} {...rest}>
+                                <Checkbox icon={icon} checkedIcon={checkedIcon} style={{ marginRight: 8 }} checked={selected} />
+                                {option.name} ({option.employeeId})
+                              </li>
+                            );
+                          }}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, index) => {
+                              const { key, ...tagProps } = getTagProps({ index });
+                              return <Chip key={key} label={option.name} size="small" sx={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', fontWeight: 500, '& .MuiChip-deleteIcon': { color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#fff' } } }} {...tagProps} />;
+                            })
+                          }
+                          renderInput={(params) => <TextField {...params} label="Reporting Managers" placeholder="Select your reporting managers" helperText="You can select multiple managers" />}
                         />
                       )}
                     />

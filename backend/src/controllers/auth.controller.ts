@@ -7,12 +7,17 @@ import { sendEmail } from '../config/nodemailer';
 
 export const signup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, email, password, phone, department, designation, jobRoles } = req.body;
+    const { name, email, password, phone, department, designation, employeeId, jobRoles } = req.body;
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) { error(res, 'Email already in use', 409); return; }
+    // Check if employeeId is already taken
+    if (employeeId) {
+      const existingEmployeeId = await prisma.user.findUnique({ where: { employeeId } });
+      if (existingEmployeeId) { error(res, 'Employee ID already in use', 409); return; }
+    }
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, phone, department, designation, jobRoles: jobRoles ?? [] },
+      data: { name, email, passwordHash, phone, department, designation, employeeId, jobRoles: jobRoles ?? [] },
       select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, createdAt: true },
     });
     const tokens = generateTokens({ id: user.id, email: user.email, role: user.role });
@@ -43,7 +48,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
+      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, managerEmployeeIds: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
     });
     if (!user) { error(res, 'User not found', 404); return; }
     success(res, user);
@@ -101,18 +106,24 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 
 export const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, phone, department, designation, employeeId, jobRoles } = req.body;
+    const { name, phone, department, designation, employeeId, jobRoles, managerEmployeeIds } = req.body;
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
     if (phone !== undefined) data.phone = phone;
     if (department !== undefined) data.department = department;
     if (designation !== undefined) data.designation = designation;
-    if (employeeId !== undefined) data.employeeId = employeeId;
+    if (employeeId !== undefined) {
+       // Validate uniqueness if changing
+       const existingEmployeeId = await prisma.user.findUnique({ where: { employeeId } });
+       if (existingEmployeeId && existingEmployeeId.id !== req.user!.id) { error(res, 'Employee ID already in use', 409); return; }
+       data.employeeId = employeeId;
+    }
     if (jobRoles !== undefined) data.jobRoles = jobRoles;
+    if (managerEmployeeIds !== undefined) data.managerEmployeeIds = managerEmployeeIds;
     const user = await prisma.user.update({
       where: { id: req.user!.id },
       data,
-      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
+      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, managerEmployeeIds: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
     });
     success(res, user, 'Profile updated');
   } catch (err) { next(err); }

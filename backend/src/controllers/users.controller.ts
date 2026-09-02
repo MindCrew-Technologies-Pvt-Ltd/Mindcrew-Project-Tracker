@@ -21,7 +21,7 @@ export const getUsers: RequestHandler = async (req, res, next) => {
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive === 'true';
     const [items, total] = await Promise.all([
-      prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, createdAt: true, updatedAt: true, _count: { select: { ownedProjects: true } } } }),
+      prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, managerEmployeeIds: true, role: true, isActive: true, createdAt: true, updatedAt: true, _count: { select: { ownedProjects: true } } } }),
       prisma.user.count({ where }),
     ]);
     paginated(res, items.map(({ _count, ...u }) => ({ ...u, projectCount: _count.ownedProjects })), total, page, pageSize);
@@ -31,7 +31,7 @@ export const getUsers: RequestHandler = async (req, res, next) => {
 export const getUser: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);
-    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, createdAt: true, updatedAt: true } });
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, managerEmployeeIds: true, role: true, isActive: true, createdAt: true, updatedAt: true } });
     if (!user) return next(new AppError('User not found', 404));
     const [recentActivity, ownedProjects] = await Promise.all([
       prisma.activityLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 20 }),
@@ -46,14 +46,19 @@ export const updateUser: RequestHandler = async (req, res, next) => {
     const id = sp(req.params.id);
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) return next(new AppError('User not found', 404));
-    const { name, phone, department, designation, employeeId, jobRoles, role, isActive } = req.body;
+    const { name, phone, department, designation, employeeId, jobRoles, managerEmployeeIds, role, isActive } = req.body;
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
     if (phone !== undefined) data.phone = phone;
     if (department !== undefined) data.department = department;
     if (designation !== undefined) data.designation = designation;
-    if (employeeId !== undefined) data.employeeId = employeeId;
+    if (employeeId !== undefined) {
+      const existingEmployeeId = await prisma.user.findUnique({ where: { employeeId } });
+      if (existingEmployeeId && existingEmployeeId.id !== id) { error(res, 'Employee ID already in use', 409); return; }
+      data.employeeId = employeeId;
+    }
     if (jobRoles !== undefined) data.jobRoles = jobRoles;
+    if (managerEmployeeIds !== undefined) data.managerEmployeeIds = managerEmployeeIds;
     if (role !== undefined) data.role = role;
     if (isActive !== undefined) data.isActive = isActive;
     const user = await prisma.user.update({ where: { id }, data, select: { id: true, name: true, email: true, role: true, isActive: true, updatedAt: true } });
@@ -101,3 +106,64 @@ export const resetUserPassword: RequestHandler = async (req, res, next) => {
     success(res, null, 'Password reset and email sent');
   } catch (err) { next(err); }
 };
+
+export const getManagers: RequestHandler = async (req, res, next) => {
+  try {
+    const managers = await prisma.user.findMany({
+      where: {
+        OR: [
+          { jobRoles: { has: 'Manager' } },
+          { role: 'ADMIN' },
+        ],
+        isActive: true,
+      },
+      select: { id: true, name: true, email: true, employeeId: true, jobRoles: true },
+    });
+    success(res, managers);
+  } catch (err) { next(err); }
+};
+
+export const getMyTeam: RequestHandler = async (req, res, next) => {
+  try {
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!currentUser?.employeeId) {
+      success(res, []);
+      return;
+    }
+    const team = await prisma.user.findMany({
+      where: { managerEmployeeIds: { has: currentUser.employeeId }, isActive: true },
+      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, managerEmployeeIds: true },
+    });
+    success(res, team);
+  } catch (err) { next(err); }
+};
+
+export const assignReportee: RequestHandler = async (req, res, next) => {
+  try {
+    const { employeeId } = req.body; // The employeeId of the reportee to assign
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    
+    if (!currentUser?.employeeId) {
+      error(res, 'You need an Employee ID to assign reportees', 400); return;
+    }
+    if (!currentUser.jobRoles.includes('Manager') && currentUser.role !== 'ADMIN') {
+      error(res, 'Only managers can assign reportees', 403); return;
+    }
+
+    const reportee = await prisma.user.findUnique({ where: { employeeId } });
+    if (!reportee) {
+      error(res, 'Employee not found', 404); return;
+    }
+
+    if (!reportee.managerEmployeeIds.includes(currentUser.employeeId)) {
+      await prisma.user.update({
+        where: { employeeId },
+        data: { managerEmployeeIds: { push: currentUser.employeeId } }
+      });
+      await logActivity({ userId: req.user!.id, action: 'UPDATE', module: 'USER', description: `Assigned employee ${employeeId} to their team` });
+    }
+    
+    success(res, null, 'Employee assigned to your team successfully');
+  } catch (err) { next(err); }
+};
+

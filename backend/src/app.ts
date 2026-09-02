@@ -23,6 +23,7 @@ import timesheetRoutes from './routes/timesheet.routes';
 import integrationsRoutes from './routes/integrations.routes';
 import apiTokensRoutes from './routes/apiTokens.routes';
 import adminRoutes from './routes/admin.routes';
+import usersRoutes from './routes/users.routes';
 import mcpRouter from './mcp/mcpServer';
 
 const app = express();
@@ -61,6 +62,7 @@ app.use('/api/edit-requests', editRequestsRoutes);
 // has to be mounted BEFORE it (same reason /api/health is declared early).
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/api-tokens', apiTokensRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api', timesheetRoutes);
 app.use('/api/admin', adminRoutes);
 

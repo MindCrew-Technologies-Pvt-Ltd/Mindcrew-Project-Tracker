@@ -15,6 +15,7 @@ export const ROUTES = {
   WEEKLY_UPDATE_EDIT: (projectId: string, updateId: string) => `/projects/${projectId}/weekly-update/${updateId}/edit`,
   NOTIFICATIONS: '/notifications',
   PROFILE: '/profile',
+  MY_TEAM: '/my-team',
   CHANGE_PASSWORD: '/change-password',
   INTEGRATIONS: '/integrations',
   SEARCH: '/search',

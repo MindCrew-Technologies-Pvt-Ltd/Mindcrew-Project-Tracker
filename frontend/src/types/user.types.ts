@@ -9,6 +9,7 @@ export interface User {
   designation: string;
   employeeId?: string;
   jobRoles: string[];
+  managerEmployeeIds: string[];
   role: UserRole;
   isActive: boolean;
   createdAt: string;
@@ -33,4 +34,5 @@ export interface UpdateUserPayload {
   designation?: string;
   employeeId?: string;
   jobRoles?: string[];
+  managerEmployeeIds?: string[];
 }
