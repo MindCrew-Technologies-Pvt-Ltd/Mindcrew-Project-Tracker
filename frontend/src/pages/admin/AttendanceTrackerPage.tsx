@@ -4,7 +4,7 @@ import {
   TableCell, TableContainer, TableHead, TableRow,
   CircularProgress, Grid, Alert, Snackbar
 } from '@mui/material';
-import { CloudUpload, Save, Download, Description } from '@mui/icons-material';
+import { Save, Download, CloudUpload, Email, Description } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import attendanceService, { SheetData } from '../../services/attendanceService';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -20,6 +20,7 @@ export default function AttendanceTrackerPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [loadingSheet, setLoadingSheet] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [toast, setToast] = useState<{ msg: string; severity: 'success' | 'error' | 'info' } | null>(null);
@@ -135,6 +136,19 @@ export default function AttendanceTrackerPage() {
     }
   };
 
+  const handleSendReport = async () => {
+    try {
+      setSendingEmail(true);
+      setToast({ msg: 'Sending report via email...', severity: 'info' });
+      await attendanceService.sendReport();
+      setToast({ msg: 'Report sent successfully to all employees!', severity: 'success' });
+    } catch (err: any) {
+      setToast({ msg: err.response?.data?.message || 'Failed to send report', severity: 'error' });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const getStatusColor = (val: string) => {
     switch (val) {
       case 'P': return 'transparent';
@@ -164,6 +178,15 @@ export default function AttendanceTrackerPage() {
               disabled={sheets.length === 0}
             >
               Download Excel
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<Email />}
+              onClick={handleSendReport}
+              disabled={sheets.length === 0 || sendingEmail}
+            >
+              {sendingEmail ? 'Sending...' : 'Send Report via Email'}
             </Button>
             <Button
               variant="contained"

@@ -39,6 +39,9 @@ const attendanceService = {
       rows,
     }),
 
+  /** Send report via email to all employees */
+  sendReport: () => axiosInstance.post(`${API}/send-report`),
+
   /** Download master Excel */
   downloadMaster() {
     return axiosInstance.get(`${API}/download-master`, { responseType: 'blob' });
