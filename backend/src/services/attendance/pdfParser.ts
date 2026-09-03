@@ -70,7 +70,9 @@ export async function parsePdfReport(
   const importDynamic = new Function('modulePath', 'return import(modulePath)');
   const pdfjsLib = await importDynamic('pdfjs-dist/legacy/build/pdf.mjs');
 
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBytes, useSystemFonts: true });
+  // pdfjs-dist strictly requires a Uint8Array, not a Node Buffer
+  const dataArray = new Uint8Array(pdfBytes);
+  const loadingTask = pdfjsLib.getDocument({ data: dataArray, useSystemFonts: true });
   const doc = await loadingTask.promise;
   const numPages = doc.numPages;
 
