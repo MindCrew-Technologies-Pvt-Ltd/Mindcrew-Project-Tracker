@@ -233,8 +233,6 @@ export default function AttendanceTrackerPage() {
               </Box>
             </CardContent>
           </Card>
-
-          </Card>
         </Grid>
 
         <Grid item xs={12} md={8} lg={9} sx={{ height: '100%' }}>
