@@ -66,8 +66,9 @@ function groupWordsByLine(words: Word[], tolerance = 5): Word[][] {
 export async function parsePdfReport(
   pdfBytes: Buffer | Uint8Array
 ): Promise<{ attendanceData: EmployeeAttendance[]; datesList: Date[] }> {
-  // Dynamic import for pdfjs-dist (ESM-style in Node)
-  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  // Dynamic import for pdfjs-dist (bypassing TS require transpilation for ESM)
+  const importDynamic = new Function('modulePath', 'return import(modulePath)');
+  const pdfjsLib = await importDynamic('pdfjs-dist/legacy/build/pdf.mjs');
 
   const loadingTask = pdfjsLib.getDocument({ data: pdfBytes, useSystemFonts: true });
   const doc = await loadingTask.promise;
