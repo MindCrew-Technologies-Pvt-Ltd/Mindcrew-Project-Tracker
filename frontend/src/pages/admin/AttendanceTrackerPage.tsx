@@ -124,12 +124,12 @@ export default function AttendanceTrackerPage() {
 
   const getStatusColor = (val: string) => {
     switch (val) {
-      case 'P': return 'success.main';
-      case 'A': return 'error.main';
-      case 'SL': return 'warning.light';
-      case 'HD': return 'info.main';
-      case 'Weekly Off': return 'warning.main';
-      case 'WFH': return 'secondary.main';
+      case 'P': return 'transparent';
+      case 'A': return '#FF0000'; // Red
+      case 'SL': return '#FFFF00'; // Yellow
+      case 'HD': return '#92D050'; // Light Green
+      case 'Weekly Off': return '#FFC000'; // Orange
+      case 'WFH': return '#CCC0DA'; // Light Purple
       default: return 'transparent';
     }
   };
@@ -194,15 +194,15 @@ export default function AttendanceTrackerPage() {
               <Typography variant="h6" gutterBottom>Legend</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {[
-                  { label: 'Present', color: 'success.main' },
-                  { label: 'Absent', color: 'error.main' },
-                  { label: 'Short Leave', color: 'warning.light' },
-                  { label: 'Half Day', color: 'info.main' },
-                  { label: 'Weekly Off', color: 'warning.main' },
-                  { label: 'WFH', color: 'secondary.main' }
+                  { label: 'Present', color: 'transparent', border: '1px solid #ccc' },
+                  { label: 'Absent', color: '#FF0000' },
+                  { label: 'Short Leave', color: '#FFFF00' },
+                  { label: 'Half Day', color: '#92D050' },
+                  { label: 'Weekly Off', color: '#FFC000' },
+                  { label: 'WFH', color: '#CCC0DA' }
                 ].map(item => (
                   <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: item.color }} />
+                    <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: item.color, border: item.border || 'none' }} />
                     <Typography variant="body2">{item.label}</Typography>
                   </Box>
                 ))}
@@ -276,7 +276,13 @@ export default function AttendanceTrackerPage() {
                     <TableHead>
                       <TableRow>
                         {sheetData.headers.map((h, i) => (
-                          <TableCell key={i} sx={{ fontWeight: 'bold', bgcolor: 'grey.100' }}>
+                          <TableCell key={i} sx={{ 
+                            fontWeight: 'bold', 
+                            bgcolor: '#FCE4D6', // Excel Header Color
+                            border: '1px solid #ccc',
+                            px: 1, py: 0.5,
+                            textAlign: 'center'
+                          }}>
                             {h}
                           </TableCell>
                         ))}
@@ -288,36 +294,37 @@ export default function AttendanceTrackerPage() {
                           {row.map((cell, ci) => {
                             // Column 0: Name (Read-only)
                             if (ci === 0) {
-                              return <TableCell key={ci} sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1, fontWeight: 'medium' }}>{cell}</TableCell>;
+                              return <TableCell key={ci} sx={{ position: 'sticky', left: 0, bgcolor: '#F8CBAD', zIndex: 1, fontWeight: 'medium', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
                             }
 
                             // ATTENDANCE SHEET
                             if (isAttendance) {
-                              if (ci === 1) return <TableCell key={ci} sx={{ color: 'text.secondary' }}>{cell}</TableCell>;
+                              if (ci === 1) return <TableCell key={ci} sx={{ bgcolor: '#F8CBAD', color: 'text.primary', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
                               
+                              const cellColor = getStatusColor(cell);
                               return (
-                                <TableCell key={ci} sx={{ p: 0.5 }}>
-                                  <Select
+                                <TableCell key={ci} sx={{ p: 0, border: '1px solid #ccc', bgcolor: cellColor, minWidth: 40 }}>
+                                  <select
                                     value={cell || ''}
                                     onChange={(e) => handleCellChange(ri, ci, e.target.value)}
-                                    size="small"
-                                    variant="standard"
-                                    disableUnderline
-                                    sx={{ 
+                                    style={{ 
                                       width: '100%', 
-                                      minWidth: 50,
-                                      bgcolor: getStatusColor(cell),
-                                      color: cell ? 'primary.contrastText' : 'text.primary',
-                                      px: 1,
-                                      borderRadius: 1,
-                                      '& .MuiSelect-select': { py: 0.5 },
-                                      ...(getStatusColor(cell) === 'transparent' ? {} : { color: '#000' })
+                                      height: '100%',
+                                      minHeight: '28px',
+                                      backgroundColor: 'transparent',
+                                      border: 'none',
+                                      outline: 'none',
+                                      textAlign: 'center',
+                                      appearance: 'none', // Remove default arrow
+                                      cursor: 'pointer',
+                                      color: cellColor === 'transparent' ? '#000' : '#000',
+                                      fontWeight: cellColor !== 'transparent' ? '500' : 'normal'
                                     }}
                                   >
                                     {STATUS_OPTIONS.map(opt => (
-                                      <MenuItem key={opt} value={opt}>{opt === 'Weekly Off' ? 'WO' : opt || '-'}</MenuItem>
+                                      <option key={opt} value={opt}>{opt === 'Weekly Off' ? 'WO' : opt || '-'}</option>
                                     ))}
-                                  </Select>
+                                  </select>
                                 </TableCell>
                               );
                             }
@@ -326,20 +333,23 @@ export default function AttendanceTrackerPage() {
                             if (isLeaves) {
                               const isFormula = LEAVES_FORMULA_COLUMNS.includes(ci);
                               if (isFormula) {
-                                return <TableCell key={ci} sx={{ color: 'text.secondary', fontStyle: 'italic' }}>{cell || '—'}</TableCell>;
+                                return <TableCell key={ci} sx={{ color: 'text.secondary', fontStyle: 'italic', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell || '—'}</TableCell>;
                               }
                               return (
-                                <TableCell key={ci} sx={{ p: 0.5 }}>
+                                <TableCell key={ci} sx={{ p: 0, border: '1px solid #ccc' }}>
                                   <input
                                     type="text"
                                     value={cell}
                                     onChange={(e) => handleCellChange(ri, ci, e.target.value)}
                                     style={{
                                       width: '100%',
+                                      height: '100%',
+                                      minHeight: '28px',
                                       minWidth: 60,
-                                      padding: '4px 8px',
-                                      border: '1px solid #ccc',
-                                      borderRadius: '4px',
+                                      padding: '0 8px',
+                                      border: 'none',
+                                      outline: 'none',
+                                      background: 'transparent',
                                       fontFamily: 'inherit'
                                     }}
                                   />
@@ -347,7 +357,7 @@ export default function AttendanceTrackerPage() {
                               );
                             }
 
-                            return <TableCell key={ci}>{cell}</TableCell>;
+                            return <TableCell key={ci} sx={{ border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
                           })}
                         </TableRow>
                       ))}
