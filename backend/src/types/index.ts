@@ -17,6 +17,7 @@ export type JwtPayload = {
   id: string;
   email: string;
   role: string;
+  jobRoles?: string[];
   iat?: number;
   exp?: number;
 };

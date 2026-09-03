@@ -20,7 +20,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction): P
       data: { name, email, passwordHash, phone, department, designation, employeeId, jobRoles: jobRoles ?? [] },
       select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, createdAt: true },
     });
-    const tokens = generateTokens({ id: user.id, email: user.email, role: user.role });
+    const tokens = generateTokens({ id: user.id, email: user.email, role: user.role, jobRoles: user.jobRoles });
     success(res, { user, ...tokens }, 'Account created', 201);
   } catch (err) { next(err); }
 };
@@ -34,7 +34,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     const valid = await comparePassword(password, user.passwordHash);
     if (!valid) { error(res, 'Incorrect password', 401); return; }
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-    const tokens = generateTokens({ id: user.id, email: user.email, role: user.role });
+    const tokens = generateTokens({ id: user.id, email: user.email, role: user.role, jobRoles: user.jobRoles });
     const { passwordHash, passwordResetToken, passwordResetExpiry, ...safeUser } = user;
     success(res, { user: safeUser, ...tokens }, 'Login successful');
   } catch (err) { next(err); }
@@ -98,9 +98,9 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     const token: string | undefined = req.body?.refreshToken ?? req.cookies?.refreshToken;
     if (!token) { error(res, 'Refresh token required', 400); return; }
     const payload = verifyRefreshToken(token);
-    const user = await prisma.user.findUnique({ where: { id: payload.id }, select: { id: true, email: true, role: true, isActive: true } });
+    const user = await prisma.user.findUnique({ where: { id: payload.id }, select: { id: true, email: true, role: true, jobRoles: true, isActive: true } });
     if (!user || !user.isActive) { error(res, 'Invalid token', 401); return; }
-    success(res, generateTokens({ id: user.id, email: user.email, role: user.role }), 'Token refreshed');
+    success(res, generateTokens({ id: user.id, email: user.email, role: user.role, jobRoles: user.jobRoles }), 'Token refreshed');
   } catch (err) { next(err); }
 };
 

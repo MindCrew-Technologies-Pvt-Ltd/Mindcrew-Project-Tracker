@@ -21,7 +21,7 @@ const router = Router();
 const requireHrOrAdmin: RequestHandler = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
-    const isAdmin = user?.role === 'ADMIN';
+    const isAdmin = user?.role === 'ADMIN' || user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN');
     const isHR = user?.jobRoles?.some(
       (r: string) => r.toUpperCase() === 'HR' || r.toUpperCase().includes('HR')
     );
