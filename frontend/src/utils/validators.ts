@@ -23,7 +23,7 @@ const requiredPhone = yup.string()
   })
   .required('Phone is required');
 
-export const JOB_ROLE_OPTIONS = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA'] as const;
+export const JOB_ROLE_OPTIONS = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA', 'Admin'] as const;
 
 export const signupSchema = yup.object({
   name: yup.string().min(2, 'Name must be at least 2 characters').required('Full name is required'),

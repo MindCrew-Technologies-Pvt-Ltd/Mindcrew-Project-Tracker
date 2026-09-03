@@ -230,7 +230,7 @@ export default function LeaveManagementPage() {
           
           <Grid item xs={12} md={4}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6">Calendar ({currentMonth.format('MMMM YYYY')})</Typography>
+              <Typography variant="h6">{currentMonth.format('MMMM YYYY')}</Typography>
               <Box>
                 <IconButton size="small" onClick={() => setCurrentMonth(prev => prev.subtract(1, 'month'))}>
                   <ChevronLeft />
@@ -413,7 +413,7 @@ export default function LeaveManagementPage() {
                 {myManagers.map((mgr) => (
                   <MenuItem key={mgr.id} value={mgr.employeeId}>
                     <Checkbox checked={formData.notifyManagerIds.indexOf(mgr.employeeId) > -1} />
-                    <ListItemText primary={mgr.name} secondary={mgr.employeeId} />
+                    <ListItemText primary={mgr.name} />
                   </MenuItem>
                 ))}
                 {myManagers.length === 0 && (
