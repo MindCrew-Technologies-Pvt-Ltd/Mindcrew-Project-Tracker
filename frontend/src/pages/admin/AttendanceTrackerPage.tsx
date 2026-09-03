@@ -275,31 +275,41 @@ export default function AttendanceTrackerPage() {
                   <Table stickyHeader size="small" sx={{ '& td, & th': { whiteSpace: 'nowrap' } }}>
                     <TableHead>
                       <TableRow>
-                        {sheetData.headers.map((h, i) => (
-                          <TableCell key={i} sx={{ 
-                            fontWeight: 'bold', 
-                            bgcolor: '#FCE4D6', // Excel Header Color
-                            border: '1px solid #ccc',
-                            px: 1, py: 0.5,
-                            textAlign: 'center'
-                          }}>
-                            {h}
-                          </TableCell>
-                        ))}
+                        {sheetData.headers.map((h, i) => {
+                          const isStickyName = i === 0;
+                          const isStickyId = i === 1;
+                          
+                          return (
+                            <TableCell key={i} sx={{ 
+                              fontWeight: 'bold', 
+                              bgcolor: '#FCE4D6', // Excel Header Color
+                              border: '1px solid #ccc',
+                              px: 1, py: 0.5,
+                              textAlign: 'center',
+                              position: isStickyName || isStickyId ? 'sticky' : 'static',
+                              left: isStickyName ? 0 : (isStickyId ? 180 : 'auto'),
+                              minWidth: isStickyName ? 180 : (isStickyId ? 120 : 60),
+                              zIndex: isStickyName || isStickyId ? 3 : 2 // 3 to stay above sticky columns (1) and normal headers (2)
+                            }}>
+                              {h}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {sheetData.rows.map((row, ri) => (
                         <TableRow key={ri} hover>
                           {row.map((cell, ci) => {
-                            // Column 0: Name (Read-only)
+                            // Column 0: Name (Read-only, Sticky)
                             if (ci === 0) {
-                              return <TableCell key={ci} sx={{ position: 'sticky', left: 0, bgcolor: '#F8CBAD', zIndex: 1, fontWeight: 'medium', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
+                              return <TableCell key={ci} sx={{ position: 'sticky', left: 0, minWidth: 180, bgcolor: '#F8CBAD', zIndex: 1, fontWeight: 'medium', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
                             }
 
                             // ATTENDANCE SHEET
                             if (isAttendance) {
-                              if (ci === 1) return <TableCell key={ci} sx={{ bgcolor: '#F8CBAD', color: 'text.primary', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
+                              // Column 1: Emp ID (Read-only, Sticky)
+                              if (ci === 1) return <TableCell key={ci} sx={{ position: 'sticky', left: 180, minWidth: 120, bgcolor: '#F8CBAD', zIndex: 1, color: 'text.primary', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
                               
                               const cellColor = getStatusColor(cell);
                               return (
@@ -331,6 +341,9 @@ export default function AttendanceTrackerPage() {
 
                             // LEAVES SHEET
                             if (isLeaves) {
+                              // Column 1: Emp ID (Read-only, Sticky)
+                              if (ci === 1) return <TableCell key={ci} sx={{ position: 'sticky', left: 180, minWidth: 120, bgcolor: '#F8CBAD', zIndex: 1, color: 'text.primary', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
+                              
                               const isFormula = LEAVES_FORMULA_COLUMNS.includes(ci);
                               if (isFormula) {
                                 return <TableCell key={ci} sx={{ color: 'text.secondary', fontStyle: 'italic', border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell || '—'}</TableCell>;
