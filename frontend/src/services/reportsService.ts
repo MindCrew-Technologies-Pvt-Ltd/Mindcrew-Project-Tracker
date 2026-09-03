@@ -14,6 +14,7 @@ const reportsService = {
     axiosInstance.post('/admin/reports/generate', { type: TYPE_MAP[type], ...filters }),
   exportReport: (type: ReportType, filters: ReportFilters) =>
     axiosInstance.post('/admin/reports/export', { type: TYPE_MAP[type], ...filters }, { responseType: 'blob' }),
+  getEmployeeAnalytics: () => axiosInstance.get('/admin/employee-analytics'),
 };
 
 export default reportsService;

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Grid, Card, CardContent, Typography, Box } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Grid, Card, CardContent, Typography, Box, Tabs, Tab } from '@mui/material';
 import FolderIcon from '@mui/icons-material/esm/Folder';
 import PlayCircleIcon from '@mui/icons-material/esm/PlayCircle';
 import CheckCircleIcon from '@mui/icons-material/esm/CheckCircle';
@@ -18,6 +18,7 @@ import ProjectsByTechChart from '../../components/charts/ProjectsByTechChart';
 import ProjectsByEmployeeChart from '../../components/charts/ProjectsByEmployeeChart';
 import MonthlyCreationChart from '../../components/charts/MonthlyCreationChart';
 import WeeklyUpdateTrendsChart from '../../components/charts/WeeklyUpdateTrendsChart';
+import EmployeeAnalyticsTab from './EmployeeAnalyticsTab';
 
 interface StatCardProps {
   label: string;
@@ -61,6 +62,7 @@ const StatCard = ({ label, value, icon, bg, iconColor, trend }: StatCardProps) =
 
 const AdminDashboardPage = () => {
   const dispatch = useAppDispatch();
+  const [tabIndex, setTabIndex] = useState(0);
   const { list: projects } = useAppSelector((s) => s.projects);
   const { list: users } = useAppSelector((s) => s.users);
   const { requests } = useAppSelector((s) => s.editRequests);
@@ -117,47 +119,60 @@ const AdminDashboardPage = () => {
     <Box>
       <PageHeader title="Admin Dashboard" subtitle="System-wide analytics overview" />
 
-      <Grid container spacing={2.5} mb={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Total Users" value={totalUsers} icon={<PeopleIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Total Projects" value={totalProj} icon={<FolderIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Active Projects" value={activeProj} icon={<PlayCircleIcon />} bg="#E9F9EF" iconColor="#16A34A" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Pending Edit Requests" value={pendingReq} icon={<EditNoteIcon />} bg="#EDE9FE" iconColor="#7C3AED" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <StatCard label="Completed Projects" value={completedProj} icon={<CheckCircleIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <StatCard label="On Hold" value={onHold} icon={<PauseCircleIcon />} bg="#FEF3E2" iconColor="#F59E0B" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <StatCard label="Delayed Projects" value={delayed} icon={<WarningIcon />} bg="#FDF0EE" iconColor="#C66A4B" />
-        </Grid>
-      </Grid>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)}>
+          <Tab label="Project Analytics" />
+          <Tab label="Employee Analytics" />
+        </Tabs>
+      </Box>
 
-      <Grid container spacing={2.5}>
-        <Grid item xs={12} md={6}>
-          <Card><CardContent sx={{ p: 2.5 }}><ProjectsByStatusChart data={statusData} /></CardContent></Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card><CardContent sx={{ p: 2.5 }}><MonthlyCreationChart data={monthlyChartData} /></CardContent></Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card><CardContent sx={{ p: 2.5 }}><ProjectsByTechChart data={techData} /></CardContent></Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card><CardContent sx={{ p: 2.5 }}><ProjectsByEmployeeChart data={empData} /></CardContent></Card>
-        </Grid>
-        <Grid item xs={12}>
-          <Card><CardContent sx={{ p: 2.5 }}><WeeklyUpdateTrendsChart data={weeklyTrendsData} /></CardContent></Card>
-        </Grid>
-      </Grid>
+      {tabIndex === 0 && (
+        <Box>
+          <Grid container spacing={2.5} mb={3}>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard label="Total Users" value={totalUsers} icon={<PeopleIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard label="Total Projects" value={totalProj} icon={<FolderIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard label="Active Projects" value={activeProj} icon={<PlayCircleIcon />} bg="#E9F9EF" iconColor="#16A34A" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard label="Pending Edit Requests" value={pendingReq} icon={<EditNoteIcon />} bg="#EDE9FE" iconColor="#7C3AED" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <StatCard label="Completed Projects" value={completedProj} icon={<CheckCircleIcon />} bg="#EEF0FF" iconColor="#4F46E5" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <StatCard label="On Hold" value={onHold} icon={<PauseCircleIcon />} bg="#FEF3E2" iconColor="#F59E0B" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <StatCard label="Delayed Projects" value={delayed} icon={<WarningIcon />} bg="#FDF0EE" iconColor="#C66A4B" />
+            </Grid>
+          </Grid>
+
+          <Grid container spacing={2.5}>
+            <Grid item xs={12} md={6}>
+              <Card><CardContent sx={{ p: 2.5 }}><ProjectsByStatusChart data={statusData} /></CardContent></Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card><CardContent sx={{ p: 2.5 }}><MonthlyCreationChart data={monthlyChartData} /></CardContent></Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card><CardContent sx={{ p: 2.5 }}><ProjectsByTechChart data={techData} /></CardContent></Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card><CardContent sx={{ p: 2.5 }}><ProjectsByEmployeeChart data={empData} /></CardContent></Card>
+            </Grid>
+            <Grid item xs={12}>
+              <Card><CardContent sx={{ p: 2.5 }}><WeeklyUpdateTrendsChart data={weeklyTrendsData} /></CardContent></Card>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+      
+      {tabIndex === 1 && <EmployeeAnalyticsTab />}
     </Box>
   );
 };
