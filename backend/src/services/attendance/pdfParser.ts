@@ -93,11 +93,16 @@ export async function parsePdfReport(
       const yBottom = it.transform[5];
       const top = viewport.height - yBottom;
       // Split multi-word items
-      const parts = (it.str as string).split(/\s+/).filter(Boolean);
-      let offset = 0;
+      const str = (it.str as string);
+      const parts = str.split(/\s+/).filter(Boolean);
+      let currentIndex = 0;
       for (const part of parts) {
-        words.push({ text: part, x0: x0 + offset * 5, top });
-        offset += part.length;
+        const matchIndex = str.indexOf(part, currentIndex);
+        // Estimate the x0 position of this part based on its character index
+        const charWidth = it.width ? it.width / str.length : 5;
+        const partX0 = x0 + matchIndex * charWidth;
+        words.push({ text: part, x0: partX0, top });
+        currentIndex = matchIndex + part.length;
       }
     }
     allPagesWords.push(words);
@@ -128,7 +133,8 @@ export async function parsePdfReport(
 
     for (const line of lines) {
       const lineText = line.map(w => w.text).join(' ');
-      if (lineText.startsWith('Days 1') || lineText.startsWith('Days  1')) {
+      // The word 'Days' might be separated from '1'
+      if (lineText.includes('Days') && (lineText.includes(' 1') || lineText.includes('Days 1'))) {
         for (const w of line) {
           const n = parseInt(w.text, 10);
           if (!isNaN(n) && n >= 1 && n <= 31) {
@@ -177,11 +183,33 @@ export async function parsePdfReport(
       const lineText = line.map(w => w.text).join(' ');
 
       // Detect employee header
-      if (lineText.includes('Emp. Code') && lineText.includes('Emp. Name')) {
+      // Sometimes spaces are missing or extra
+      if (lineText.includes('Emp.') && lineText.includes('Code') && lineText.includes('Name')) {
         if (currentEmp) attendanceData.push(currentEmp);
 
-        const codeMatch = lineText.match(/Emp\.\s*Code\s*:\s*(\w+)/);
-        const nameMatch = lineText.match(/Emp\.\s*Name\s*:\s*(.+)/);
+        // Try to match standard format
+        let codeMatch = lineText.match(/Code\s*:\s*([A-Za-z0-9-]+)/);
+        if (!codeMatch) {
+            // fallback: find the word after "Code:" or "Code"
+            const codeIndex = line.findIndex(w => w.text.includes('Code'));
+            if (codeIndex !== -1 && codeIndex + 1 < line.length) {
+                const nextWord = line[codeIndex + 1].text;
+                codeMatch = [ '', nextWord === ':' && codeIndex + 2 < line.length ? line[codeIndex + 2].text : nextWord ];
+            }
+        }
+        
+        let nameMatch = lineText.match(/Name\s*:\s*(.+)/);
+        if (!nameMatch) {
+            // fallback
+            const nameIndex = line.findIndex(w => w.text.includes('Name'));
+            if (nameIndex !== -1) {
+                let nameParts = [];
+                for(let i = nameIndex + 1; i < line.length; i++) {
+                    if (line[i].text !== ':') nameParts.push(line[i].text);
+                }
+                nameMatch = [ '', nameParts.join(' ') ];
+            }
+        }
 
         let empId = codeMatch ? codeMatch[1] : 'Unknown';
         if (!empId.toUpperCase().startsWith('MCT')) empId = `MCT- ${empId}`;
@@ -195,16 +223,19 @@ export async function parsePdfReport(
       }
 
       // Status row
-      else if (lineText.startsWith('Status') && currentEmp) {
-        for (const w of line.slice(1)) {
+      else if (lineText.includes('Status') && currentEmp) {
+        // Skip the word 'Status'
+        const statusWords = line.filter(w => !w.text.includes('Status') && w.text !== ':');
+        for (const w of statusWords) {
           const day = closestDay(w.x0);
           if (day) currentEmp.attendance[day].pdf_status = w.text;
         }
       }
 
       // InTime row
-      else if (lineText.startsWith('InTime') && currentEmp) {
-        for (const w of line.slice(1)) {
+      else if (lineText.includes('InTime') && currentEmp) {
+        const timeWords = line.filter(w => !w.text.includes('InTime') && w.text !== ':');
+        for (const w of timeWords) {
           const day = closestDay(w.x0);
           if (day) {
             const tm = parseTime(w.text);
@@ -214,8 +245,9 @@ export async function parsePdfReport(
       }
 
       // OutTime row
-      else if (lineText.startsWith('OutTime') && currentEmp) {
-        for (const w of line.slice(1)) {
+      else if (lineText.includes('OutTime') && currentEmp) {
+        const timeWords = line.filter(w => !w.text.includes('OutTime') && w.text !== ':');
+        for (const w of timeWords) {
           const day = closestDay(w.x0);
           if (day) {
             const tm = parseTime(w.text);
@@ -225,8 +257,9 @@ export async function parsePdfReport(
       }
 
       // Total row
-      else if (lineText.startsWith('Total') && currentEmp) {
-        for (const w of line.slice(1)) {
+      else if (lineText.includes('Total') && currentEmp) {
+        const timeWords = line.filter(w => !w.text.includes('Total') && w.text !== ':');
+        for (const w of timeWords) {
           const day = closestDay(w.x0);
           if (day) currentEmp.attendance[day].total = w.text;
         }
