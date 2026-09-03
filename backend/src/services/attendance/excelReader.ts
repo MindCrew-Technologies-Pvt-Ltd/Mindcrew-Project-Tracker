@@ -216,7 +216,10 @@ export async function saveSheetData(
       // Apply attendance colors
       if (!isLeaves && excelCol >= 3) {
         const cell = ws.getCell(excelRow, excelCol);
-        cell.fill = { type: 'pattern', pattern: 'none' } as any;
+        // Clear previous fill correctly
+        delete cell.style.fill;
+        cell.fill = undefined as any;
+        
         const statusColors: Record<string, string> = {
           'Weekly Off': 'FFC000', A: 'FF0000', SL: 'FFFF00', HD: '92D050', WFH: 'CCC0DA',
         };
