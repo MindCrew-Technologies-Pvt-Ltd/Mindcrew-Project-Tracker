@@ -27,8 +27,9 @@ const LoginPage = () => {
     dispatch(clearError());
     const result = await dispatch(loginThunk(data));
     if (loginThunk.fulfilled.match(result)) {
-      const role = result.payload?.data?.user?.role;
-      navigate(role === 'ADMIN' ? ROUTES.ADMIN_DASHBOARD : ROUTES.DASHBOARD);
+      const user = result.payload?.data?.user;
+      const isAdminRole = user?.role === 'ADMIN' || user?.jobRoles?.some((r: string) => r.toUpperCase() === 'ADMIN');
+      navigate(isAdminRole ? ROUTES.ADMIN_DASHBOARD : ROUTES.DASHBOARD);
     }
   };
 

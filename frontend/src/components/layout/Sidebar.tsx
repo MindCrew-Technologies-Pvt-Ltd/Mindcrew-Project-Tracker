@@ -53,6 +53,7 @@ const adminTimesheetNav = [
 ];
 
 const adminNav = [
+  { label: 'Dashboard', icon: <DashboardIcon fontSize="small" />, to: ROUTES.ADMIN_DASHBOARD },
   { label: 'Users', icon: <PeopleIcon fontSize="small" />, to: ROUTES.ADMIN_USERS },
   { label: 'Edit Requests', icon: <EditNoteIcon fontSize="small" />, to: ROUTES.ADMIN_EDIT_REQUESTS },
   { label: 'Reports', icon: <AssessmentIcon fontSize="small" />, to: ROUTES.ADMIN_REPORTS },
