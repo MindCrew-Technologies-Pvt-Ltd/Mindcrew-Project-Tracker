@@ -39,8 +39,10 @@ const attendanceService = {
       rows,
     }),
 
-  /** Get download URL for master Excel */
-  getDownloadUrl: () => `${API}/download-master`,
+  /** Download master Excel */
+  downloadMaster() {
+    return axiosInstance.get(`${API}/download-master`, { responseType: 'blob' });
+  },
 };
 
 export default attendanceService;
