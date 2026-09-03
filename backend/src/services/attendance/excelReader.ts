@@ -216,17 +216,31 @@ export async function saveSheetData(
       // Apply attendance colors
       if (!isLeaves && excelCol >= 3) {
         const cell = ws.getCell(excelRow, excelCol);
-        // Safe way to clear fill without corrupting shared styles
-        cell.fill = { type: 'pattern', pattern: 'none' } as any;
         
         const statusColors: Record<string, string> = {
           'Weekly Off': 'FFC000', A: 'FF0000', SL: 'FFFF00', HD: '92D050', WFH: 'CCC0DA',
         };
+        
+        // ExcelJS bug: pattern:'none' does NOT clear fill.
+        // Only resetting entire style works. So we reset and re-apply borders/alignment.
+        const border: Partial<ExcelJS.Borders> = {
+          top: { style: 'thin' }, bottom: { style: 'thin' },
+          left: { style: 'thin' }, right: { style: 'thin' },
+        };
+        const alignment: Partial<ExcelJS.Alignment> = { horizontal: 'center', vertical: 'middle' };
+        
         if (statusColors[cellValue]) {
-          cell.fill = {
-            type: 'pattern', pattern: 'solid',
-            fgColor: { argb: `FF${statusColors[cellValue]}` },
+          cell.style = {
+            border,
+            alignment,
+            fill: {
+              type: 'pattern', pattern: 'solid',
+              fgColor: { argb: `FF${statusColors[cellValue]}` },
+            },
           };
+        } else {
+          // P or empty — clear fill entirely
+          cell.style = { border, alignment };
         }
       }
     }
