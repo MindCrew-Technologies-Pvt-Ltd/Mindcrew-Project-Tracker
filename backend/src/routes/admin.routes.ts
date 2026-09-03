@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { getUsers, getUser, updateUser, deactivateUser, resetUserPassword, deleteUser } from '../controllers/users.controller';
 import { getEditRequests, getEditRequest, approveEditRequest, rejectEditRequest } from '../controllers/editRequests.controller';
-import { generateReport, exportReport } from '../controllers/reports.controller';
+import { generateReport, exportReport, getEmployeeAnalytics } from '../controllers/reports.controller';
 import { getActivityLogs } from '../controllers/activityLogs.controller';
 import { validate } from '../middleware/validate';
 import { updateUserSchema, adminResetPasswordSchema } from '../validations/schemas';
@@ -24,6 +24,7 @@ router.put('/edit-requests/:id/reject', rejectEditRequest);
 
 router.post('/reports/generate', generateReport);
 router.post('/reports/export', exportReport);
+router.get('/employee-analytics', getEmployeeAnalytics);
 
 router.get('/activity-logs', getActivityLogs);
 

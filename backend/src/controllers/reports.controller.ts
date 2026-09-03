@@ -58,6 +58,98 @@ export const generateReport: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const getEmployeeAnalytics: RequestHandler = async (req, res, next) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // 1. Fetch all active users
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        employeeId: true,
+        department: true,
+        designation: true,
+      }
+    });
+
+    // 2. Fetch project assignments (ACTIVE projects only)
+    const members = await prisma.projectMember.findMany({
+      where: { project: { status: 'ACTIVE' } },
+      select: { userId: true, project: { select: { name: true } } }
+    });
+    
+    // Group projects by user
+    const userProjects = members.reduce((acc, m) => {
+      if (!acc[m.userId]) acc[m.userId] = [];
+      acc[m.userId].push(m.project.name);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    // 3. Fetch today's approved leaves/WFH
+    const leaves = await prisma.leaveRequest.findMany({
+      where: {
+        status: 'APPROVED',
+        startDate: { lte: todayEnd },
+        endDate: { gte: todayStart }
+      }
+    });
+
+    // 4. Fetch today's daily availability
+    const availabilities = await prisma.dailyAvailability.findMany({
+      where: {
+        date: { gte: todayStart, lte: todayEnd }
+      }
+    });
+
+    // 5. Fetch today's time entries (using date field)
+    const timeEntries = await prisma.timeEntry.findMany({
+      where: {
+        date: { gte: todayStart, lte: todayEnd }
+      }
+    });
+    
+    // Group time logged by user
+    const userMinutes = timeEntries.reduce((acc, te) => {
+      acc[te.userId] = (acc[te.userId] || 0) + te.minutes;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Combine data
+    const analytics = users.map(user => {
+      const activeProjects = userProjects[user.id] || [];
+      const userLeaves = leaves.filter(l => l.userId === user.id);
+      
+      let leaveType = null;
+      if (userLeaves.length > 0) {
+        leaveType = userLeaves[0].type; // 'FULL_DAY', 'HALF_DAY', 'WFH'
+      }
+
+      const availability = availabilities.find(a => a.userId === user.id);
+      const minutesLogged = userMinutes[user.id] || 0;
+      
+      return {
+        id: user.id,
+        name: user.name,
+        employeeId: user.employeeId,
+        department: user.department,
+        designation: user.designation,
+        activeProjects,
+        leaveType,
+        availabilityStatus: availability?.status || 'NOT_UPDATED',
+        availabilityNote: availability?.note || null,
+        minutesLogged,
+      };
+    });
+
+    success(res, analytics);
+  } catch (err) { next(err); }
+};
+
 export const exportReport: RequestHandler = async (req, res, next) => {
   try {
     const { type, startDate, endDate } = req.body;
