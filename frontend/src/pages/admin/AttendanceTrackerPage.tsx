@@ -138,11 +138,35 @@ export default function AttendanceTrackerPage() {
   const isLeaves = sheetData?.is_leaves;
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1400, margin: '0 auto' }}>
-      <PageHeader title="Attendance Master Sheet" />
+    <Box sx={{ p: 3, maxWidth: 1400, margin: '0 auto', height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
+      <PageHeader 
+        title="Attendance Master Sheet" 
+        action={
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<Download />}
+              onClick={handleDownload}
+              disabled={sheets.length === 0}
+            >
+              Download Excel
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Save />}
+              onClick={handleSave}
+              disabled={saving || !hasChanges}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </Box>
+        }
+      />
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4} lg={3}>
+      <Grid container spacing={3} sx={{ flexGrow: 1, overflow: 'hidden' }}>
+        <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflowY: 'auto' }}>
           {/* Upload Card */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
@@ -210,36 +234,10 @@ export default function AttendanceTrackerPage() {
             </CardContent>
           </Card>
 
-          {/* Actions */}
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Actions</Typography>
-              <Button
-                variant="contained"
-                color="secondary"
-                fullWidth
-                startIcon={<Download />}
-                onClick={handleDownload}
-                disabled={sheets.length === 0}
-                sx={{ mb: 2 }}
-              >
-                Download Excel
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                startIcon={<Save />}
-                onClick={handleSave}
-                disabled={saving || !hasChanges}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={8} lg={9}>
+        <Grid item xs={12} md={8} lg={9} sx={{ height: '100%' }}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs
