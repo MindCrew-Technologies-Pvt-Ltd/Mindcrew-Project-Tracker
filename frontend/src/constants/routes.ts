@@ -33,4 +33,5 @@ export const ROUTES = {
   ADMIN_EDIT_REQUESTS: '/admin/edit-requests',
   ADMIN_REPORTS: '/admin/reports',
   AVAILABILITY: '/availability',
+  ATTENDANCE_TRACKER: '/admin/attendance-tracker',
 } as const;

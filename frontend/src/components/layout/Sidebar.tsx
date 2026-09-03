@@ -215,6 +215,20 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
             {adminNav.map((item) => <NavItem key={item.to} item={item} />)}
           </>
         )}
+
+        {(isAdmin || user?.jobRoles?.some((r) => r.toUpperCase() === 'HR' || r.toUpperCase().includes('HR'))) && (
+          <>
+            <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }} />
+            {!collapsed && (
+              <Typography variant="caption" sx={{ px: 2.5, display: 'block', mb: 0.5, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.07em', fontSize: '0.65rem' }}>
+                HR TOOLS
+              </Typography>
+            )}
+            <NavItem 
+              item={{ label: 'Attendance Sheet', icon: <EventNoteIcon fontSize="small" />, to: ROUTES.ATTENDANCE_TRACKER }} 
+            />
+          </>
+        )}
       </List>
 
       {/* Footer */}

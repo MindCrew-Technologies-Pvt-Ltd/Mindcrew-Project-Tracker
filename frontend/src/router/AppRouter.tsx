@@ -24,6 +24,7 @@ import ProfilePage from '../pages/employee/ProfilePage';
 import MyTeamPage from '../pages/employee/MyTeamPage';
 import LeaveManagementPage from '../pages/employee/LeaveManagementPage';
 import AvailabilityPage from '../pages/employee/AvailabilityPage';
+import AttendanceTrackerPage from '../pages/admin/AttendanceTrackerPage';
 import ChangePasswordPage from '../pages/employee/ChangePasswordPage';
 import SearchPage from '../pages/employee/SearchPage';
 
@@ -74,6 +75,9 @@ const AppRouter = () => (
         <Route path="/timesheet" element={<MyTimesheetPage />} />
         <Route path="/timesheet/approvals" element={<ApprovalsPage />} />
         <Route path="/timesheet/reports" element={<TimeReportsPage />} />
+        
+        {/* HR & Admin only - guarded by backend and UI checks */}
+        <Route path="/admin/attendance-tracker" element={<AttendanceTrackerPage />} />
       </Route>
     </Route>
 
