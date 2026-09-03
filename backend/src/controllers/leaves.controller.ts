@@ -11,6 +11,20 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
   try {
     const { type, startDate, endDate, reason } = req.body;
     
+    // Week-based date restriction: users cannot request leaves for completed weeks
+    const reqStart = new Date(startDate);
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const currentWeekMonday = new Date(now);
+    currentWeekMonday.setDate(now.getDate() - mondayOffset);
+    currentWeekMonday.setHours(0, 0, 0, 0);
+    
+    if (reqStart < currentWeekMonday) {
+      error(res, 'Cannot request leaves for dates in completed weeks. Earliest allowed date is ' + currentWeekMonday.toISOString().split('T')[0], 400);
+      return;
+    }
+
     const leave = await prisma.leaveRequest.create({
       data: {
         userId: req.user!.id,

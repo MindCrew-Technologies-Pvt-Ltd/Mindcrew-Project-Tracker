@@ -61,6 +61,16 @@ export default function LeaveManagementPage() {
     reason: ''
   });
 
+  // Week-based date restriction: minimum selectable date is the Monday of the current week
+  const getMinDate = () => {
+    const now = dayjs();
+    const dayOfWeek = now.day(); // 0=Sun, 1=Mon, ..., 6=Sat
+    // If today is Sunday (0), the current week started on the previous Monday
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    return now.subtract(mondayOffset, 'day').format('YYYY-MM-DD');
+  };
+  const minSelectableDate = getMinDate();
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -85,6 +95,15 @@ export default function LeaveManagementPage() {
   useAutoRefresh(fetchData);
 
   const handleSubmit = async () => {
+    // Validate dates against week restriction
+    if (formData.startDate < minSelectableDate) {
+      alert(`Cannot select dates before ${dayjs(minSelectableDate).format('MMM D, YYYY')} (start of current week)`);
+      return;
+    }
+    if (formData.endDate < formData.startDate) {
+      alert('End date cannot be before start date');
+      return;
+    }
     try {
       await leavesService.createRequest({
         ...formData,
@@ -317,14 +336,25 @@ export default function LeaveManagementPage() {
               type="date"
               fullWidth
               InputLabelProps={{ shrink: true }}
+              inputProps={{ min: minSelectableDate }}
               value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              onChange={(e) => {
+                const newStart = e.target.value;
+                setFormData({ 
+                  ...formData, 
+                  startDate: newStart,
+                  // Auto-adjust end date if it's before new start date
+                  endDate: formData.endDate < newStart ? newStart : formData.endDate
+                });
+              }}
+              helperText={`Earliest: ${dayjs(minSelectableDate).format('ddd, MMM D')}`}
             />
             <TextField
               label="End Date"
               type="date"
               fullWidth
               InputLabelProps={{ shrink: true }}
+              inputProps={{ min: formData.startDate }}
               value={formData.endDate}
               onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
             />
