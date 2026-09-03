@@ -47,7 +47,7 @@ async function main() {
   // Daily timesheet reminder is in-app only (no email), controlled by the
   // admin toggle in Timesheet Settings — safe to always register.
   startDailyReminderJob();
-  // Daily 6:00 PM IST push notification reminder to fill timesheet
+  // Daily 7:00 PM IST push notification reminder to fill timesheet
   startTimesheetReminderCron();
 }
 

@@ -5,13 +5,13 @@ import logger from '../config/logger';
 
 /**
  * Daily Timesheet Reminder Cron Job
- * Runs every day at 6:00 PM IST (Asia/Kolkata)
+ * Runs every day at 7:00 PM IST (Asia/Kolkata)
  * Sends a push notification to ALL active EMPLOYEE users (not ADMINs)
  * who have a push subscription registered in the DB.
  */
 export function startTimesheetReminderCron(): void {
   cron.schedule(
-    '0 18 * * *',   // 18:00 = 6:00 PM every day
+    '0 19 * * *',   // 19:00 = 7:00 PM every day
     async () => {
       logger.info('[Cron] Running daily timesheet reminder...');
       try {
@@ -50,5 +50,5 @@ export function startTimesheetReminderCron(): void {
     }
   );
 
-  logger.info('[Cron] Daily timesheet reminder cron scheduled at 6:00 PM IST');
+  logger.info('[Cron] Daily timesheet reminder cron scheduled at 7:00 PM IST');
 }
