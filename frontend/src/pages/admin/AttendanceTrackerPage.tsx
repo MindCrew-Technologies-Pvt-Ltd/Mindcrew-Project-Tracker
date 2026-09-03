@@ -166,9 +166,9 @@ export default function AttendanceTrackerPage() {
       />
 
       <Grid container spacing={3} sx={{ flexGrow: 1, overflow: 'hidden' }}>
-        <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflowY: 'auto' }}>
+        <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {/* Upload Card */}
-          <Card sx={{ mb: 3 }}>
+          <Card sx={{ mb: 2 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>Upload Report</Typography>
               <Box
@@ -177,7 +177,7 @@ export default function AttendanceTrackerPage() {
                   border: '2px dashed',
                   borderColor: 'divider',
                   borderRadius: 2,
-                  p: 3,
+                  p: 2,
                   textAlign: 'center',
                   cursor: 'pointer',
                   bgcolor: 'background.default',
@@ -191,7 +191,7 @@ export default function AttendanceTrackerPage() {
                   accept=".pdf"
                   style={{ display: 'none' }}
                 />
-                <CloudUpload sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                <CloudUpload sx={{ fontSize: 32, color: 'text.secondary', mb: 0.5 }} />
                 {file ? (
                   <Typography variant="body1" color="primary">{file.name}</Typography>
                 ) : (
@@ -213,10 +213,10 @@ export default function AttendanceTrackerPage() {
           </Card>
 
           {/* Legend Card */}
-          <Card sx={{ mb: 3 }}>
+          <Card sx={{ mb: 2, flexGrow: 1 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Legend</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Legend</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                 {[
                   { label: 'Present', color: 'transparent', border: '1px solid #ccc' },
                   { label: 'Absent', color: '#FF0000' },
@@ -225,9 +225,9 @@ export default function AttendanceTrackerPage() {
                   { label: 'Weekly Off', color: '#FFC000' },
                   { label: 'WFH', color: '#CCC0DA' }
                 ].map(item => (
-                  <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: item.color, border: item.border || 'none' }} />
-                    <Typography variant="body2">{item.label}</Typography>
+                  <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: item.color, border: item.border || 'none' }} />
+                    <Typography variant="caption">{item.label}</Typography>
                   </Box>
                 ))}
               </Box>
