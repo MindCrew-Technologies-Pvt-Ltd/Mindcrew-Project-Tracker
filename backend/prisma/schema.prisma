@@ -387,11 +387,12 @@ model LeaveRequest {
   startDate    DateTime
   endDate      DateTime
   reason       String?
-  status       LeaveStatus @default(PENDING)
-  reviewedById String?
-  reviewedAt   DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  status             LeaveStatus @default(PENDING)
+  reviewedById       String?
+  reviewedAt         DateTime?
+  notifiedManagerIds String[]    @default([])
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   user       User  @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
   reviewedBy User? @relation("LeaveReviewer", fields: [reviewedById], references: [id])

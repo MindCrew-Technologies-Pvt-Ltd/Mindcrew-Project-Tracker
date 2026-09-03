@@ -9,7 +9,7 @@ const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 
 export const createLeaveRequest: RequestHandler = async (req, res, next) => {
   try {
-    const { type, startDate, endDate, reason } = req.body;
+    const { type, startDate, endDate, reason, notifyManagerIds } = req.body;
     
     // Week-based date restriction: users cannot request leaves for completed weeks
     const reqStart = new Date(startDate);
@@ -32,7 +32,8 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         reason,
-        status: 'PENDING'
+        status: 'PENDING',
+        notifiedManagerIds: Array.isArray(notifyManagerIds) ? notifyManagerIds : []
       }
     });
 
@@ -43,18 +44,25 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
     });
 
     if (employee && employee.managerEmployeeIds.length > 0) {
+      const managersToNotify = Array.isArray(notifyManagerIds) && notifyManagerIds.length > 0 
+        ? notifyManagerIds 
+        : employee.managerEmployeeIds;
+
       const managers = await (prisma.user.findMany as any)({
-        where: { employeeId: { in: employee.managerEmployeeIds }, pushSubscription: { not: null } },
+        where: { employeeId: { in: managersToNotify }, pushSubscription: { not: null } },
         select: { pushSubscription: true },
       }) as Array<{ pushSubscription: string }>;
+      
       const subs = managers.map((m) => m.pushSubscription).filter(Boolean);
       const typeLabel = type === 'FULL_DAY' ? 'Full Day Leave' : type === 'HALF_DAY' ? 'Half Day Leave' : 'WFH';
-      await sendWebPushToMany(subs, {
-        title: '📋 New Leave Request',
-        body: `${employee.name} has requested ${typeLabel}. Please review it.`,
-        tag: `leave-request-${leave.id}`,
-        url: '/leaves',
-      });
+      if (subs.length > 0) {
+        await sendWebPushToMany(subs, {
+          title: '📋 New Leave Request',
+          body: `${employee.name} has requested ${typeLabel}. Please review it.`,
+          tag: `leave-request-${leave.id}`,
+          url: '/leaves',
+        });
+      }
     }
     
     success(res, leave, 'Leave request submitted successfully', 201);
@@ -84,9 +92,25 @@ export const getTeamLeaveRequests: RequestHandler = async (req, res, next) => {
       return;
     }
 
+    const empId = currentUser!.employeeId!;
+    const empIdNum = empId.replace('MCT-', '');
+    const empIdFull = `MCT-${empIdNum}`;
+
+    // A manager can see a request if:
+    // 1. They are an admin OR
+    // 2. The request's notifiedManagerIds contains their ID (either format) OR
+    // 3. For backwards compatibility, if notifiedManagerIds is empty, we show it to all managers of that user.
     const teamLeaves = await prisma.leaveRequest.findMany({
       where: isAdmin ? {} : {
-        user: { managerEmployeeIds: { has: currentUser!.employeeId } }
+        OR: [
+          { notifiedManagerIds: { has: empId } },
+          { notifiedManagerIds: { has: empIdNum } },
+          { notifiedManagerIds: { has: empIdFull } },
+          {
+            notifiedManagerIds: { isEmpty: true },
+            user: { managerEmployeeIds: { has: empId } }
+          }
+        ]
       },
       orderBy: { createdAt: 'desc' },
       include: {

@@ -167,3 +167,25 @@ export const assignReportee: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const getMyManagers: RequestHandler = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { managerEmployeeIds: true }
+    });
+
+    if (!user || user.managerEmployeeIds.length === 0) {
+      success(res, []);
+      return;
+    }
+
+    const managers = await prisma.user.findMany({
+      where: { employeeId: { in: user.managerEmployeeIds }, isActive: true },
+      select: { id: true, name: true, employeeId: true }
+    });
+
+    success(res, managers);
+  } catch (err) {
+    next(err);
+  }
+};

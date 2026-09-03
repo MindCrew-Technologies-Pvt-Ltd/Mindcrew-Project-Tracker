@@ -13,6 +13,9 @@ const leavesService = {
     
   updateStatus: (id: string, payload: UpdateLeaveStatusPayload) => 
     axiosInstance.put(`/leaves/${id}/status`, payload),
+
+  getMyManagers: () => 
+    axiosInstance.get('/users/my-managers'),
 };
 
 export default leavesService;
