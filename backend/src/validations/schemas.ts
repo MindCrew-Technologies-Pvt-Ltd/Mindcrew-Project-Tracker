@@ -42,7 +42,7 @@ const employeeIdRule = Joi.alternatives().try(
   Joi.number().integer().positive().messages({ 'number.base': 'Employee ID must be a number' })
 ).custom((v) => String(v));
 
-const JOB_ROLE_VALUES = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA'] as const;
+const JOB_ROLE_VALUES = ['Developer', 'Manager', 'HR', 'Sales Team', 'Data Entry', 'QA', 'Admin'] as const;
 
 export const signupSchema = Joi.object({
   name: Joi.string().min(2).required().messages({ 'string.min': 'Name must be at least 2 characters' }),
