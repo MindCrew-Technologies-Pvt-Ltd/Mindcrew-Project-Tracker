@@ -5,6 +5,12 @@
 import ExcelJS from 'exceljs';
 import { EmployeeAttendance } from './pdfParser';
 
+export interface ApprovedLeave {
+  employeeId: string; // The numeric part
+  date: Date;
+  type: string; // 'WFH'
+}
+
 // Color definitions matching the Python original
 const COLORS = {
   WEEKLY_OFF: 'FFC000',  // Orange/Gold
@@ -47,7 +53,8 @@ export const STATUS_FILLS: Record<string, ExcelJS.FillPattern> = {
 export async function generateExcel(
   attendanceData: EmployeeAttendance[],
   datesList: Date[],
-  existingData?: Buffer | null
+  existingData?: Buffer | null,
+  wfhLeaves: ApprovedLeave[] = []
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
 
@@ -121,8 +128,21 @@ export async function generateExcel(
     for (let i = 0; i < datesList.length; i++) {
       const col = i + 3;
       const dayNum = i + 1;
-      const att = emp.attendance[dayNum];
-      const status = att?.final_status || '';
+      const currentDate = datesList[i];
+      let status = emp.attendance[dayNum]?.final_status || '';
+
+      // Check for approved WFH
+      const empNumId = (emp.emp_id.match(/\d+/) || [''])[0];
+      const hasWfh = wfhLeaves.some(l => 
+        l.employeeId === empNumId && 
+        l.date.getDate() === currentDate.getDate() &&
+        l.date.getMonth() === currentDate.getMonth() &&
+        l.date.getFullYear() === currentDate.getFullYear()
+      );
+
+      if (hasWfh) {
+        status = 'WFH';
+      }
 
       const cell = ws.getCell(currentRow, col);
       cell.value = status;

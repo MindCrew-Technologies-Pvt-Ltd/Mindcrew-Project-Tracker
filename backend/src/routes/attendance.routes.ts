@@ -9,6 +9,7 @@ import {
   getSheetData,
   saveSheet,
   downloadMaster,
+  sendReport,
 } from '../controllers/attendance.controller';
 
 const router = Router();
@@ -42,5 +43,6 @@ router.get('/get-sheets', getSheets);
 router.get('/get-sheet-data/:sheetName', getSheetData);
 router.post('/save-sheet/:sheetName', saveSheet);
 router.get('/download-master', downloadMaster);
+router.post('/send-report', sendReport);
 
 export default router;
