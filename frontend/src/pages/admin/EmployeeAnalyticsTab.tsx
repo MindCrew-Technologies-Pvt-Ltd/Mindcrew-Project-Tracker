@@ -138,12 +138,12 @@ export default function EmployeeAnalyticsTab() {
 
       <Typography variant="h6" mb={2} mt={4}>Assigned Resources ({assignedResources.length})</Typography>
       <Card sx={{ mb: 4 }}>
-        <DataTablePro columns={columns} data={assignedResources} keyField="id" />
+        <DataTablePro columns={columns as any} data={assignedResources} keyField="id" />
       </Card>
 
       <Typography variant="h6" mb={2}>Available Resources / Bench ({availableResources.length})</Typography>
       <Card>
-        <DataTablePro columns={columns} data={availableResources} keyField="id" />
+        <DataTablePro columns={columns as any} data={availableResources} keyField="id" />
       </Card>
     </Box>
   );
