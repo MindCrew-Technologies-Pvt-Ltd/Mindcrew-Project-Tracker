@@ -116,6 +116,7 @@ export const getManagers: RequestHandler = async (req, res, next) => {
           { role: 'ADMIN' },
         ],
         isActive: true,
+        name: { not: 'Admin' },
       },
       select: { id: true, name: true, email: true, employeeId: true, jobRoles: true },
     });
