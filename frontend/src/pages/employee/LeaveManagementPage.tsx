@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Grid, Tabs, Tab, Button, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, MenuItem, Select, FormControl,
   InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, IconButton, CircularProgress, Checkbox, ListItemText
+  Chip, IconButton, CircularProgress, Checkbox, ListItemText, FormHelperText
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckIcon, Cancel as CancelIcon, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -64,6 +63,7 @@ export default function LeaveManagementPage() {
     reason: '',
     notifyManagerIds: [] as string[]
   });
+  const [managerError, setManagerError] = useState(false);
 
   // Week-based date restriction: minimum selectable date is the Monday of the current week
   const getMinDate = () => {
@@ -112,9 +112,10 @@ export default function LeaveManagementPage() {
       return;
     }
     if (!formData.notifyManagerIds || formData.notifyManagerIds.length === 0) {
-      alert('Please select at least one manager to notify.');
+      setManagerError(true);
       return;
     }
+    setManagerError(false);
     try {
       await leavesService.createRequest({
         ...formData,
@@ -427,13 +428,14 @@ export default function LeaveManagementPage() {
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
             />
-            <FormControl fullWidth required>
+            <FormControl fullWidth required error={managerError}>
               <InputLabel>Notify Managers *</InputLabel>
               <Select
                 multiple
                 value={formData.notifyManagerIds}
-                label="Notify Managers"
+                label="Notify Managers *"
                 onChange={(e) => {
+                  setManagerError(false);
                   const val = e.target.value as string[];
                   if (val.includes('ALL')) {
                     setFormData({ ...formData, notifyManagerIds: myManagers.map(m => m.employeeId) });
@@ -466,6 +468,7 @@ export default function LeaveManagementPage() {
                   <MenuItem disabled>No managers assigned</MenuItem>
                 )}
               </Select>
+              {managerError && <FormHelperText error>Please select at least one manager to notify.</FormHelperText>}
             </FormControl>
           </Box>
         </DialogContent>

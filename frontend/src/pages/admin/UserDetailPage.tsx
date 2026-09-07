@@ -48,6 +48,40 @@ const UserDetailPage = () => {
                 <Chip label={user.role} size="small" color={user.role === 'ADMIN' ? 'secondary' : 'default'} />
                 <Chip label={user.isActive ? 'ACTIVE' : 'INACTIVE'} size="small" color={user.isActive ? 'success' : 'error'} />
               </Box>
+
+              {user.pendingJobRoles && user.pendingJobRoles.length > 0 && (
+                <Box sx={{ mt: 3, p: 2, bgcolor: '#FFFBEB', borderRadius: 2, border: '1px solid #FCD34D', textAlign: 'left' }}>
+                  <Typography variant="subtitle2" color="#B45309" gutterBottom fontWeight="bold">
+                    Pending Role Requests
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                    {user.pendingJobRoles.map(r => <Chip key={r} label={r} size="small" sx={{ bgcolor: '#F59E0B', color: 'white' }} />)}
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button 
+                      variant="contained" 
+                      color="success" 
+                      size="small" 
+                      onClick={() => {
+                        const newRoles = [...new Set([...user.jobRoles, ...user.pendingJobRoles!])];
+                        dispatch(updateUserThunk({ id: user.id, payload: { jobRoles: newRoles } }));
+                      }}
+                    >
+                      Approve All
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      color="error" 
+                      size="small" 
+                      onClick={() => {
+                        dispatch(updateUserThunk({ id: user.id, payload: { jobRoles: user.jobRoles } }));
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </Box>
+                </Box>
+              )}
             </CardContent>
           </Card>
 
