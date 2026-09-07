@@ -142,9 +142,26 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
 
     if (!leave) return next(new AppError('Leave request not found', 404));
 
-    // Ensure the current user is an admin or a manager of the requester
-    if (!isAdmin && !leave.user.managerEmployeeIds.includes(currentUser!.employeeId!)) {
-      error(res, 'You are not authorized to approve this leave request', 403); return;
+    if (leave.userId === currentUser.id) {
+      error(res, 'You cannot approve or reject your own leave request', 403); return;
+    }
+
+    // Ensure the current user is an admin or the manager to whom it was notified
+    if (!isAdmin) {
+      const empId = currentUser!.employeeId!;
+      const empIdNum = empId.replace('MCT-', '');
+      const empIdFull = `MCT-${empIdNum}`;
+      
+      const isNotified = leave.notifiedManagerIds.includes(empId) || 
+                         leave.notifiedManagerIds.includes(empIdNum) || 
+                         leave.notifiedManagerIds.includes(empIdFull);
+                         
+      const isFallbackManager = leave.notifiedManagerIds.length === 0 && 
+                                leave.user.managerEmployeeIds.includes(empId);
+                                
+      if (!isNotified && !isFallbackManager) {
+        error(res, 'You are not authorized to approve this leave request. Only the notified manager can approve it.', 403); return;
+      }
     }
 
     if (status !== 'APPROVED' && status !== 'REJECTED') {
