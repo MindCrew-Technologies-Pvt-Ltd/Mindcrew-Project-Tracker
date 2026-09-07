@@ -152,7 +152,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         data.pendingJobRoles = { push: newElevated };
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
         await Promise.all(admins.map(admin => 
-          createNotification({ userId: admin.id, title: 'Role Request', message: `${req.user!.name || 'A user'} has requested the following elevated roles: ${newElevated.join(', ')}. Please review in the Users list.`, type: 'SYSTEM', relatedId: req.user!.id })
+          createNotification({ userId: admin.id, title: 'Role Request', message: `A user has requested the following elevated roles: ${newElevated.join(', ')}. Please review in the Users list.`, type: 'SYSTEM', relatedId: req.user!.id })
         ));
       }
     }

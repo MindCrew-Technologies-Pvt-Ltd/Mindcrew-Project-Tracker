@@ -16,7 +16,7 @@ import { ROUTES } from '../../constants/routes';
 interface Props { onMenuClick: () => void; sidebarWidth?: number; }
 
 const Topbar = ({ onMenuClick, sidebarWidth = 248 }: Props) => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
