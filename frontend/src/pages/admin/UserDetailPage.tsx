@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Grid, Card, CardContent, Typography, Avatar, Chip, Button, List, ListItem, ListItemText, Divider, CircularProgress } from '@mui/material';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { fetchUserByIdThunk, deactivateUserThunk } from '../../store/slices/usersSlice';
+import { fetchUserByIdThunk, deactivateUserThunk, updateUserThunk } from '../../store/slices/usersSlice';
 import PageHeader from '../../components/common/PageHeader';
 import { ROUTES } from '../../constants/routes';
 import { formatDate, formatDateTime } from '../../utils/formatters';
