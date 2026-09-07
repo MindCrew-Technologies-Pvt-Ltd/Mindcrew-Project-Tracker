@@ -191,7 +191,9 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
           </Typography>
         )}
 
-        {employeeNav.map((item) => <NavItem key={item.to} item={item} />)}
+        {employeeNav
+          .filter(item => !(isAdmin && item.to === ROUTES.DASHBOARD))
+          .map((item) => <NavItem key={item.to} item={item} />)}
 
         {user?.jobRoles?.includes('Manager') && (
           <NavItem key={ROUTES.MY_TEAM} item={{ label: 'My Team', icon: <GroupIcon fontSize="small" />, to: ROUTES.MY_TEAM }} />

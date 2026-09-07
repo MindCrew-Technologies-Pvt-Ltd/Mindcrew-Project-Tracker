@@ -4,7 +4,8 @@ import FolderIcon from '@mui/icons-material/esm/Folder';
 import CheckCircleIcon from '@mui/icons-material/esm/CheckCircle';
 import PlayCircleIcon from '@mui/icons-material/esm/PlayCircle';
 import WarningIcon from '@mui/icons-material/esm/Warning';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProjectsThunk } from '../../store/slices/projectsSlice';
@@ -32,13 +33,16 @@ const StatCard = ({ label, value, icon, color }: { label: string; value: number;
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const { list: projects, loading } = useAppSelector((s) => s.projects);
 
   useEffect(() => {
-    // The dashboard shows the employee's own numbers, not the whole company's.
-    dispatch(fetchProjectsThunk({ pageSize: 100, scope: 'mine' }));
-  }, [dispatch]);
+    if (!isAdmin) {
+      dispatch(fetchProjectsThunk({ pageSize: 100, scope: 'mine' }));
+    }
+  }, [dispatch, isAdmin]);
 
+  if (isAdmin) return <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />;
   if (loading) return <LoadingSpinner />;
 
   const total = projects.length;
