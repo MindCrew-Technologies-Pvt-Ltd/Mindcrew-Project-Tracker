@@ -113,6 +113,8 @@ export const getManagers: RequestHandler = async (req, res, next) => {
       where: {
         OR: [
           { jobRoles: { has: 'Manager' } },
+          { jobRoles: { has: 'Admin' } },
+          { jobRoles: { has: 'HR' } },
           { role: 'ADMIN' },
         ],
         isActive: true,
