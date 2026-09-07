@@ -75,32 +75,32 @@ export const getEmployeeAnalytics: RequestHandler = async (req, res, next) => {
         department: true,
         designation: true,
         jobRoles: true,
+        managerEmployeeIds: true,
       }
     });
+
+    const allManagerIds = Array.from(new Set(users.flatMap(u => u.managerEmployeeIds)));
+    const managerUsers = await prisma.user.findMany({
+      where: { employeeId: { in: allManagerIds } },
+      select: { employeeId: true, name: true }
+    });
+    const managerNameMap = managerUsers.reduce((acc, mu) => {
+      if (mu.employeeId) acc[mu.employeeId] = mu.name;
+      return acc;
+    }, {} as Record<string, string>);
 
     // 2. Fetch project assignments (ACTIVE projects only)
     const members = await prisma.projectMember.findMany({
       where: { project: { status: 'ACTIVE' } },
-      select: { 
-        userId: true, 
-        project: { 
-          select: { 
-            name: true, 
-            owner: { select: { name: true } } 
-          } 
-        } 
-      }
+      select: { userId: true, project: { select: { name: true } } }
     });
     
     // Group projects by user
     const userProjects = members.reduce((acc, m) => {
       if (!acc[m.userId]) acc[m.userId] = [];
-      acc[m.userId].push({ 
-        name: m.project.name, 
-        manager: m.project.owner?.name || 'N/A' 
-      });
+      acc[m.userId].push(m.project.name);
       return acc;
-    }, {} as Record<string, { name: string; manager: string }[]>);
+    }, {} as Record<string, string[]>);
 
     // 3. Fetch today's approved leaves/WFH
     const leaves = await prisma.leaveRequest.findMany({
@@ -144,6 +144,8 @@ export const getEmployeeAnalytics: RequestHandler = async (req, res, next) => {
       const availability = availabilities.find(a => a.userId === user.id);
       const minutesLogged = userMinutes[user.id] || 0;
       
+      const managers = user.managerEmployeeIds.map(id => managerNameMap[id] || id);
+
       return {
         id: user.id,
         name: user.name,
@@ -151,6 +153,7 @@ export const getEmployeeAnalytics: RequestHandler = async (req, res, next) => {
         department: user.department,
         designation: user.designation,
         jobRoles: user.jobRoles,
+        managers,
         activeProjects,
         leaveType,
         availabilityStatus: availability?.status || 'NOT_UPDATED',
