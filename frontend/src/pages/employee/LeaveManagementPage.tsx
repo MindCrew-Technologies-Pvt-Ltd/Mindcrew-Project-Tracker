@@ -39,6 +39,7 @@ const getTypeColor = (type: LeaveType) => {
     case 'FULL_DAY': return '#f44336'; // Red
     case 'HALF_DAY': return '#ffeb3b'; // Yellow
     case 'WFH': return '#4caf50'; // Green
+    case 'COMP_OFF': return '#9c27b0'; // Purple
     default: return '#ccc';
   }
 };
@@ -110,6 +111,10 @@ export default function LeaveManagementPage() {
       alert('End date cannot be before start date');
       return;
     }
+    if (!formData.notifyManagerIds || formData.notifyManagerIds.length === 0) {
+      alert('Please select at least one manager to notify.');
+      return;
+    }
     try {
       await leavesService.createRequest({
         ...formData,
@@ -160,6 +165,7 @@ export default function LeaveManagementPage() {
   const totalFull = calculateDays('FULL_DAY');
   const totalHalf = calculateDays('HALF_DAY') * 0.5;
   const totalWfh = calculateDays('WFH');
+  const totalCompOff = calculateDays('COMP_OFF');
 
   // Mini Calendar logic (currentMonth state based)
   const startOfMonth = currentMonth.startOf('month');
@@ -212,6 +218,12 @@ export default function LeaveManagementPage() {
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
               <Typography variant="subtitle1">WFH Days</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalWfh}</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'secondary.light', color: 'secondary.contrastText' }}>
+              <Typography variant="subtitle1">Comp-Off</Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalCompOff}</Typography>
             </Paper>
           </Grid>
         </Grid>
@@ -300,6 +312,7 @@ export default function LeaveManagementPage() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('FULL_DAY'), borderRadius: '50%', width: 12, height: 12 }}/> Leave</Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('HALF_DAY'), borderRadius: '50%', width: 12, height: 12 }}/> Half Day</Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('WFH'), borderRadius: '50%', width: 12, height: 12 }}/> WFH</Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('COMP_OFF'), borderRadius: '50%', width: 12, height: 12 }}/> Comp</Box>
               </Box>
             </Paper>
           </Grid>
@@ -376,6 +389,7 @@ export default function LeaveManagementPage() {
                 <MenuItem value="FULL_DAY">Full Day Leave</MenuItem>
                 <MenuItem value="HALF_DAY">Half Day Leave</MenuItem>
                 <MenuItem value="WFH">Work From Home</MenuItem>
+                <MenuItem value="COMP_OFF">Comp-Off</MenuItem>
               </Select>
             </FormControl>
             <TextField
@@ -413,8 +427,8 @@ export default function LeaveManagementPage() {
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
             />
-            <FormControl fullWidth>
-              <InputLabel>Notify Managers</InputLabel>
+            <FormControl fullWidth required>
+              <InputLabel>Notify Managers *</InputLabel>
               <Select
                 multiple
                 value={formData.notifyManagerIds}

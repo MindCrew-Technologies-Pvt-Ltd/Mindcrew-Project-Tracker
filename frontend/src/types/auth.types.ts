@@ -9,8 +9,10 @@ export interface SignupPayload {
   email: string;
   phone?: string;
   department?: string;
-  designation?: string;
+  employeeId?: string;
   jobRoles?: string[];
+  pendingJobRoles?: string[];
+  managerEmployeeIds?: string[];
   password: string;
   confirmPassword: string;
 }

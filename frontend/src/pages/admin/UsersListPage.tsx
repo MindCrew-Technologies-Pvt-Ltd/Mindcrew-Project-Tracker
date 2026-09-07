@@ -76,7 +76,18 @@ const UsersListPage = () => {
         </Box>
       ),
     },
-    { key: 'role', header: 'Role', width: '10%', sortable: true, value: (u) => u.role, render: (u) => <RolePill role={u.role} /> },
+    { key: 'role', header: 'Role', width: '15%', sortable: true, value: (u) => u.role, render: (u) => (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <RolePill role={u.role} />
+        {u.pendingJobRoles && u.pendingJobRoles.length > 0 && (
+          <Tooltip title={`Pending Role Requests: ${u.pendingJobRoles.join(', ')}`} arrow>
+            <Box sx={{ display: 'inline-flex', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#FFFBEB', color: '#B45309', border: '1px solid #FCD34D' }}>
+              Pending: {u.pendingJobRoles[0]}
+            </Box>
+          </Tooltip>
+        )}
+      </Box>
+    )},
     { key: 'isActive', header: 'Status', width: '11%', sortable: true, value: (u) => String(u.isActive), render: (u) => <StatusPill active={u.isActive} /> },
     { key: 'createdAt', header: 'Joined', width: '12%', sortable: true, value: (u) => u.createdAt, render: (u) => formatDate(u.createdAt) },
   ];

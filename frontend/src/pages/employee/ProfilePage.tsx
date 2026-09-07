@@ -152,23 +152,35 @@ const ProfilePage = () => {
               />
 
               {/* Job Roles chips */}
-              {user?.jobRoles && user.jobRoles.length > 0 && (
-                <Stack direction="row" flexWrap="wrap" justifyContent="center" gap={0.5} sx={{ mt: 1.5 }}>
-                  {user.jobRoles.map((role) => (
+              <Stack direction="row" flexWrap="wrap" justifyContent="center" gap={0.5} sx={{ mt: 1.5 }}>
+                {user?.jobRoles && user.jobRoles.map((role) => (
+                  <Chip
+                    key={role}
+                    label={role}
+                    size="small"
+                    sx={{
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      color: '#fff',
+                      fontWeight: 500,
+                      fontSize: '0.72rem',
+                    }}
+                  />
+                ))}
+                {user?.pendingJobRoles && user.pendingJobRoles.map((role) => (
+                  <Tooltip key={`pending-${role}`} title="Pending Admin Approval" arrow>
                     <Chip
-                      key={role}
-                      label={role}
+                      label={`${role} (Pending)`}
                       size="small"
                       sx={{
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                         color: '#fff',
                         fontWeight: 500,
                         fontSize: '0.72rem',
                       }}
                     />
-                  ))}
-                </Stack>
-              )}
+                  </Tooltip>
+                ))}
+              </Stack>
             </CardContent>
           </Card>
 

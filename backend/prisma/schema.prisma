@@ -76,6 +76,7 @@ enum LeaveType {
   FULL_DAY
   HALF_DAY
   WFH
+  COMP_OFF
 }
 
 enum LeaveStatus {
@@ -102,6 +103,7 @@ model User {
   designation         String?
   employeeId          String?
   jobRoles            String[]
+  pendingJobRoles     String[]  @default([])
   managerEmployeeIds  String[]  @default([])
   role                Role      @default(EMPLOYEE)
   isActive            Boolean   @default(true)

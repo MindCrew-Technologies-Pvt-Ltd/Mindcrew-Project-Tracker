@@ -16,8 +16,19 @@ export const signup = async (req: Request, res: Response, next: NextFunction): P
       if (existingEmployeeId) { error(res, 'Employee ID already in use', 409); return; }
     }
     const passwordHash = await hashPassword(password);
+    
+    // Handle pending roles for elevated access
+    const requestedRoles = jobRoles ?? [];
+    const elevatedRoles = ['Manager', 'Admin', 'HR'];
+    const approvedRoles = requestedRoles.filter((r: string) => !elevatedRoles.includes(r));
+    const pendingRoles = requestedRoles.filter((r: string) => elevatedRoles.includes(r));
+
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, phone, department, designation, employeeId, jobRoles: jobRoles ?? [] },
+      data: { 
+        name, email, passwordHash, phone, department, designation, employeeId, 
+        jobRoles: approvedRoles,
+        pendingJobRoles: pendingRoles 
+      },
       select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, createdAt: true },
     });
     const tokens = generateTokens({ id: user.id, email: user.email, role: user.role, jobRoles: user.jobRoles });
@@ -113,17 +124,30 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     if (department !== undefined) data.department = department;
     if (designation !== undefined) data.designation = designation;
     if (employeeId !== undefined) {
-       // Validate uniqueness if changing
        const existingEmployeeId = await prisma.user.findFirst({ where: { employeeId } });
        if (existingEmployeeId && existingEmployeeId.id !== req.user!.id) { error(res, 'Employee ID already in use', 409); return; }
        data.employeeId = employeeId;
     }
-    if (jobRoles !== undefined) data.jobRoles = jobRoles;
+    if (jobRoles !== undefined) {
+      const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+      const currentRoles = currentUser?.jobRoles || [];
+      
+      const elevatedRoles = ['Manager', 'Admin', 'HR'];
+      const requestedElevated = jobRoles.filter((r: string) => elevatedRoles.includes(r));
+      const newElevated = requestedElevated.filter((r: string) => !currentRoles.includes(r));
+      
+      const approvedRoles = jobRoles.filter((r: string) => !newElevated.includes(r));
+      
+      data.jobRoles = approvedRoles;
+      if (newElevated.length > 0) {
+        data.pendingJobRoles = { push: newElevated };
+      }
+    }
     if (managerEmployeeIds !== undefined) data.managerEmployeeIds = managerEmployeeIds;
     const user = await prisma.user.update({
       where: { id: req.user!.id },
       data,
-      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, managerEmployeeIds: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
+      select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, pendingJobRoles: true, managerEmployeeIds: true, role: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true },
     });
     success(res, user, 'Profile updated');
   } catch (err) { next(err); }

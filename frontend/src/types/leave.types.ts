@@ -1,6 +1,6 @@
 import { User } from './user.types';
 
-export type LeaveType = 'FULL_DAY' | 'HALF_DAY' | 'WFH';
+export type LeaveType = 'FULL_DAY' | 'HALF_DAY' | 'WFH' | 'COMP_OFF';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface LeaveRequest {

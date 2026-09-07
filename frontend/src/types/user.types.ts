@@ -9,6 +9,7 @@ export interface User {
   designation: string;
   employeeId?: string;
   jobRoles: string[];
+  pendingJobRoles?: string[];
   managerEmployeeIds: string[];
   role: UserRole;
   isActive: boolean;

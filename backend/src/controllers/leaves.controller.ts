@@ -11,6 +11,11 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
   try {
     const { type, startDate, endDate, reason, notifyManagerIds } = req.body;
     
+    if (!notifyManagerIds || notifyManagerIds.length === 0) {
+      error(res, 'Manager selection is required', 400);
+      return;
+    }
+    
     // Week-based date restriction: users cannot request leaves for completed weeks
     const reqStart = new Date(startDate);
     const now = new Date();
