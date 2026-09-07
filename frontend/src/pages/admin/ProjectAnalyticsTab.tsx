@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Grid, Card, CardContent, Typography, Box, CircularProgress, CardActionArea, Chip, Button } from '@mui/material';
 import FolderIcon from '@mui/icons-material/esm/Folder';
 import PlayCircleIcon from '@mui/icons-material/esm/PlayCircle';
@@ -16,6 +16,7 @@ import ProjectsByEmployeeChart from '../../components/charts/ProjectsByEmployeeC
 import MonthlyCreationChart from '../../components/charts/MonthlyCreationChart';
 import WeeklyUpdateTrendsChart from '../../components/charts/WeeklyUpdateTrendsChart';
 import DataTablePro, { Column } from '../../components/data-display/DataTablePro';
+import reportsService from '../../services/reportsService';
 
 interface StatCardProps {
   label: string;
@@ -59,6 +60,28 @@ export default function ProjectAnalyticsTab() {
   const { requests } = useAppSelector((s) => s.editRequests);
 
   const [view, setView] = useState<ViewType>('CHARTS');
+  const [weeklyTrendsData, setWeeklyTrendsData] = useState<{week: string, count: number}[]>([]);
+
+  useEffect(() => {
+    reportsService.getReport('WEEKLY_UPDATE', {}).then(res => {
+      const data = res.data.data || [];
+      const weeklyData: Record<string, number> = {};
+      data.forEach((u: any) => {
+        const d = new Date(u.createdAt);
+        // get ISO week
+        const firstDayOfYear = new Date(d.getFullYear(), 0, 1);
+        const pastDaysOfYear = (d.getTime() - firstDayOfYear.getTime()) / 86400000;
+        const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+        const w = `W${weekNum}`;
+        weeklyData[w] = (weeklyData[w] || 0) + 1;
+      });
+      // Sort keys (e.g. W1, W2, W3) and get last 4
+      const trendData = Object.keys(weeklyData)
+        .sort((a, b) => parseInt(a.replace('W', '')) - parseInt(b.replace('W', '')))
+        .map(week => ({ week, count: weeklyData[week] }));
+      setWeeklyTrendsData(trendData.slice(-4));
+    }).catch(console.error);
+  }, []);
 
   // If initial load is happening, show global loading
   if (projectsLoading && projects.length === 0) {
@@ -98,10 +121,7 @@ export default function ProjectAnalyticsTab() {
   });
   const monthlyChartData = Object.entries(monthlyData).map(([month, count]) => ({ month, count }));
 
-  // Mock weekly trends since we don't have historical weekly updates snapshot easily accessible here
-  const weeklyTrendsData = [
-    { week: 'W1', count: 8 }, { week: 'W2', count: 12 }, { week: 'W3', count: 7 }, { week: 'W4', count: 10 }
-  ];
+  // Weekly trends data is now fetched from the database on mount
 
   // --- Table Columns ---
   const userCols: Column<any>[] = [

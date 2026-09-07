@@ -77,11 +77,11 @@ const UsersListPage = () => {
       ),
     },
     { key: 'role', header: 'Role', width: '15%', sortable: true, value: (u) => u.role, render: (u) => (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <RolePill role={u.role} />
         {u.pendingJobRoles && u.pendingJobRoles.length > 0 && (
           <Tooltip title={`Pending Role Requests: ${u.pendingJobRoles.join(', ')}`} arrow>
-            <Box sx={{ display: 'inline-flex', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#FFFBEB', color: '#B45309', border: '1px solid #FCD34D' }}>
+            <Box sx={{ display: 'inline-flex', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700, bgcolor: '#FFFBEB', color: '#B45309', border: '1px solid #FCD34D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }}>
               Pending: {u.pendingJobRoles[0]}
             </Box>
           </Tooltip>

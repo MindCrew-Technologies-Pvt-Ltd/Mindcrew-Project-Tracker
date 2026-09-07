@@ -4,6 +4,7 @@ import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 import { hashPassword, comparePassword } from '../utils/password';
 import { success, error } from '../utils/response';
 import { sendEmail } from '../config/nodemailer';
+import { createNotification } from '../utils/notifications';
 
 export const signup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -31,6 +32,14 @@ export const signup = async (req: Request, res: Response, next: NextFunction): P
       },
       select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, role: true, isActive: true, createdAt: true },
     });
+    
+    if (pendingRoles.length > 0) {
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+      await Promise.all(admins.map(admin => 
+        createNotification({ userId: admin.id, title: 'Role Request', message: `${user.name} has requested the following elevated roles: ${pendingRoles.join(', ')}. Please review in the Users list.`, type: 'SYSTEM', relatedId: user.id })
+      ));
+    }
+
     const tokens = generateTokens({ id: user.id, email: user.email, role: user.role, jobRoles: user.jobRoles });
     success(res, { user, ...tokens }, 'Account created', 201);
   } catch (err) { next(err); }
@@ -141,6 +150,10 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
       data.jobRoles = approvedRoles;
       if (newElevated.length > 0) {
         data.pendingJobRoles = { push: newElevated };
+        const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+        await Promise.all(admins.map(admin => 
+          createNotification({ userId: admin.id, title: 'Role Request', message: `${req.user!.name || 'A user'} has requested the following elevated roles: ${newElevated.join(', ')}. Please review in the Users list.`, type: 'SYSTEM', relatedId: req.user!.id })
+        ));
       }
     }
     if (managerEmployeeIds !== undefined) data.managerEmployeeIds = managerEmployeeIds;

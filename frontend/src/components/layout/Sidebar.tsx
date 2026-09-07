@@ -46,6 +46,7 @@ const timesheetNav = [
 ];
 
 const adminTimesheetNav = [
+  { label: 'My Timesheet', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET, end: true },
   { label: 'Daily Timesheets', icon: <AccessTimeIcon fontSize="small" />, to: ROUTES.TIMESHEET_DAILY },
   { label: 'Approvals', icon: <FactCheckIcon fontSize="small" />, to: ROUTES.TIMESHEET_APPROVALS },
   { label: 'Time Reports', icon: <InsightsIcon fontSize="small" />, to: ROUTES.TIMESHEET_REPORTS },

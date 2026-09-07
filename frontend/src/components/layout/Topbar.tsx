@@ -57,8 +57,8 @@ const Topbar = ({ onMenuClick, sidebarWidth = 248 }: Props) => {
 
         <Box sx={{ flex: 1 }} />
 
-        {/* Admins never fill a timesheet, so the timer is hidden for them. */}
-        {!isAdmin && <TimerWidget />}
+        {/* Admins can also fill a timesheet now */}
+        <TimerWidget />
 
         <NotificationBell />
 

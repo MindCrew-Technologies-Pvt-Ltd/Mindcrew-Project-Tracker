@@ -4,6 +4,7 @@ import { success, paginated, error } from '../utils/response';
 import { hashPassword } from '../utils/password';
 import { logActivity } from '../utils/activityLogger';
 import { sendEmail } from '../config/nodemailer';
+import { createNotification } from '../utils/notifications';
 import { getPaginationParams } from '../utils/pagination';
 import { AppError } from '../middleware/errorHandler';
 
@@ -65,6 +66,12 @@ export const updateUser: RequestHandler = async (req, res, next) => {
     if (role !== undefined) data.role = role;
     if (isActive !== undefined) data.isActive = isActive;
     const user = await prisma.user.update({ where: { id }, data, select: { id: true, name: true, email: true, role: true, isActive: true, updatedAt: true } });
+    
+    // Notify user if their pending roles were resolved
+    if (jobRoles !== undefined && existing.pendingJobRoles.length > 0) {
+      await createNotification({ userId: id, title: 'Role Updated', message: 'Your requested roles have been reviewed and updated by an administrator.', type: 'SYSTEM' });
+    }
+
     await logActivity({ userId: req.user!.id, action: 'UPDATE', module: 'USER', description: `Updated user ${id}` });
     success(res, user);
   } catch (err) { next(err); }
