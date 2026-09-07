@@ -16,6 +16,9 @@ const leavesService = {
 
   getMyManagers: () => 
     axiosInstance.get('/users/my-managers'),
+
+  cancelRequest: (id: string) =>
+    axiosInstance.delete(`/leaves/${id}`),
 };
 
 export default leavesService;

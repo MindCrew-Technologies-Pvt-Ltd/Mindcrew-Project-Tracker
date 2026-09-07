@@ -179,3 +179,19 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
     success(res, updatedLeave, `Leave request ${status.toLowerCase()} successfully`);
   } catch (err) { next(err); }
 };
+
+export const cancelLeaveRequest: RequestHandler = async (req, res, next) => {
+  try {
+    const id = sp(req.params.id);
+    const leave = await prisma.leaveRequest.findUnique({ where: { id } });
+    if (!leave) return next(new AppError('Leave request not found', 404));
+
+    if (leave.userId !== req.user!.id) {
+      error(res, 'You can only cancel your own leave requests', 403);
+      return;
+    }
+
+    await prisma.leaveRequest.delete({ where: { id } });
+    success(res, null, 'Leave request cancelled successfully');
+  } catch (err) { next(err); }
+};

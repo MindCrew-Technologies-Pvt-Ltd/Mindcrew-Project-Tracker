@@ -178,7 +178,6 @@ const ProfilePage = () => {
               Account Details
             </Typography>
             <Divider sx={{ mb: 1 }} />
-            <InfoRow icon={<BadgeIcon fontSize="small" />} label="User ID" value={user?.id || ''} copyable />
             <InfoRow icon={<BadgeIcon fontSize="small" />} label="Employee ID" value={user?.employeeId || ''} copyable />
             <InfoRow icon={<EmailIcon fontSize="small" />} label="Email" value={user?.email || ''} copyable />
             <InfoRow icon={<PhoneIcon fontSize="small" />} label="Phone" value={user?.phone || ''} copyable />

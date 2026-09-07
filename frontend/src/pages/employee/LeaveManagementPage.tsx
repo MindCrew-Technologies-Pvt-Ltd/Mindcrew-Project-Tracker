@@ -134,11 +134,32 @@ export default function LeaveManagementPage() {
     }
   };
 
+  const handleCancelRequest = async (id: string) => {
+    if (!window.confirm('Are you sure you want to cancel this leave request?')) return;
+    try {
+      await leavesService.cancelRequest(id);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to cancel request');
+    }
+  };
+
   // Stats calculation
   const approvedLeaves = myRequests.filter(r => r.status === 'APPROVED');
-  const totalFull = approvedLeaves.filter(r => r.type === 'FULL_DAY').length;
-  const totalHalf = approvedLeaves.filter(r => r.type === 'HALF_DAY').length;
-  const totalWfh = approvedLeaves.filter(r => r.type === 'WFH').length;
+  
+  const calculateDays = (type: LeaveType) => {
+    return approvedLeaves
+      .filter(r => r.type === type)
+      .reduce((acc, r) => {
+        const days = dayjs(r.endDate).diff(dayjs(r.startDate), 'day') + 1;
+        return acc + (days > 0 ? days : 1);
+      }, 0);
+  };
+
+  const totalFull = calculateDays('FULL_DAY');
+  const totalHalf = calculateDays('HALF_DAY') * 0.5;
+  const totalWfh = calculateDays('WFH');
 
   // Mini Calendar logic (currentMonth state based)
   const startOfMonth = currentMonth.startOf('month');
@@ -206,6 +227,7 @@ export default function LeaveManagementPage() {
                     <TableCell>Date Range</TableCell>
                     <TableCell>Reason</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -218,10 +240,20 @@ export default function LeaveManagementPage() {
                       </TableCell>
                       <TableCell>{req.reason || '-'}</TableCell>
                       <TableCell><Chip label={req.status} color={getStatusColor(req.status)} size="small" /></TableCell>
+                      <TableCell align="right">
+                        <IconButton 
+                          size="small" 
+                          color="error" 
+                          title="Cancel Request"
+                          onClick={() => handleCancelRequest(req.id)}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {myRequests.length === 0 && (
-                    <TableRow><TableCell colSpan={4} align="center">No requests found</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} align="center">No requests found</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
