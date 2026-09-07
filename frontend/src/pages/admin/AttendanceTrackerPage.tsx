@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, Button, Tabs, Tab, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
-  CircularProgress, Grid, Alert, Snackbar
+  CircularProgress, Grid, Alert, Snackbar, IconButton, Tooltip
 } from '@mui/material';
-import { Save, Download, CloudUpload, Email, Description } from '@mui/icons-material';
+import { Save, Download, CloudUpload, Email, Description, DeleteOutline } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import attendanceService, { SheetData } from '../../services/attendanceService';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -149,6 +149,20 @@ export default function AttendanceTrackerPage() {
     }
   };
 
+  const handleDeleteData = async () => {
+    if (!window.confirm('Are you sure you want to clear all attendance data? This cannot be undone.')) return;
+    try {
+      setToast({ msg: 'Clearing data...', severity: 'info' });
+      await attendanceService.deleteMaster();
+      setToast({ msg: 'All attendance data cleared successfully!', severity: 'success' });
+      setSheets([]);
+      setActiveSheet('');
+      setSheetData(null);
+    } catch (err: any) {
+      setToast({ msg: err.response?.data?.message || 'Failed to clear data', severity: 'error' });
+    }
+  };
+
   const getStatusColor = (val: string) => {
     switch (val) {
       case 'P': return 'transparent';
@@ -169,7 +183,19 @@ export default function AttendanceTrackerPage() {
       <PageHeader 
         title="Attendance Master Sheet" 
         action={
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Tooltip title="Clear all data">
+              <span>
+                <IconButton 
+                  color="error" 
+                  onClick={handleDeleteData}
+                  disabled={sheets.length === 0}
+                  sx={{ border: '1px solid', borderColor: 'error.main' }}
+                >
+                  <DeleteOutline />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Button
               variant="outlined"
               color="secondary"

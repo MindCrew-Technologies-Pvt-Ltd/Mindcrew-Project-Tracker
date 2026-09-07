@@ -6,7 +6,7 @@
 import { RequestHandler } from 'express';
 import multer from 'multer';
 import { success, error } from '../utils/response';
-import { readMaster, writeMaster, savePdf } from '../services/attendance/fileStore';
+import { readMaster, writeMaster, savePdf, deleteMaster } from '../services/attendance/fileStore';
 import { parsePdfReport } from '../services/attendance/pdfParser';
 import { generateExcel } from '../services/attendance/excelGenerator';
 import { getAvailableSheets, readSheetData, saveSheetData } from '../services/attendance/excelReader';
@@ -199,4 +199,14 @@ export const sendReport: RequestHandler = async (_req, res, next) => {
     console.error('Email error:', err);
     error(res, err.message || 'Failed to send email report', 500);
   }
+};
+
+/**
+ * DELETE /api/attendance/delete-master
+ */
+export const deleteMasterFile: RequestHandler = async (_req, res, next) => {
+  try {
+    deleteMaster();
+    success(res, null, 'Data cleared successfully');
+  } catch (err) { next(err); }
 };

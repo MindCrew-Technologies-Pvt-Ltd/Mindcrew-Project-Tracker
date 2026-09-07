@@ -34,3 +34,11 @@ export function writeMaster(data: Buffer): void {
   ensureDirs();
   fs.writeFileSync(MASTER_PATH, data);
 }
+
+/** Delete master Excel file. */
+export function deleteMaster(): void {
+  ensureDirs();
+  if (fs.existsSync(MASTER_PATH)) {
+    fs.unlinkSync(MASTER_PATH);
+  }
+}

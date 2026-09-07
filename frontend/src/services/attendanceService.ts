@@ -46,6 +46,9 @@ const attendanceService = {
   downloadMaster() {
     return axiosInstance.get(`${API}/download-master`, { responseType: 'blob' });
   },
+
+  /** Clear all attendance data */
+  deleteMaster: () => axiosInstance.delete(`${API}/delete-master`),
 };
 
 export default attendanceService;

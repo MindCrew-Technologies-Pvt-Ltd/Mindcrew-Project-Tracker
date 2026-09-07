@@ -10,6 +10,7 @@ import {
   saveSheet,
   downloadMaster,
   sendReport,
+  deleteMasterFile,
 } from '../controllers/attendance.controller';
 
 const router = Router();
@@ -44,5 +45,6 @@ router.get('/get-sheet-data/:sheetName', getSheetData);
 router.post('/save-sheet/:sheetName', saveSheet);
 router.get('/download-master', downloadMaster);
 router.post('/send-report', sendReport);
+router.delete('/delete-master', deleteMasterFile);
 
 export default router;
