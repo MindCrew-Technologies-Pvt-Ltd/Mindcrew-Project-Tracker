@@ -15,7 +15,8 @@ interface EmployeeAnalyticsData {
   department: string;
   designation: string;
   jobRoles: string[];
-  activeProjects: { name: string; manager: string }[];
+  activeProjects: string[];
+  managers: string[];
   leaveType: string | null;
   availabilityStatus: string;
   availabilityNote: string | null;
@@ -147,21 +148,21 @@ export default function EmployeeAnalyticsTab() {
         render: (row) => (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             {row.activeProjects.map((p, i) => (
-              <Typography key={i} variant="body2" sx={{ fontWeight: 500 }}>• {p.name}</Typography>
+              <Typography key={i} variant="body2" sx={{ fontWeight: 500 }}>• {p}</Typography>
             ))}
           </Box>
         )
       },
       {
         key: 'managers', header: 'Managers', width: '180px',
-        render: (row) => {
-          const managers = Array.from(new Set(row.activeProjects.map(p => p.manager)));
-          return (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {managers.map((m, i) => <Chip key={i} label={m} size="small" variant="outlined" />)}
-            </Box>
-          );
-        }
+        render: (row) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {row.managers && row.managers.length > 0 
+              ? row.managers.map((m, i) => <Chip key={i} label={m} size="small" variant="outlined" />)
+              : <Typography variant="body2" color="text.secondary">-</Typography>
+            }
+          </Box>
+        )
       }
     ];
   } else if (view === 'BANDWIDTH') {
