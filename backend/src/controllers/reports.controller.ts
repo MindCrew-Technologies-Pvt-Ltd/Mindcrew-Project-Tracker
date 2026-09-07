@@ -74,21 +74,33 @@ export const getEmployeeAnalytics: RequestHandler = async (req, res, next) => {
         employeeId: true,
         department: true,
         designation: true,
+        jobRoles: true,
       }
     });
 
     // 2. Fetch project assignments (ACTIVE projects only)
     const members = await prisma.projectMember.findMany({
       where: { project: { status: 'ACTIVE' } },
-      select: { userId: true, project: { select: { name: true } } }
+      select: { 
+        userId: true, 
+        project: { 
+          select: { 
+            name: true, 
+            owner: { select: { name: true } } 
+          } 
+        } 
+      }
     });
     
     // Group projects by user
     const userProjects = members.reduce((acc, m) => {
       if (!acc[m.userId]) acc[m.userId] = [];
-      acc[m.userId].push(m.project.name);
+      acc[m.userId].push({ 
+        name: m.project.name, 
+        manager: m.project.owner?.name || 'N/A' 
+      });
       return acc;
-    }, {} as Record<string, string[]>);
+    }, {} as Record<string, { name: string; manager: string }[]>);
 
     // 3. Fetch today's approved leaves/WFH
     const leaves = await prisma.leaveRequest.findMany({
@@ -138,6 +150,7 @@ export const getEmployeeAnalytics: RequestHandler = async (req, res, next) => {
         employeeId: user.employeeId,
         department: user.department,
         designation: user.designation,
+        jobRoles: user.jobRoles,
         activeProjects,
         leaveType,
         availabilityStatus: availability?.status || 'NOT_UPDATED',
