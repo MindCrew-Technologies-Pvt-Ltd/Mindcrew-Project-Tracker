@@ -55,8 +55,8 @@ type ViewType = 'CHARTS' | 'USERS' | 'PROJECTS' | 'ACTIVE_PROJECTS' | 'PENDING_R
 
 export default function ProjectAnalyticsTab() {
   const { list: projects, loading: projectsLoading } = useAppSelector((s) => s.projects);
-  const { list: users, loading: usersLoading } = useAppSelector((s) => s.users);
-  const { requests, loading: requestsLoading } = useAppSelector((s) => s.editRequests);
+  const { list: users } = useAppSelector((s) => s.users);
+  const { requests } = useAppSelector((s) => s.editRequests);
 
   const [view, setView] = useState<ViewType>('CHARTS');
 
