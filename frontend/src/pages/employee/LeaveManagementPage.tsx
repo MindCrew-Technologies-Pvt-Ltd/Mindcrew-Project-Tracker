@@ -10,6 +10,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import leavesService from '../../services/leavesService';
 import { LeaveRequest, LeaveType, LeaveStatus } from '../../types/leave.types';
+import { isAdmin as checkIsAdmin } from '../../utils/roleGuards';
 import dayjs from 'dayjs';
 
 interface TabPanelProps {
@@ -48,7 +49,7 @@ const getTypeColor = (type: LeaveType) => {
 
 export default function LeaveManagementPage() {
   const { user } = useAppSelector(state => state.auth);
-  const isManager = user?.jobRoles?.includes('Manager') || user?.role === 'ADMIN';
+  const isManager = user?.jobRoles?.includes('Manager') || checkIsAdmin(user);
 
   const [tabIndex, setTabIndex] = useState(0);
   const [myRequests, setMyRequests] = useState<LeaveRequest[]>([]);
