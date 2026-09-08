@@ -9,7 +9,7 @@ import { Add as AddIcon, CheckCircle as CheckIcon, Cancel as CancelIcon, Chevron
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import leavesService from '../../services/leavesService';
-import { LeaveRequest, LeaveType, LeaveStatus } from '../../types/leave.types';
+import { LeaveRequest, LeaveType } from '../../types/leave.types';
 import { isAdmin as checkIsAdmin } from '../../utils/roleGuards';
 import dayjs from 'dayjs';
 
