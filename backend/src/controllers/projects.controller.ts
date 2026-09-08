@@ -79,7 +79,7 @@ export const updateProject: RequestHandler = async (req, res, next) => {
     const id = sp(req.params.id);
     const existing = await prisma.project.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Project not found', 404));
-    const isAdmin = req.user?.role === 'ADMIN';
+    const isAdmin = req.user?.role === 'ADMIN' || req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN');
     const isOwner = existing.ownerId === req.user!.id;
     if (!isAdmin && !isOwner) {
       // An approved edit request grants permanent edit access (no expiry).
@@ -103,7 +103,8 @@ export const deleteProject: RequestHandler = async (req, res, next) => {
     const existing = await prisma.project.findUnique({ where: { id } });
     if (!existing) return next(new AppError('Project not found', 404));
     // An admin, or the project's own owner, may delete it.
-    if (req.user?.role !== 'ADMIN' && existing.ownerId !== req.user!.id) return next(new AppError('You can only delete your own projects', 403));
+    const isAdmin = req.user?.role === 'ADMIN' || req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN');
+    if (!isAdmin && existing.ownerId !== req.user!.id) return next(new AppError('You can only delete your own projects', 403));
     await prisma.project.delete({ where: { id } });
     await logActivity({ userId: req.user!.id, action: 'DELETE', module: 'PROJECT', description: `Deleted project "${existing.name}"` });
     success(res, null, 'Project deleted');
@@ -141,7 +142,8 @@ export const addTeamMember: RequestHandler = async (req, res, next) => {
     if (!userId) { error(res, 'userId is required', 400); return; }
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return next(new AppError('Project not found', 404));
-    if (req.user?.role !== 'ADMIN' && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
+    const isAdmin = req.user?.role === 'ADMIN' || req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN');
+    if (!isAdmin && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
     if (userId === project.ownerId) { error(res, 'The project owner is already on the team', 400); return; }
     const existing = await prisma.projectMember.findFirst({ where: { projectId: id, userId } });
     if (existing) { error(res, 'This user is already a team member', 400); return; }
@@ -157,7 +159,8 @@ export const removeTeamMember: RequestHandler = async (req, res, next) => {
     const userId = sp(req.params.userId);
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return next(new AppError('Project not found', 404));
-    if (req.user?.role !== 'ADMIN' && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
+    const isAdmin = req.user?.role === 'ADMIN' || req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN');
+    if (!isAdmin && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
     const member = await prisma.projectMember.findFirst({ where: { projectId: id, userId } });
     if (!member) return next(new AppError('Member not found', 404));
     await prisma.projectMember.delete({ where: { id: member.id } });
