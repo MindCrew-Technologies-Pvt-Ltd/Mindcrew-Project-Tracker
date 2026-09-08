@@ -119,19 +119,24 @@ export const resetUserPassword: RequestHandler = async (req, res, next) => {
 
 export const getManagers: RequestHandler = async (req, res, next) => {
   try {
-    const managers = await prisma.user.findMany({
+    const activeUsers = await prisma.user.findMany({
       where: {
-        OR: [
-          { jobRoles: { has: 'Manager' } },
-          { jobRoles: { has: 'Admin' } },
-          { jobRoles: { has: 'HR' } },
-          { role: 'ADMIN' },
-        ],
         isActive: true,
         name: { not: 'Admin' },
       },
-      select: { id: true, name: true, email: true, employeeId: true, jobRoles: true },
+      select: { id: true, name: true, email: true, employeeId: true, jobRoles: true, role: true },
     });
+
+    const managers = activeUsers.filter(user => {
+      const hasManagerOrAdminRole = user.jobRoles.some(r => 
+        r.toLowerCase().includes('manager') || 
+        r.toLowerCase() === 'admin'
+      );
+      const isSystemAdmin = user.role === 'ADMIN';
+
+      return hasManagerOrAdminRole || isSystemAdmin;
+    }).map(({ role, ...rest }) => rest); // remove role from the final response to match previous select
+
     success(res, managers);
   } catch (err) { next(err); }
 };
