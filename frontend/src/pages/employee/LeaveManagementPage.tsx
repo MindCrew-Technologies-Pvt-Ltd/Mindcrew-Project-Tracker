@@ -217,19 +217,19 @@ export default function LeaveManagementPage() {
       <TabPanel value={tabIndex} index={0}>
         {/* Stats Grid */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={3}>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.light', color: 'primary.contrastText' }}>
               <Typography variant="subtitle1">Total Leaves</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalFull}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={3}>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'warning.contrastText' }}>
               <Typography variant="subtitle1">Half Days</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalHalf}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={3}>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
               <Typography variant="subtitle1">WFH Days</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalWfh}</Typography>
