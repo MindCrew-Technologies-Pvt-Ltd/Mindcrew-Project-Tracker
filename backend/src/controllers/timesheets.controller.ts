@@ -95,16 +95,46 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
   try {
     const { skip, take, page, pageSize } = getPaginationParams(req.query as Record<string, unknown>);
     const status = (qs(req.query.status) ?? 'SUBMITTED') as 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!currentUser) return next(new AppError('User not found', 404));
+    
+    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.some(r => r.toLowerCase() === 'admin');
+    
     let userFilter: Record<string, unknown> = {};
-    if (req.user!.role !== 'ADMIN') {
+    if (!isAdmin) {
       const myProjects = await ownedProjectIds(req.user!.id);
-      if (myProjects.length === 0) { paginated(res, [], 0, page, pageSize); return; }
-      const authors = await prisma.timeEntry.findMany({
+      
+      const authors = myProjects.length > 0 ? await prisma.timeEntry.findMany({
         where: { projectId: { in: myProjects } },
         select: { userId: true },
         distinct: ['userId'],
-      });
-      userFilter = { userId: { in: authors.map((a) => a.userId).filter((id) => id !== req.user!.id) } };
+      }) : [];
+      const projectAuthors = authors.map((a) => a.userId).filter((id) => id !== req.user!.id);
+
+      const empId = currentUser.employeeId;
+      const empIdNum = empId?.replace('MCT-', '');
+      const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
+
+      const directReports = empId ? await prisma.user.findMany({
+        where: {
+          OR: [
+            { managerEmployeeIds: { has: empId } },
+            ...(empIdNum ? [{ managerEmployeeIds: { has: empIdNum } }] : []),
+            ...(empIdFull ? [{ managerEmployeeIds: { has: empIdFull } }] : [])
+          ]
+        },
+        select: { id: true }
+      }) : [];
+      const reportIds = directReports.map(u => u.id).filter(id => id !== req.user!.id);
+
+      const allowedUserIds = Array.from(new Set([...projectAuthors, ...reportIds]));
+      
+      if (allowedUserIds.length === 0) {
+        paginated(res, [], 0, page, pageSize);
+        return;
+      }
+      
+      userFilter = { userId: { in: allowedUserIds } };
     }
     const where = { status, ...userFilter };
     const [items, total] = await Promise.all([

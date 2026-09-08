@@ -123,14 +123,33 @@ export async function assertWeekUnlocked(userId: string, isoYear: number, isoWee
 /**
  * May `user` review (approve/reject) this timesheet week?
  * Admin: always. Otherwise: user must own at least one project that appears
- * in the week's time entries.
+ * in the week's time entries, OR be the reporting manager for the user.
  */
 export async function assertWeekReviewer(
   week: { userId: string; isoYear: number; isoWeek: number },
   user: AuthUser,
 ): Promise<void> {
-  if (user.role === 'ADMIN') return;
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
+  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.some((r: string) => r.toLowerCase() === 'admin');
+  
+  if (isAdmin) return;
   if (week.userId === user.id) throw new AppError('You cannot review your own timesheet', 403);
+  
+  // Check if current user is reporting manager
+  const targetUser = await prisma.user.findUnique({ where: { id: week.userId }, select: { managerEmployeeIds: true } });
+  if (targetUser && fullUser?.employeeId) {
+    const empId = fullUser.employeeId;
+    const empIdNum = empId.replace('MCT-', '');
+    const empIdFull = `MCT-${empIdNum}`;
+    if (
+      targetUser.managerEmployeeIds.includes(empId) ||
+      targetUser.managerEmployeeIds.includes(empIdNum) ||
+      targetUser.managerEmployeeIds.includes(empIdFull)
+    ) {
+      return; // authorized as reporting manager
+    }
+  }
+
   const ownedProjectWithTime = await prisma.timeEntry.findFirst({
     where: {
       userId: week.userId,
@@ -141,7 +160,7 @@ export async function assertWeekReviewer(
     select: { id: true },
   });
   if (!ownedProjectWithTime) {
-    throw new AppError('Only an owner of a project in this timesheet, or an admin, can review it', 403);
+    throw new AppError('Only an owner of a project in this timesheet, a reporting manager, or an admin can review it', 403);
   }
 }
 
@@ -151,9 +170,29 @@ export async function ownedProjectIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-/** May the user read another user's time data? (self, admin, or owner of ≥1 project) */
+/** May the user read another user's time data? (self, admin, or owner of ≥1 project, or reporting manager) */
 export async function canReadUserTime(targetUserId: string, user: AuthUser): Promise<boolean> {
-  if (user.role === 'ADMIN' || targetUserId === user.id) return true;
+  if (targetUserId === user.id) return true;
+  
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
+  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.some((r: string) => r.toLowerCase() === 'admin');
+  if (isAdmin) return true;
+
+  // Check if reporting manager
+  const targetUser = await prisma.user.findUnique({ where: { id: targetUserId }, select: { managerEmployeeIds: true } });
+  if (targetUser && fullUser?.employeeId) {
+    const empId = fullUser.employeeId;
+    const empIdNum = empId.replace('MCT-', '');
+    const empIdFull = `MCT-${empIdNum}`;
+    if (
+      targetUser.managerEmployeeIds.includes(empId) ||
+      targetUser.managerEmployeeIds.includes(empIdNum) ||
+      targetUser.managerEmployeeIds.includes(empIdFull)
+    ) {
+      return true;
+    }
+  }
+
   const owns = await prisma.project.findFirst({ where: { ownerId: user.id }, select: { id: true } });
   return !!owns;
 }
