@@ -26,10 +26,12 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const getStatusColor = (status: LeaveStatus) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'APPROVED': return 'success';
     case 'REJECTED': return 'error';
+    case 'CANCELLED': return 'default';
+    case 'CANCEL_REQUESTED': return 'warning';
     default: return 'warning';
   }
 };
@@ -152,6 +154,16 @@ export default function LeaveManagementPage() {
     }
   };
 
+  const handleReviewCancel = async (id: string, approved: boolean) => {
+    try {
+      await leavesService.reviewCancelRequest(id, { approved });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to process cancellation request');
+    }
+  };
+
   // Stats calculation
   const approvedLeaves = myRequests.filter(r => r.status === 'APPROVED');
   
@@ -253,16 +265,24 @@ export default function LeaveManagementPage() {
                         {req.startDate !== req.endDate && ` - ${dayjs(req.endDate).format('MMM D, YYYY')}`}
                       </TableCell>
                       <TableCell>{req.reason || '-'}</TableCell>
-                      <TableCell><Chip label={req.status} color={getStatusColor(req.status)} size="small" /></TableCell>
+                      <TableCell>
+                        {req.cancelRequested ? (
+                          <Chip label="CANCEL REQUESTED" color="warning" size="small" />
+                        ) : (
+                          <Chip label={req.status} color={getStatusColor(req.status) as any} size="small" />
+                        )}
+                      </TableCell>
                       <TableCell align="right">
-                        <IconButton 
-                          size="small" 
-                          color="error" 
-                          title="Cancel Request"
-                          onClick={() => handleCancelRequest(req.id)}
-                        >
-                          <CancelIcon />
-                        </IconButton>
+                        {!req.cancelRequested && req.status !== 'CANCELLED' && req.status !== 'REJECTED' && (
+                          <IconButton 
+                            size="small" 
+                            color="error" 
+                            title="Cancel Request"
+                            onClick={() => handleCancelRequest(req.id)}
+                          >
+                            <CancelIcon />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -348,9 +368,24 @@ export default function LeaveManagementPage() {
                       {dayjs(req.startDate).format('MMM D')} - {dayjs(req.endDate).format('MMM D, YYYY')}
                     </TableCell>
                     <TableCell>{req.reason || '-'}</TableCell>
-                    <TableCell><Chip label={req.status} color={getStatusColor(req.status)} size="small" /></TableCell>
+                    <TableCell>
+                      {req.cancelRequested ? (
+                        <Chip label="CANCEL REQUESTED" color="warning" size="small" />
+                      ) : (
+                        <Chip label={req.status} color={getStatusColor(req.status) as any} size="small" />
+                      )}
+                    </TableCell>
                     <TableCell align="right">
-                      {req.status === 'PENDING' ? (
+                      {req.cancelRequested ? (
+                        <>
+                          <IconButton color="success" onClick={() => handleReviewCancel(req.id, true)} title="Approve Cancellation">
+                            <CheckIcon />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => handleReviewCancel(req.id, false)} title="Reject Cancellation">
+                            <CancelIcon />
+                          </IconButton>
+                        </>
+                      ) : req.status === 'PENDING' ? (
                         <>
                           <IconButton color="success" onClick={() => handleUpdateStatus(req.id, 'APPROVED')} title="Approve">
                             <CheckIcon />

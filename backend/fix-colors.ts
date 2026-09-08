@@ -27,7 +27,7 @@ async function fixColors() {
       for (let c = 3; c <= ws.columnCount; c++) {
         const cell = ws.getCell(r, c);
         const val = cell.value ? String(cell.value) : '';
-        
+
         if (statusColors[val]) {
           cell.fill = {
             type: 'pattern', pattern: 'solid',

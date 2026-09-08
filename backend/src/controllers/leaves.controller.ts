@@ -205,7 +205,7 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
 export const cancelLeaveRequest: RequestHandler = async (req, res, next) => {
   try {
     const id = sp(req.params.id);
-    const leave = await prisma.leaveRequest.findUnique({ where: { id } });
+    const leave = await prisma.leaveRequest.findUnique({ where: { id }, include: { user: true } });
     if (!leave) return next(new AppError('Leave request not found', 404));
 
     if (leave.userId !== req.user!.id) {
@@ -213,7 +213,118 @@ export const cancelLeaveRequest: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    await prisma.leaveRequest.delete({ where: { id } });
-    success(res, null, 'Leave request cancelled successfully');
+    if (leave.status === 'CANCELLED') {
+      error(res, 'Leave is already cancelled', 400); return;
+    }
+    if (leave.cancelRequested) {
+      error(res, 'Cancellation is already requested', 400); return;
+    }
+
+    await prisma.leaveRequest.update({ 
+      where: { id },
+      data: { cancelRequested: true }
+    });
+
+    // Notify managers
+    const employee = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { name: true, employeeId: true, managerEmployeeIds: true },
+    });
+
+    if (employee && employee.managerEmployeeIds.length > 0) {
+      const managersToNotify = leave.notifiedManagerIds.length > 0 
+        ? leave.notifiedManagerIds 
+        : employee.managerEmployeeIds;
+
+      const managers = await (prisma.user.findMany as any)({
+        where: { employeeId: { in: managersToNotify }, pushSubscription: { not: null } },
+        select: { pushSubscription: true },
+      }) as Array<{ pushSubscription: string }>;
+      
+      const subs = managers.map((m) => m.pushSubscription).filter(Boolean);
+      const typeLabel = leave.type === 'FULL_DAY' ? 'Full Day Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'WFH' ? 'WFH' : 'Comp-Off';
+      if (subs.length > 0) {
+        await sendWebPushToMany(subs, {
+          title: '⚠️ Leave Cancellation Request',
+          body: `${employee.name} has requested to cancel their ${typeLabel}. Please review it.`,
+          tag: `leave-cancel-${leave.id}`,
+          url: '/leaves',
+        });
+      }
+    }
+
+    success(res, null, 'Cancellation request sent successfully');
+  } catch (err) { next(err); }
+};
+
+export const reviewCancellation: RequestHandler = async (req, res, next) => {
+  try {
+    const id = sp(req.params.id);
+    const { approved } = req.body;
+
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    const isAdmin = currentUser?.role === 'ADMIN';
+
+    if (!isAdmin && !currentUser?.employeeId) {
+      error(res, 'You need an Employee ID to approve cancellations', 400); return;
+    }
+
+    const leave = await prisma.leaveRequest.findUnique({
+      where: { id },
+      include: { user: true }
+    });
+
+    if (!leave) return next(new AppError('Leave request not found', 404));
+
+    if (!leave.cancelRequested) {
+      error(res, 'No cancellation requested for this leave', 400); return;
+    }
+
+    // Authorization
+    if (!isAdmin) {
+      const empId = currentUser!.employeeId!;
+      const empIdNum = empId.replace('MCT-', '');
+      const empIdFull = `MCT-${empIdNum}`;
+      
+      const isNotified = leave.notifiedManagerIds.includes(empId) || 
+                         leave.notifiedManagerIds.includes(empIdNum) || 
+                         leave.notifiedManagerIds.includes(empIdFull);
+                         
+      const isFallbackManager = leave.notifiedManagerIds.length === 0 && 
+                                leave.user.managerEmployeeIds.includes(empId);
+                                
+      if (!isNotified && !isFallbackManager) {
+        error(res, 'You are not authorized to review this cancellation.', 403); return;
+      }
+    }
+
+    const updatedLeave = await prisma.leaveRequest.update({
+      where: { id },
+      data: {
+        status: approved ? 'CANCELLED' : leave.status,
+        cancelRequested: false,
+        reviewedById: currentUser.id,
+        reviewedAt: new Date()
+      }
+    });
+
+    // Notify employee
+    const employee = await (prisma.user.findUnique as any)({
+      where: { id: leave.userId },
+      select: { name: true, pushSubscription: true },
+    }) as { name: string; pushSubscription: string | null } | null;
+    
+    if (employee?.pushSubscription) {
+      const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'WFH' ? 'WFH' : 'Comp-Off';
+      const actionStr = approved ? 'approved' : 'rejected';
+      await sendWebPushNotification(employee.pushSubscription, {
+        title: `🚫 Cancellation ${approved ? 'Approved' : 'Rejected'}`,
+        body: `Your request to cancel ${typeLabel} from ${new Date(leave.startDate).toLocaleDateString('en-IN')} has been ${actionStr}.`,
+        tag: `leave-cancel-status-${leave.id}`,
+        url: '/leaves',
+      });
+    }
+
+    success(res, updatedLeave, `Cancellation ${approved ? 'approved' : 'rejected'} successfully`);
   } catch (err) { next(err); }
 };

@@ -1,7 +1,7 @@
 import { User } from './user.types';
 
 export type LeaveType = 'FULL_DAY' | 'HALF_DAY' | 'WFH' | 'COMP_OFF';
-export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface LeaveRequest {
   id: string;
@@ -13,6 +13,7 @@ export interface LeaveRequest {
   status: LeaveStatus;
   reviewedById: string | null;
   reviewedAt: string | null;
+  cancelRequested: boolean;
   createdAt: string;
   updatedAt: string;
   
@@ -25,6 +26,7 @@ export interface CreateLeaveRequestPayload {
   startDate: string;
   endDate: string;
   reason?: string;
+  notifyManagerIds: string[];
 }
 
 export interface UpdateLeaveStatusPayload {

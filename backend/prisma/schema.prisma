@@ -83,6 +83,7 @@ enum LeaveStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELLED
 }
 
 enum AvailabilityStatus {
@@ -393,6 +394,7 @@ model LeaveRequest {
   reviewedById       String?
   reviewedAt         DateTime?
   notifiedManagerIds String[]    @default([])
+  cancelRequested    Boolean     @default(false)
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 

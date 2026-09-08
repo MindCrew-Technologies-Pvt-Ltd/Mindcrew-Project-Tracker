@@ -18,7 +18,10 @@ const leavesService = {
     axiosInstance.get('/users/my-managers'),
 
   cancelRequest: (id: string) =>
-    axiosInstance.delete(`/leaves/${id}`),
+    axiosInstance.post(`/leaves/${id}/cancel-request`),
+
+  reviewCancelRequest: (id: string, payload: { approved: boolean }) =>
+    axiosInstance.post(`/leaves/${id}/cancel-review`, payload),
 };
 
 export default leavesService;

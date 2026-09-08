@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createLeaveRequest, getMyLeaveRequests, getTeamLeaveRequests, updateLeaveStatus, cancelLeaveRequest } from '../controllers/leaves.controller';
+import { createLeaveRequest, getMyLeaveRequests, getTeamLeaveRequests, updateLeaveStatus, cancelLeaveRequest, reviewCancellation } from '../controllers/leaves.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createLeaveRequestSchema } from '../validations/schemas';
@@ -18,6 +18,11 @@ const updateStatusSchema = Joi.object({
 });
 
 router.put('/:id/status', validate(updateStatusSchema), updateLeaveStatus);
-router.delete('/:id', cancelLeaveRequest);
+router.post('/:id/cancel-request', cancelLeaveRequest);
+
+const reviewCancelSchema = Joi.object({
+  approved: Joi.boolean().required()
+});
+router.post('/:id/cancel-review', validate(reviewCancelSchema), reviewCancellation);
 
 export default router;
