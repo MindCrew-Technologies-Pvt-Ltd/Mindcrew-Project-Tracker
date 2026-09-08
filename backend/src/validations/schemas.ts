@@ -167,10 +167,11 @@ export const paginationSchema = Joi.object({
 
 
 export const createLeaveRequestSchema = Joi.object({
-  type: Joi.string().valid('FULL_DAY', 'HALF_DAY', 'WFH').required(),
+  type: Joi.string().valid('FULL_DAY', 'HALF_DAY', 'WFH', 'COMP_OFF').required(),
   startDate: Joi.date().iso().required(),
   endDate: Joi.date().iso().min(Joi.ref('startDate')).required(),
   reason: Joi.string().max(500).allow('', null).optional(),
+  notifyManagerIds: Joi.array().items(Joi.string()).min(1).required(),
 });
 
 export const createTimeEntrySchema = Joi.object({
