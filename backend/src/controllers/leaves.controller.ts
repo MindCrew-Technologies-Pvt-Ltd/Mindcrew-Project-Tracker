@@ -91,7 +91,7 @@ export const getTeamLeaveRequests: RequestHandler = async (req, res, next) => {
   try {
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!currentUser) { error(res, 'User not found', 404); return; }
-    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.some(r => r.toLowerCase() === 'admin');
+    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.includes('Admin');
 
     if (!isAdmin && !currentUser?.employeeId) {
       success(res, []);
@@ -136,7 +136,7 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
 
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!currentUser) { error(res, 'User not found', 404); return; }
-    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.some(r => r.toLowerCase() === 'admin');
+    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.includes('Admin');
 
     if (!isAdmin && !currentUser?.employeeId) {
       error(res, 'You need an Employee ID to approve leaves', 400); return;
@@ -266,7 +266,7 @@ export const reviewCancellation: RequestHandler = async (req, res, next) => {
 
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!currentUser) { error(res, 'User not found', 404); return; }
-    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.some(r => r.toLowerCase() === 'admin');
+    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.includes('Admin');
 
     if (!isAdmin && !currentUser?.employeeId) {
       error(res, 'You need an Employee ID to approve cancellations', 400); return;

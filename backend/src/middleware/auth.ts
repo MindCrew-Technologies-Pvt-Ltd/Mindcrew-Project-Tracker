@@ -31,7 +31,7 @@ export const authenticate: RequestHandler = (req, res, next) => {
 };
 
 export const requireAdmin: RequestHandler = (req, res, next) => {
-  const hasAdminRole = req.user?.role === 'ADMIN' || req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN');
+  const hasAdminRole = req.user?.role === 'ADMIN' || req.user?.jobRoles?.includes('Admin');
   if (!hasAdminRole) {
     res.status(403).json({ success: false, message: 'Forbidden' });
     return;

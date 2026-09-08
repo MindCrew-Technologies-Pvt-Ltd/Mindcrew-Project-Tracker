@@ -130,7 +130,7 @@ export async function assertWeekReviewer(
   user: AuthUser,
 ): Promise<void> {
   const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
-  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.some((r: string) => r.toLowerCase() === 'admin');
+  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.includes('Admin');
   
   if (isAdmin) return;
   if (week.userId === user.id) throw new AppError('You cannot review your own timesheet', 403);
@@ -175,7 +175,7 @@ export async function canReadUserTime(targetUserId: string, user: AuthUser): Pro
   if (targetUserId === user.id) return true;
   
   const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
-  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.some((r: string) => r.toLowerCase() === 'admin');
+  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.includes('Admin');
   if (isAdmin) return true;
 
   // Check if reporting manager
