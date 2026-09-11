@@ -12,6 +12,8 @@ import WorkIcon from '@mui/icons-material/esm/Work';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/esm/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/esm/CheckBox';
 import ContentCopyIcon from '@mui/icons-material/esm/ContentCopy';
+import NotificationsActiveIcon from '@mui/icons-material/esm/NotificationsActive';
+import NotificationsOffIcon from '@mui/icons-material/esm/NotificationsOff';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchMeThunk } from '../../store/slices/authSlice';
@@ -20,6 +22,7 @@ import usersService from '../../services/usersService';
 import { User } from '../../types/user.types';
 import PageHeader from '../../components/common/PageHeader';
 import { JOB_ROLE_OPTIONS } from '../../utils/validators';
+import { checkPushSubscription, requestNotificationPermission, unsubscribeFromPush } from '../../services/pushNotificationService';
 
 interface FormData { name: string; phone: string; department: string; designation: string; employeeId: string; jobRoles: string[]; managerEmployeeIds: string[]; }
 
@@ -62,11 +65,22 @@ const ProfilePage = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [managers, setManagers] = useState<User[]>([]);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(true);
 
   const { register, handleSubmit, reset, control } = useForm<FormData>();
 
   useEffect(() => {
     usersService.getManagers().then(res => setManagers(res.data.data)).catch(console.error);
+
+    if ('PushManager' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
+      checkPushSubscription().then((hasSub) => {
+        setPushEnabled(hasSub);
+        setPushLoading(false);
+      });
+    } else {
+      setPushLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -100,6 +114,23 @@ const ProfilePage = () => {
       setError(e.response?.data?.message || 'Failed to update profile');
     }
     setLoading(false);
+  };
+
+  const handleTogglePush = async () => {
+    setPushLoading(true);
+    if (pushEnabled) {
+      await unsubscribeFromPush();
+      setPushEnabled(false);
+    } else {
+      const res = await requestNotificationPermission();
+      if (res === 'subscribed') {
+        setPushEnabled(true);
+        localStorage.removeItem('push_notification_banner_dismissed'); // clear block if they manually enabled
+      } else if (res === 'denied') {
+        alert('Notifications are blocked in your browser settings. Please click the lock icon in the URL bar to allow them.');
+      }
+    }
+    setPushLoading(false);
   };
 
   const initials = user?.name
@@ -195,6 +226,35 @@ const ProfilePage = () => {
             <InfoRow icon={<PhoneIcon fontSize="small" />} label="Phone" value={user?.phone || ''} copyable />
             <InfoRow icon={<PersonIcon fontSize="small" />} label="System Role" value={user?.role || ''} />
             <InfoRow icon={<WorkIcon fontSize="small" />} label="Job Roles" value={user?.jobRoles?.join(', ') || 'Not set'} />
+          </Paper>
+
+          {/* ---- Notification Settings Card ---- */}
+          <Paper sx={{ mt: 2, p: 2.5, border: '1px solid', borderColor: 'divider' }} elevation={0}>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.72rem', color: 'text.secondary' }}>
+              Notifications
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {pushEnabled ? <NotificationsActiveIcon color="success" /> : <NotificationsOffIcon color="disabled" />}
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>Push Notifications</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {pushEnabled ? 'Enabled for timesheet reminders' : 'Currently disabled'}
+                  </Typography>
+                </Box>
+              </Box>
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={handleTogglePush}
+                disabled={pushLoading}
+                color={pushEnabled ? 'error' : 'primary'}
+                sx={{ textTransform: 'none', minWidth: '90px' }}
+              >
+                {pushLoading ? <CircularProgress size={16} /> : pushEnabled ? 'Disable' : 'Enable'}
+              </Button>
+            </Stack>
           </Paper>
         </Grid>
 
