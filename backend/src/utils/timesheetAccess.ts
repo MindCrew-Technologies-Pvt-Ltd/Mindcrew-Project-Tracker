@@ -32,19 +32,15 @@ export async function assertManualEntryAllowed(user: AuthUser): Promise<void> {
 export async function assertDateEditable(date: Date, user: AuthUser): Promise<void> {
   if (user.role === 'ADMIN') return;
   const today = todayInOrgTz(await orgTimezone());
-  if (date.getTime() === today.getTime()) return;
+  // Allow today and any past date; only block future dates
+  if (date.getTime() <= today.getTime()) return;
   const { isoYear, isoWeek } = isoWeekOf(date);
   const envelope = await prisma.timesheetWeek.findUnique({
     where: { userId_isoYear_isoWeek: { userId: user.id, isoYear, isoWeek } },
     select: { status: true },
   });
   if (envelope?.status === 'REJECTED') return; // fix window after rejection
-  throw new AppError(
-    date.getTime() > today.getTime()
-      ? 'Future days cannot be filled in advance'
-      : 'This day is locked — time can only be logged on the same day',
-    409,
-  );
+  throw new AppError('Future days cannot be filled in advance', 409);
 }
 
 const HM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
