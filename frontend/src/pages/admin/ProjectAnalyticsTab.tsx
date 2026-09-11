@@ -60,9 +60,10 @@ export default function ProjectAnalyticsTab() {
   const { list: users } = useAppSelector((s) => s.users);
   const { requests } = useAppSelector((s) => s.editRequests);
 
-  const [view, setView] = useState<ViewType>('CHARTS');
+  const [view, setView] = useState<ViewType | 'LEAVES'>('CHARTS');
   const [weeklyTrendsData, setWeeklyTrendsData] = useState<{week: string, count: number}[]>([]);
   const [leaveCount, setLeaveCount] = useState(0);
+  const [leaveData, setLeaveData] = useState<any[]>([]);
 
   useEffect(() => {
     reportsService.getReport('WEEKLY_UPDATE', {}).then(res => {
@@ -86,9 +87,9 @@ export default function ProjectAnalyticsTab() {
 
     reportsService.getEmployeeAnalytics().then(res => {
       const data = res.data.data || res.data;
-      const onLeave = data.filter((d: any) => d.leaveType === 'FULL_DAY' || d.leaveType === 'HALF_DAY').length;
-      const onWfh = data.filter((d: any) => d.leaveType === 'WFH').length;
-      setLeaveCount(onLeave + onWfh);
+      const leaves = data.filter((d: any) => d.leaveType === 'FULL_DAY' || d.leaveType === 'HALF_DAY' || d.leaveType === 'WFH');
+      setLeaveCount(leaves.length);
+      setLeaveData(leaves);
     }).catch(console.error);
   }, []);
 
@@ -165,6 +166,20 @@ export default function ProjectAnalyticsTab() {
     { key: 'date', header: 'Date', value: r => new Date(r.createdAt).toLocaleDateString() },
   ];
 
+  const leaveCols: Column<any>[] = [
+    { key: 'name', header: 'Name', value: r => r.name },
+    { key: 'role', header: 'Role', value: r => r.designation || (r.jobRoles && r.jobRoles[0]) || 'Employee' },
+    { 
+      key: 'leaveType', header: 'Status', 
+      render: r => (
+        <Chip size="small" 
+              label={r.leaveType === 'FULL_DAY' ? 'Full Day' : r.leaveType === 'HALF_DAY' ? 'Half Day' : 'Work From Home'} 
+              color={r.leaveType === 'WFH' ? 'info' : r.leaveType === 'HALF_DAY' ? 'warning' : 'error'} 
+        />
+      )
+    }
+  ];
+
   // --- Render Table View ---
   const renderTableView = () => {
     let tableData: any[] = [];
@@ -179,6 +194,7 @@ export default function ProjectAnalyticsTab() {
       case 'ON_HOLD': tableData = projects.filter(p => p.status === 'ON_HOLD'); columns = projectCols; title = 'On Hold Projects'; break;
       case 'DELAYED': tableData = delayedProjects; columns = projectCols; title = 'Delayed Projects'; break;
       case 'PENDING_REQUESTS': tableData = requests; columns = reqCols; title = 'Pending Edit Requests'; break;
+      case 'LEAVES': tableData = leaveData; columns = leaveCols; title = 'Employees on Leave/WFH Today'; break;
       default: return null;
     }
 
@@ -222,7 +238,7 @@ export default function ProjectAnalyticsTab() {
           <StatCard label="Delayed Projects" value={stats.delayed} icon={<WarningIcon />} bg="#FDF0EE" iconColor="#C66A4B" active={view === 'DELAYED'} onClick={() => setView(view === 'DELAYED' ? 'CHARTS' : 'DELAYED')} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard label="Leaves & WFH Today" value={stats.leavesToday} icon={<FlightTakeoffIcon />} bg="#FEF3E2" iconColor="#F59E0B" />
+          <StatCard label="Leaves & WFH Today" value={stats.leavesToday} icon={<FlightTakeoffIcon />} bg="#FEF3E2" iconColor="#F59E0B" active={view === 'LEAVES'} onClick={() => setView(view === 'LEAVES' ? 'CHARTS' : 'LEAVES')} />
         </Grid>
       </Grid>
 

@@ -125,8 +125,9 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocke
                     <TextField
                       {...params}
                       label="Project"
+                      placeholder="Select or type a custom project name..."
                       error={!!errors.projectId}
-                      helperText={errors.projectId?.message}
+                      helperText={errors.projectId?.message || 'If you are on bench, type a custom title (e.g., Learning React)'}
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
