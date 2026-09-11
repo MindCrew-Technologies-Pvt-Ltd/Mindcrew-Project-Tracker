@@ -8,6 +8,7 @@ import PeopleIcon from '@mui/icons-material/esm/People';
 import PauseCircleIcon from '@mui/icons-material/esm/PauseCircle';
 import WarningIcon from '@mui/icons-material/esm/Warning';
 import ArrowBackIcon from '@mui/icons-material/esm/ArrowBack';
+import FlightTakeoffIcon from '@mui/icons-material/esm/FlightTakeoff';
 
 import { useAppSelector } from '../../hooks/useAppSelector';
 import ProjectsByStatusChart from '../../components/charts/ProjectsByStatusChart';
@@ -61,6 +62,7 @@ export default function ProjectAnalyticsTab() {
 
   const [view, setView] = useState<ViewType>('CHARTS');
   const [weeklyTrendsData, setWeeklyTrendsData] = useState<{week: string, count: number}[]>([]);
+  const [leaveCount, setLeaveCount] = useState(0);
 
   useEffect(() => {
     reportsService.getReport('WEEKLY_UPDATE', {}).then(res => {
@@ -81,6 +83,13 @@ export default function ProjectAnalyticsTab() {
         .map(week => ({ week, count: weeklyData[week] }));
       setWeeklyTrendsData(trendData.slice(-4));
     }).catch(console.error);
+
+    reportsService.getEmployeeAnalytics().then(res => {
+      const data = res.data.data || res.data;
+      const onLeave = data.filter((d: any) => d.leaveType === 'FULL_DAY' || d.leaveType === 'HALF_DAY').length;
+      const onWfh = data.filter((d: any) => d.leaveType === 'WFH').length;
+      setLeaveCount(onLeave + onWfh);
+    }).catch(console.error);
   }, []);
 
   // If initial load is happening, show global loading
@@ -98,7 +107,8 @@ export default function ProjectAnalyticsTab() {
     completedProj: projects.filter(p => p.status === 'COMPLETED').length,
     pendingReq: requests.length,
     onHold: projects.filter(p => p.status === 'ON_HOLD').length,
-    delayed: delayedProjects.length
+    delayed: delayedProjects.length,
+    leavesToday: leaveCount
   };
 
   // --- Charts Calculations ---
@@ -202,14 +212,17 @@ export default function ProjectAnalyticsTab() {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard label="Pending Edit Requests" value={stats.pendingReq} icon={<EditNoteIcon />} bg="#EDE9FE" iconColor="#7C3AED" active={view === 'PENDING_REQUESTS'} onClick={() => setView(view === 'PENDING_REQUESTS' ? 'CHARTS' : 'PENDING_REQUESTS')} />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard label="Completed Projects" value={stats.completedProj} icon={<CheckCircleIcon />} bg="#EEF0FF" iconColor="#4F46E5" active={view === 'COMPLETED'} onClick={() => setView(view === 'COMPLETED' ? 'CHARTS' : 'COMPLETED')} />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard label="On Hold" value={stats.onHold} icon={<PauseCircleIcon />} bg="#FEF3E2" iconColor="#F59E0B" active={view === 'ON_HOLD'} onClick={() => setView(view === 'ON_HOLD' ? 'CHARTS' : 'ON_HOLD')} />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard label="Delayed Projects" value={stats.delayed} icon={<WarningIcon />} bg="#FDF0EE" iconColor="#C66A4B" active={view === 'DELAYED'} onClick={() => setView(view === 'DELAYED' ? 'CHARTS' : 'DELAYED')} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard label="Leaves & WFH Today" value={stats.leavesToday} icon={<FlightTakeoffIcon />} bg="#FEF3E2" iconColor="#F59E0B" />
         </Grid>
       </Grid>
 

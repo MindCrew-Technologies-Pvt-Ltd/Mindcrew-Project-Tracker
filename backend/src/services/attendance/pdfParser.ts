@@ -270,7 +270,7 @@ export async function parsePdfReport(
   if (currentEmp) attendanceData.push(currentEmp);
 
   // ── Step 3: Apply business logic for final status ──
-  const time10_45 = { hours: 10, minutes: 45 };
+  const time11_00 = { hours: 11, minutes: 0 };
 
   for (const emp of attendanceData) {
     for (let dayIdx = 0; dayIdx < datesList.length; dayIdx++) {
@@ -317,8 +317,8 @@ export async function parsePdfReport(
           finalStatus = 'HD';
         } else if (
           att.in_time &&
-          (att.in_time.hours > time10_45.hours ||
-            (att.in_time.hours === time10_45.hours && att.in_time.minutes > time10_45.minutes))
+          (att.in_time.hours > time11_00.hours ||
+            (att.in_time.hours === time11_00.hours && att.in_time.minutes > time11_00.minutes))
         ) {
           finalStatus = 'SL';
         } else if (durationHours < 9.0) {

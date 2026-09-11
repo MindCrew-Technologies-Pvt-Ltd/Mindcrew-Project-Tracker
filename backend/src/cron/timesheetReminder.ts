@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import prisma from '../config/prisma';
 import { sendWebPushToMany } from '../services/webPush.service';
 import logger from '../config/logger';
+import { createNotification } from '../utils/notifications';
 
 /**
  * Daily Timesheet Reminder Cron Job
@@ -20,13 +21,12 @@ export const startTimesheetReminderCron = () => {
           where: {
             role: 'EMPLOYEE',
             isActive: true,
-            pushSubscription: { not: null },
           },
           select: { id: true, name: true, pushSubscription: true },
-        }) as Array<{ id: string; name: string; pushSubscription: string }>;
+        }) as Array<{ id: string; name: string; pushSubscription: string | null }>;
 
         if (employees.length === 0) {
-          logger.info('[Cron] No employees with push subscriptions found, skipping.');
+          logger.info('[Cron] No active employees found, skipping.');
           return;
         }
 
@@ -34,14 +34,23 @@ export const startTimesheetReminderCron = () => {
           .map((e) => e.pushSubscription!)
           .filter(Boolean);
 
-        await sendWebPushToMany(subscriptions, {
-          title: '⏰ Timesheet Reminder',
-          body: 'Hi! Please fill your timesheet for today before you log off.',
-          tag: 'timesheet-reminder',
-          url: '/timesheet',
-        });
+        if (subscriptions.length > 0) {
+          await sendWebPushToMany(subscriptions, {
+            title: '⏰ Timesheet Reminder',
+            body: 'Hi! Please fill your timesheet for today before you log off.',
+            tag: 'timesheet-reminder',
+            url: '/timesheet',
+          });
+        }
 
-        logger.info(`[Cron] Timesheet reminder sent to ${subscriptions.length} employees.`);
+        await Promise.all(employees.map(e => createNotification({
+          userId: e.id,
+          title: '⏰ Timesheet Reminder',
+          message: 'Hi! Please fill your timesheet for today before you log off.',
+          type: 'TIMESHEET'
+        })));
+
+        logger.info(`[Cron] Timesheet reminder sent to ${employees.length} employees (push sent to ${subscriptions.length}).`);
       } catch (err) {
         logger.error('[Cron] Timesheet reminder failed:', err);
       }

@@ -14,7 +14,7 @@ const AdminDashboardPage = () => {
 
   useEffect(() => {
     dispatch(fetchProjectsThunk({ pageSize: 1000 }));
-    dispatch(fetchUsersThunk({}));
+    dispatch(fetchUsersThunk({ pageSize: 1000 }));
     dispatch(fetchEditRequestsThunk({ status: 'PENDING' }));
   }, [dispatch]);
 
