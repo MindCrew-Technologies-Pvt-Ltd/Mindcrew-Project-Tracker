@@ -147,6 +147,7 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocke
             <TextField
               label="Date" type="date" fullWidth InputLabelProps={{ shrink: true }}
               disabled={dateLocked}
+              inputProps={{ min: todayISO(), max: todayISO() }}
               error={!!errors.date}
               helperText={errors.date?.message || (dateLocked ? 'Same-day entry — days lock at 11:59 PM' : 'Only today\'s date is allowed')}
               {...register('date')}
