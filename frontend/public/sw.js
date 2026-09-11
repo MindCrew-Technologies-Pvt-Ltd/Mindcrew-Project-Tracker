@@ -17,7 +17,7 @@ self.addEventListener('push', function (event) {
     badge: payload.badge || '/icon-192.png',
     tag: payload.tag || 'general',
     data: { url: payload.url || '/' },
-    requireInteraction: false,
+    requireInteraction: true,
     silent: false,
   };
 
