@@ -120,12 +120,21 @@ export const getTeamLeaveRequests: RequestHandler = async (req, res, next) => {
       },
       orderBy: { createdAt: 'desc' },
       include: {
-        user: { select: { name: true, employeeId: true, department: true, designation: true } },
+        user: { select: { name: true, employeeId: true, department: true, designation: true, managerEmployeeIds: true } },
         reviewedBy: { select: { name: true } }
       }
     });
 
-    success(res, teamLeaves);
+    const allManagerIds = Array.from(new Set(teamLeaves.flatMap(l => l.user.managerEmployeeIds || [])));
+    const managers = await prisma.user.findMany({ where: { employeeId: { in: allManagerIds } }, select: { employeeId: true, name: true } });
+    const managerMap = new Map(managers.map(m => [m.employeeId, m.name]));
+
+    const enriched = teamLeaves.map(l => {
+      const managerNames = (l.user.managerEmployeeIds || []).map(id => managerMap.get(id)).filter(Boolean).join(', ');
+      return { ...l, user: { ...l.user, managerNames } };
+    });
+
+    success(res, enriched);
   } catch (err) { next(err); }
 };
 

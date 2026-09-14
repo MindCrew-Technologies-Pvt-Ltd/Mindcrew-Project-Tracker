@@ -98,7 +98,7 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
         dailyAvailability: { some: {} },
       },
       select: {
-        id: true, name: true, employeeId: true, department: true, designation: true, jobRoles: true,
+        id: true, name: true, employeeId: true, department: true, designation: true, jobRoles: true, managerEmployeeIds: true,
         dailyAvailability: {
           orderBy: { date: 'desc' },
           take: 1,
@@ -106,13 +106,18 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
       }
     });
 
+    const allManagerIds = Array.from(new Set(usersWithAvailability.flatMap(u => u.managerEmployeeIds || [])));
+    const managers = await prisma.user.findMany({ where: { employeeId: { in: allManagerIds } }, select: { employeeId: true, name: true } });
+    const managerMap = new Map(managers.map(m => [m.employeeId, m.name]));
+
     // Map to expected format (extracting the latest availability record)
     let records = usersWithAvailability.map((u: any) => {
       const { dailyAvailability, ...user } = u;
       const record = dailyAvailability[0];
+      const managerNames = (user.managerEmployeeIds || []).map((id: string) => managerMap.get(id)).filter(Boolean).join(', ');
       return {
         ...record,
-        user
+        user: { ...user, managerNames }
       };
     });
 

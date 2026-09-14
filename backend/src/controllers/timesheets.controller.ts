@@ -144,10 +144,15 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
       prisma.timesheetWeek.findMany({
         where, skip, take,
         orderBy: { submittedAt: 'desc' },
-        include: { user: { select: { id: true, name: true, email: true } }, reviewedBy: { select: { id: true, name: true } } },
+        include: { user: { select: { id: true, name: true, email: true, managerEmployeeIds: true } }, reviewedBy: { select: { id: true, name: true } } },
       }),
       prisma.timesheetWeek.count({ where }),
     ]);
+
+    const allManagerIds = Array.from(new Set(items.flatMap(i => i.user.managerEmployeeIds || [])));
+    const managers = await prisma.user.findMany({ where: { employeeId: { in: allManagerIds } }, select: { employeeId: true, name: true } });
+    const managerMap = new Map(managers.map(m => [m.employeeId, m.name]));
+
     // Attach per-week project chips + billable split for the queue table.
     const enriched = await Promise.all(items.map(async (w) => {
       const entries = await prisma.timeEntry.findMany({
@@ -156,7 +161,8 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
       });
       const billableMinutes = entries.filter((e) => e.billable).reduce((s, e) => s + e.minutes, 0);
       const projects = [...new Map(entries.map((e) => [e.project.id, e.project])).values()];
-      return { ...w, entryCount: entries.length, billableMinutes, projects, label: weekLabel(w.isoYear, w.isoWeek) };
+      const managerNames = (w.user.managerEmployeeIds || []).map(id => managerMap.get(id)).filter(Boolean).join(', ');
+      return { ...w, user: { ...w.user, managerNames }, entryCount: entries.length, billableMinutes, projects, label: weekLabel(w.isoYear, w.isoWeek) };
     }));
     paginated(res, enriched, total, page, pageSize);
   } catch (err) { next(err); }
