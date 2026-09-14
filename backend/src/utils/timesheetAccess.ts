@@ -118,7 +118,7 @@ export async function assertWeekUnlocked(userId: string, isoYear: number, isoWee
   if (week && (week.status === 'SUBMITTED' || week.status === 'APPROVED')) {
     await prisma.timesheetWeek.update({
       where: { id: week.id },
-      data: { status: 'DRAFT', submittedAt: null },
+      data: { status: 'DRAFT' },
     });
   }
 }
