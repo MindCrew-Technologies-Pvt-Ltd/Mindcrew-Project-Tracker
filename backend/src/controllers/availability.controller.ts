@@ -112,3 +112,38 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
     success(res, records);
   } catch (err) { next(err); }
 };
+
+/**
+ * PUT /api/availability/:id
+ * Manager / Admin: Update an employee's availability record directly.
+ */
+export const updateAvailabilityAdmin: RequestHandler = async (req, res, next) => {
+  try {
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    const isManagerOrAdmin = currentUser?.role === 'ADMIN' || currentUser?.jobRoles?.includes('Manager');
+
+    if (!isManagerOrAdmin) {
+      error(res, 'Access denied. Managers and Admins only.', 403);
+      return;
+    }
+
+    const { id } = req.params;
+    const { status, note } = req.body;
+
+    if (status && !VALID_STATUSES.includes(status as AvailabilityStatus)) {
+      error(res, `Invalid status. Valid values: ${VALID_STATUSES.join(', ')}`, 400);
+      return;
+    }
+
+    const updateData: any = {};
+    if (status) updateData.status = status;
+    if (note !== undefined) updateData.note = note;
+
+    const record = await db.dailyAvailability.update({
+      where: { id },
+      data: updateData,
+    });
+
+    success(res, record, 'Availability updated successfully');
+  } catch (err) { next(err); }
+};

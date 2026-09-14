@@ -5,6 +5,7 @@ import {
   getMyAvailability,
   getTodayMyAvailability,
   getAllAvailability,
+  updateAvailabilityAdmin,
 } from '../controllers/availability.controller';
 
 const router = Router();
@@ -17,5 +18,6 @@ router.get('/today', getTodayMyAvailability);     // GET    /api/availability/to
 
 // Manager / Admin routes
 router.get('/all', getAllAvailability);            // GET    /api/availability/all?date=&status=
+router.put('/:id', updateAvailabilityAdmin);       // PUT    /api/availability/:id
 
 export default router;

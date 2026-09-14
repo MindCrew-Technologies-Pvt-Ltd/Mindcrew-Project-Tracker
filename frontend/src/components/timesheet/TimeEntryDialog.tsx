@@ -39,6 +39,12 @@ const todayISO = () => {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 };
 
+const pastISO = (daysAgo: number) => {
+  const n = new Date();
+  n.setDate(n.getDate() - daysAgo);
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+};
+
 const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocked, saving, errorMsg, onSave, onClose }: Props) => {
   const [projects, setProjects] = useState<ProjectRef[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
@@ -147,9 +153,9 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocke
             <TextField
               label="Date" type="date" fullWidth InputLabelProps={{ shrink: true }}
               disabled={dateLocked}
-              inputProps={{ max: todayISO() }}
+              inputProps={{ min: pastISO(2), max: todayISO() }}
               error={!!errors.date}
-              helperText={errors.date?.message || (dateLocked ? 'Date is locked for this entry' : 'Select today or any past date')}
+              helperText={errors.date?.message || (dateLocked ? 'Date is locked for this entry' : 'Select today or up to 2 days in the past')}
               {...register('date')}
             />
           </Grid>

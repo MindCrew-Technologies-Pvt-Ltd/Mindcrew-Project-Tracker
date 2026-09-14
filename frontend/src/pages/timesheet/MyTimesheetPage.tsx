@@ -152,7 +152,7 @@ const MyTimesheetPage = () => {
         </Box>
         <StatusChip status={status} note={envelope?.reviewNote} />
         {holiday && <Chip label={`Holiday: ${holiday.name}`} size="small" sx={{ bgcolor: '#FDECEC', color: '#B91C1C', fontWeight: 600, fontSize: '0.72rem' }} />}
-        <Tooltip title="You can log time for today or any previous date. Future dates are not allowed. The week auto-submits Monday morning." arrow>
+        <Tooltip title="You can log time for today and up to 2 days in the past. Older and future dates are locked." arrow>
           <Chip icon={<TodayIcon sx={{ fontSize: 15 }} />} label="Flexible entry" size="small" sx={{ bgcolor: '#EEF0FF', color: '#4338CA', fontWeight: 600, fontSize: '0.72rem' }} />
         </Tooltip>
         <Box sx={{ flex: 1 }} />

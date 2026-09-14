@@ -116,6 +116,7 @@ export default function LeaveManagementPage() {
       return;
     }
     if (!formData.notifyManagerIds || formData.notifyManagerIds.length === 0) {
+      alert('Please select at least one manager to notify. This is mandatory for leave/WFH requests.');
       setManagerError(true);
       return;
     }

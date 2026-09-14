@@ -3,7 +3,7 @@ import {
   Box, Typography, Card, CardContent, Button, TextField, MenuItem,
   Select, FormControl, InputLabel, Chip, Grid, Avatar, CircularProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  Tabs, Tab, Divider, Stack, Tooltip, Alert, Snackbar
+  Tabs, Tab, Divider, Stack, Tooltip, Alert, Snackbar, IconButton, Menu
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
@@ -14,6 +14,7 @@ import {
   Today as TodayIcon,
   History as HistoryIcon,
   Group as GroupIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -236,6 +237,8 @@ const ManagerAdminView = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [statusFilter, setStatusFilter] = useState('');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [editRecord, setEditRecord] = useState<DailyAvailability | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -244,6 +247,19 @@ const ManagerAdminView = () => {
       setRecords(res.data.data);
     } catch (e) { console.error(e); }
     setLoading(false);
+  };
+
+  const handleUpdateStatus = async (status: AvailabilityStatus) => {
+    if (!editRecord) return;
+    try {
+      await availabilityService.updateAdmin(editRecord.id, { status });
+      fetchAll();
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update status');
+    }
+    setAnchorEl(null);
+    setEditRecord(null);
   };
 
   useEffect(() => { fetchAll(); }, [selectedDate, statusFilter]);
@@ -345,8 +361,14 @@ const ManagerAdminView = () => {
                         </Typography>
                       </Box>
                     </Stack>
-                    <Box mb={1.5}>
+                    <Box mb={1.5} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <StatusChip status={record.status} />
+                      <IconButton size="small" onClick={(e) => {
+                        setAnchorEl(e.currentTarget);
+                        setEditRecord(record);
+                      }}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
                     </Box>
                     {record.note ? (
                       <Tooltip title={record.note} placement="bottom">
@@ -379,6 +401,25 @@ const ManagerAdminView = () => {
           })}
         </Grid>
       )}
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => { setAnchorEl(null); setEditRecord(null); }}
+      >
+        {(Object.entries(STATUS_CONFIG) as [AvailabilityStatus, any][]).map(([key, cfg]) => (
+          <MenuItem 
+            key={key} 
+            onClick={() => handleUpdateStatus(key)}
+            selected={editRecord?.status === key}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: cfg.color }}>
+              {cfg.icon}
+              <Typography variant="body2">{cfg.label}</Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Menu>
     </Box>
   );
 };
