@@ -106,7 +106,7 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
     });
 
     // Map to expected format (extracting the latest availability record)
-    let records = usersWithAvailability.map(u => {
+    let records = usersWithAvailability.map((u: any) => {
       const { dailyAvailability, ...user } = u;
       const record = dailyAvailability[0];
       return {
@@ -116,7 +116,7 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
     });
 
     if (status && VALID_STATUSES.includes(status as AvailabilityStatus)) {
-      records = records.filter(r => r.status === status);
+      records = records.filter((r: any) => r.status === status);
     }
 
     success(res, records);
