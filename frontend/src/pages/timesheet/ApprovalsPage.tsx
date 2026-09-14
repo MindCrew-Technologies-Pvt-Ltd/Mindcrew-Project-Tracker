@@ -26,6 +26,7 @@ import usersService from '../../services/usersService';
 import { PendingWeekRow, WeekDetail, MissingUser, TimeEntry, TimesheetWeek } from '../../types/timesheet.types';
 import { minutesToHM, minutesToPretty, weekLabel, isoWeekOf, shiftIsoWeek, dateKey } from '../../utils/timeFormat';
 import { formatDate } from '../../utils/formatters';
+import { isAdmin as checkIsAdmin, isTimesheetAdmin } from '../../utils/roleGuards';
 
 const EmployeeCell = ({ name, email, managerNames }: { name?: string; email?: string; managerNames?: string }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
@@ -62,7 +63,9 @@ const todayISO = () => {
 
 const ApprovalsPage = () => {
   const dispatch = useAppDispatch();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const isSysAdmin = checkIsAdmin(user);
+  const isTsAdmin = isTimesheetAdmin(user);
   const { pending, pendingLoading } = useAppSelector((s) => s.timesheet);
 
   // Plain employees land on their own submissions; reviewers land on the queue.
@@ -314,7 +317,7 @@ const ApprovalsPage = () => {
         {!isAdmin && <Tab value="mine" label="My submissions" sx={{ textTransform: 'none', fontWeight: 600 }} />}
         <Tab value="pending" label="Pending review" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="reviewed" label="Reviewed" sx={{ textTransform: 'none', fontWeight: 600 }} />
-        <Tab value="missing" label="Missing" sx={{ textTransform: 'none', fontWeight: 600 }} />
+        {isTsAdmin && <Tab value="missing" label="Missing" sx={{ textTransform: 'none', fontWeight: 600 }} />}
       </Tabs>
 
       {tab === 'mine' && (

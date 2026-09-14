@@ -358,8 +358,16 @@ export const missingWeek: RequestHandler = async (req, res, next) => {
     const isoYear = Number(qs(req.query.isoYear));
     const isoWeek = Number(qs(req.query.isoWeek));
     if (!isoYear || !isoWeek) return next(new AppError('isoYear and isoWeek are required', 400));
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!currentUser) return next(new AppError('User not found', 404));
+
+    const isAdmin = 
+      currentUser.role === 'ADMIN' || 
+      currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
+      (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
+
     let candidateIds: string[] | null = null;
-    if (req.user!.role !== 'ADMIN') {
+    if (!isAdmin) {
       const myProjects = await ownedProjectIds(req.user!.id);
       if (myProjects.length === 0) { success(res, []); return; }
       const members = await prisma.projectMember.findMany({ where: { projectId: { in: myProjects } }, select: { userId: true } });
