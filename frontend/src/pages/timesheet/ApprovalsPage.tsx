@@ -26,7 +26,7 @@ import usersService from '../../services/usersService';
 import { PendingWeekRow, WeekDetail, MissingUser, TimeEntry, TimesheetWeek } from '../../types/timesheet.types';
 import { minutesToHM, minutesToPretty, weekLabel, isoWeekOf, shiftIsoWeek, dateKey } from '../../utils/timeFormat';
 import { formatDate } from '../../utils/formatters';
-import { isAdmin as checkIsAdmin, isTimesheetAdmin } from '../../utils/roleGuards';
+import { isTimesheetAdmin } from '../../utils/roleGuards';
 
 const EmployeeCell = ({ name, email, managerNames }: { name?: string; email?: string; managerNames?: string }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
@@ -64,7 +64,6 @@ const todayISO = () => {
 const ApprovalsPage = () => {
   const dispatch = useAppDispatch();
   const { user, isAdmin } = useAuth();
-  const isSysAdmin = checkIsAdmin(user);
   const isTsAdmin = isTimesheetAdmin(user);
   const { pending, pendingLoading } = useAppSelector((s) => s.timesheet);
 
