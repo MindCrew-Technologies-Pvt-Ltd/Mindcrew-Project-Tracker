@@ -22,6 +22,7 @@ import {
   fetchPendingThunk, approveWeekThunk, rejectWeekThunk, reopenWeekThunk,
 } from '../../store/slices/timesheetSlice';
 import timesheetService from '../../services/timesheetService';
+import usersService from '../../services/usersService';
 import { PendingWeekRow, WeekDetail, MissingUser, TimeEntry, TimesheetWeek } from '../../types/timesheet.types';
 import { minutesToHM, minutesToPretty, weekLabel, isoWeekOf, shiftIsoWeek, dateKey } from '../../utils/timeFormat';
 import { formatDate } from '../../utils/formatters';
@@ -70,6 +71,11 @@ const ApprovalsPage = () => {
   const [snack, setSnack] = useState<{ msg: string; severity: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [managerFilter, setManagerFilter] = useState('');
+  const [allManagers, setAllManagers] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    usersService.getManagers().then(res => setAllManagers(res.data.data)).catch(console.error);
+  }, []);
 
   // My submissions (read-only — where an employee tracks their own approval status)
   const [myWeeks, setMyWeeks] = useState<TimesheetWeek[]>([]);
@@ -186,18 +192,8 @@ const ApprovalsPage = () => {
   };
 
   const uniqueManagers = useMemo(() => {
-    const managers = new Set<string>();
-    const extract = (managerNames?: string) => {
-      if (!managerNames) return;
-      managerNames.split(',').map(n => n.trim()).filter(Boolean).forEach(n => managers.add(n));
-    };
-    if (tab === 'pending' || tab === 'reviewed') {
-      pending.items.forEach(r => extract((r.user as any)?.managerNames));
-    } else if (tab === 'missing') {
-      missing.forEach(u => extract(u.managerNames));
-    }
-    return Array.from(managers).sort();
-  }, [pending.items, missing, tab]);
+    return allManagers.map(m => m.name).sort();
+  }, [allManagers]);
 
   const filteredPending = useMemo(() => {
     let result = pending.items;

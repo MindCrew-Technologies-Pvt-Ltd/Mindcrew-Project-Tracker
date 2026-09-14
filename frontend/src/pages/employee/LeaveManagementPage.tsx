@@ -9,6 +9,7 @@ import { Add as AddIcon, CheckCircle as CheckIcon, Cancel as CancelIcon, Chevron
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import leavesService from '../../services/leavesService';
+import usersService from '../../services/usersService';
 import { LeaveRequest, LeaveType } from '../../types/leave.types';
 import { isAdmin as checkIsAdmin } from '../../utils/roleGuards';
 import dayjs from 'dayjs';
@@ -56,6 +57,7 @@ export default function LeaveManagementPage() {
   const [teamRequests, setTeamRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [myManagers, setMyManagers] = useState<{ id: string, name: string, employeeId: string }[]>([]);
+  const [allManagers, setAllManagers] = useState<{ id: string; name: string }[]>([]);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,6 +107,7 @@ export default function LeaveManagementPage() {
 
   useEffect(() => {
     fetchData();
+    usersService.getManagers().then(res => setAllManagers(res.data.data)).catch(console.error);
   }, [isManager]);
 
   useAutoRefresh(fetchData);
@@ -184,15 +187,8 @@ export default function LeaveManagementPage() {
   };
 
   const uniqueManagers = React.useMemo(() => {
-    const managers = new Set<string>();
-    teamRequests.forEach(req => {
-      const names = (req.user as any)?.managerNames;
-      if (names) {
-        names.split(',').map((n: string) => n.trim()).filter(Boolean).forEach((n: string) => managers.add(n));
-      }
-    });
-    return Array.from(managers).sort();
-  }, [teamRequests]);
+    return allManagers.map(m => m.name).sort();
+  }, [allManagers]);
 
   const filteredTeamRequests = teamRequests.filter(req => {
     if (managerFilter && !((req.user as any)?.managerNames || '').includes(managerFilter)) {

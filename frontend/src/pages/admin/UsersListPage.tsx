@@ -38,7 +38,7 @@ const UsersListPage = () => {
   const [toDelete, setToDelete] = useState<{ ids: string[]; label: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => { dispatch(fetchUsersThunk({ search: debouncedSearch })); }, [debouncedSearch, dispatch]);
+  useEffect(() => { dispatch(fetchUsersThunk({ search: debouncedSearch, pageSize: 1000 })); }, [debouncedSearch, dispatch]);
 
   const filtered = useMemo(() => list.filter((u) =>
     (!roleFilter || u.role === roleFilter) &&

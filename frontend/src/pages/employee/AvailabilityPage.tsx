@@ -19,7 +19,8 @@ import {
 import dayjs from 'dayjs';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
-import availabilityService, { AvailabilityStatus, DailyAvailability } from '../../services/availabilityService';
+import availabilityService, { DailyAvailability, AvailabilityStatus } from '../../services/availabilityService';
+import usersService from '../../services/usersService';
 import PageHeader from '../../components/common/PageHeader';
 import { isAdmin as checkIsAdmin } from '../../utils/roleGuards';
 
@@ -241,6 +242,7 @@ const ManagerAdminView = () => {
   const [managerFilter, setManagerFilter] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editRecord, setEditRecord] = useState<DailyAvailability | null>(null);
+  const [allManagers, setAllManagers] = useState<{ id: string; name: string }[]>([]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -268,19 +270,15 @@ const ManagerAdminView = () => {
     setEditRecord(null);
   };
 
-  useEffect(() => { fetchAll(); }, [statusFilter]);
+  useEffect(() => {
+    fetchAll();
+    usersService.getManagers().then(res => setAllManagers(res.data.data)).catch(console.error);
+  }, [statusFilter]);
   useAutoRefresh(fetchAll);
 
   const uniqueManagers = React.useMemo(() => {
-    const managers = new Set<string>();
-    records.forEach(r => {
-      const names = (r.user as any)?.managerNames;
-      if (names) {
-        names.split(',').map((n: string) => n.trim()).filter(Boolean).forEach((n: string) => managers.add(n));
-      }
-    });
-    return Array.from(managers).sort();
-  }, [records]);
+    return allManagers.map(m => m.name).sort();
+  }, [allManagers]);
 
   const filteredRecords = records.filter(r => {
     if (managerFilter && !((r.user as any)?.managerNames || '').includes(managerFilter)) {
