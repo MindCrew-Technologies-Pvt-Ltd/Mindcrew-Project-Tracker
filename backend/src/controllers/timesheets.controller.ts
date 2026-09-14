@@ -98,7 +98,10 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!currentUser) return next(new AppError('User not found', 404));
     
-    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.includes('Admin');
+    const isAdmin = 
+      currentUser.role === 'ADMIN' || 
+      currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
+      (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
     
     let userFilter: Record<string, unknown> = {};
     if (!isAdmin) {

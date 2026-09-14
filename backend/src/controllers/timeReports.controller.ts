@@ -8,13 +8,46 @@ import { ownedProjectIds } from '../utils/timesheetAccess';
 const qs = (v: unknown): string | undefined => (v && typeof v === 'string' ? v : undefined);
 const MAX_RANGE_DAYS = 370;
 
-type Scope = { projectIds?: string[]; selfOnly?: boolean };
+type Scope = { projectIds?: string[]; userIds?: string[]; selfOnly?: boolean };
 
-/** Owners see their projects' time; admins see all; everyone always sees their own. */
+/** Owners see their projects' time; managers see their direct reports; admins and HR+Manager see all; everyone always sees their own. */
 async function reportScope(user: { id: string; role?: string }): Promise<Scope> {
-  if (user.role === 'ADMIN') return {};
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!fullUser) return { selfOnly: true };
+
+  const isAdmin = 
+    fullUser.role === 'ADMIN' || 
+    fullUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
+    (fullUser.jobRoles.some(r => r.toUpperCase() === 'HR') && fullUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
+
+  if (isAdmin) return {};
+
   const owned = await ownedProjectIds(user.id);
-  if (owned.length > 0) return { projectIds: owned };
+
+  const empId = fullUser.employeeId;
+  const empIdNum = empId?.replace('MCT-', '');
+  const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
+
+  const directReports = empId ? await prisma.user.findMany({
+    where: {
+      OR: [
+        { managerEmployeeIds: { has: empId } },
+        ...(empIdNum ? [{ managerEmployeeIds: { has: empIdNum } }] : []),
+        ...(empIdFull ? [{ managerEmployeeIds: { has: empIdFull } }] : [])
+      ]
+    },
+    select: { id: true }
+  }) : [];
+  
+  const reportIds = directReports.map(u => u.id).filter(id => id !== user.id);
+
+  if (owned.length > 0 || reportIds.length > 0) {
+    return { 
+      ...(owned.length > 0 ? { projectIds: owned } : {}),
+      ...(reportIds.length > 0 ? { userIds: reportIds } : {})
+    };
+  }
+
   return { selfOnly: true };
 }
 
@@ -37,10 +70,14 @@ async function summaryRows(user: { id: string; role?: string }, query: Record<st
   const userId = qs(query.userId);
   const billable = qs(query.billable);
 
+  const scopeOr: any[] = [];
+  if (scope.projectIds) scopeOr.push({ projectId: { in: scope.projectIds } });
+  if (scope.userIds) scopeOr.push({ userId: { in: scope.userIds } });
+
   const where = {
     date: { gte: from, lte: to },
     ...(scope.selfOnly ? { userId: user.id } : {}),
-    ...(scope.projectIds ? { projectId: { in: scope.projectIds } } : {}),
+    ...(scopeOr.length > 0 ? { OR: scopeOr } : {}),
     ...(projectId ? { projectId } : {}),
     ...(userId && !scope.selfOnly ? { userId } : {}),
     ...(billable === 'true' ? { billable: true } : billable === 'false' ? { billable: false } : {}),
@@ -93,10 +130,14 @@ export const utilization: RequestHandler = async (req, res, next) => {
     const weeks = Math.max(1, Math.round((to.getTime() - from.getTime()) / (7 * 86400000)));
     const target = targetPerWeek * weeks;
 
+    const scopeOr: any[] = [];
+    if (scope.projectIds) scopeOr.push({ projectId: { in: scope.projectIds } });
+    if (scope.userIds) scopeOr.push({ userId: { in: scope.userIds } });
+
     const where = {
       date: { gte: from, lte: to },
       ...(scope.selfOnly ? { userId: req.user!.id } : {}),
-      ...(scope.projectIds ? { projectId: { in: scope.projectIds } } : {}),
+      ...(scopeOr.length > 0 ? { OR: scopeOr } : {}),
     };
     const grouped = await prisma.timeEntry.groupBy({
       by: ['userId'], where, _sum: { minutes: true },
@@ -144,10 +185,14 @@ export const timeExceptions: RequestHandler = async (req, res, next) => {
     const dayLimitMinutes = 9 * 60;
     const weekLimitMinutes = Math.round(weeklyTargetMinutes * 1.2);
 
+    const scopeOr: any[] = [];
+    if (scope.projectIds) scopeOr.push({ projectId: { in: scope.projectIds } });
+    if (scope.userIds) scopeOr.push({ userId: { in: scope.userIds } });
+
     const where = {
       date: { gte: from, lte: to },
       ...(scope.selfOnly ? { userId: req.user!.id } : {}),
-      ...(scope.projectIds ? { projectId: { in: scope.projectIds } } : {}),
+      ...(scopeOr.length > 0 ? { OR: scopeOr } : {}),
     };
     const [byDay, byWeek] = await Promise.all([
       prisma.timeEntry.groupBy({ by: ['userId', 'date'], where, _sum: { minutes: true } }),
