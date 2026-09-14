@@ -91,31 +91,45 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
     const { date, status } = req.query as { date?: string; status?: string };
     const filterDate = date ? startOfDay(date) : startOfDay(new Date().toISOString());
 
-    const where: any = { date: filterDate };
-    if (status && VALID_STATUSES.includes(status as AvailabilityStatus)) {
-      where.status = status;
-    }
-
-    const records = await db.dailyAvailability.findMany({
-      where,
-      orderBy: { createdAt: 'asc' },
-      include: {
-        user: {
-          select: {
-            id: true, name: true, employeeId: true,
-            department: true, designation: true, jobRoles: true,
-          },
-        },
-      },
+    // 1. Get all active employees
+    const users = await prisma.user.findMany({
+      where: { isActive: true, role: 'EMPLOYEE' },
+      select: { id: true, name: true, employeeId: true, department: true, designation: true, jobRoles: true },
     });
+
+    // 2. Get today's availability for these employees
+    const availabilities = await db.dailyAvailability.findMany({
+      where: { date: filterDate },
+    });
+    const availMap = new Map(availabilities.map((a: any) => [a.userId, a]));
+
+    // 3. Map users to availability, filling in defaults
+    let records = users.map(user => {
+      const record = availMap.get(user.id);
+      if (record) return { ...record, user };
+      return {
+        id: `pending_${user.id}`, // pseudo id
+        userId: user.id,
+        date: filterDate,
+        status: 'FULLY_AVAILABLE',
+        note: null,
+        createdAt: filterDate,
+        updatedAt: filterDate,
+        user
+      };
+    });
+
+    if (status && VALID_STATUSES.includes(status as AvailabilityStatus)) {
+      records = records.filter(r => r.status === status);
+    }
 
     success(res, records);
   } catch (err) { next(err); }
 };
 
 /**
- * PUT /api/availability/:id
- * Manager / Admin: Update an employee's availability record directly.
+ * PUT /api/availability/admin
+ * Manager / Admin: Update (or create) an employee's availability record directly.
  */
 export const updateAvailabilityAdmin: RequestHandler = async (req, res, next) => {
   try {
@@ -127,21 +141,21 @@ export const updateAvailabilityAdmin: RequestHandler = async (req, res, next) =>
       return;
     }
 
-    const { id } = req.params;
-    const { status, note } = req.body;
+    const { userId, date, status, note } = req.body;
+    const filterDate = date ? startOfDay(date) : startOfDay(new Date().toISOString());
 
     if (status && !VALID_STATUSES.includes(status as AvailabilityStatus)) {
       error(res, `Invalid status. Valid values: ${VALID_STATUSES.join(', ')}`, 400);
       return;
     }
 
-    const updateData: any = {};
-    if (status) updateData.status = status;
-    if (note !== undefined) updateData.note = note;
-
-    const record = await db.dailyAvailability.update({
-      where: { id },
-      data: updateData,
+    const record = await db.dailyAvailability.upsert({
+      where: { userId_date: { userId, date: filterDate } },
+      update: { status, note: note ?? null, updatedAt: new Date() },
+      create: { userId, date: filterDate, status, note: note ?? null },
+      include: {
+        user: { select: { name: true, employeeId: true, department: true, designation: true } },
+      },
     });
 
     success(res, record, 'Availability updated successfully');

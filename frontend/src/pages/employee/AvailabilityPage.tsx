@@ -252,7 +252,11 @@ const ManagerAdminView = () => {
   const handleUpdateStatus = async (status: AvailabilityStatus) => {
     if (!editRecord) return;
     try {
-      await availabilityService.updateAdmin(editRecord.id, { status });
+      await availabilityService.updateAdmin({ 
+        userId: editRecord.userId, 
+        date: editRecord.date || selectedDate, 
+        status 
+      });
       fetchAll();
     } catch (e) {
       console.error(e);

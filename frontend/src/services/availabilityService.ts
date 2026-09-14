@@ -47,8 +47,8 @@ const availabilityService = {
   getAll: (params?: { date?: string; status?: string }) =>
     axiosInstance.get<{ data: DailyAvailability[] }>(`${API}/all`, { params }),
 
-  updateAdmin: (id: string, data: { status?: AvailabilityStatus; note?: string }) =>
-    axiosInstance.put<{ data: DailyAvailability }>(`${API}/${id}`, data),
+  updateAdmin: (data: { userId: string; date: string; status?: AvailabilityStatus; note?: string }) =>
+    axiosInstance.put<{ data: DailyAvailability }>(`${API}/admin`, data),
 };
 
 export default availabilityService;

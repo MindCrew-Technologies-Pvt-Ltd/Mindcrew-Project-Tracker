@@ -18,6 +18,6 @@ router.get('/today', getTodayMyAvailability);     // GET    /api/availability/to
 
 // Manager / Admin routes
 router.get('/all', getAllAvailability);            // GET    /api/availability/all?date=&status=
-router.put('/:id', updateAvailabilityAdmin);       // PUT    /api/availability/:id
+router.put('/admin', updateAvailabilityAdmin);     // PUT    /api/availability/admin
 
 export default router;
