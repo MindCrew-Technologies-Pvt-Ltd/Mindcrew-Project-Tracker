@@ -81,7 +81,8 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
   try {
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
     const isManagerOrAdmin =
-      currentUser?.role === 'ADMIN' || currentUser?.jobRoles?.includes('Manager');
+      currentUser?.role === 'ADMIN' ||
+      currentUser?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'MANAGER');
 
     if (!isManagerOrAdmin) {
       error(res, 'Access denied. Managers and Admins only.', 403);
@@ -130,7 +131,9 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
 export const updateAvailabilityAdmin: RequestHandler = async (req, res, next) => {
   try {
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
-    const isManagerOrAdmin = currentUser?.role === 'ADMIN' || currentUser?.jobRoles?.includes('Manager');
+    const isManagerOrAdmin = 
+      currentUser?.role === 'ADMIN' || 
+      currentUser?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'MANAGER');
 
     if (!isManagerOrAdmin) {
       error(res, 'Access denied. Managers and Admins only.', 403);
