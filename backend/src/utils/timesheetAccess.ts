@@ -25,22 +25,22 @@ export async function assertManualEntryAllowed(user: AuthUser): Promise<void> {
 }
 
 /**
- * Daily-lock rule: a day's time can only be logged/edited ON that day (org
- * timezone). Exceptions: the date's week envelope is REJECTED (the reviewer
- * sent it back for fixes), or the actor is an admin (corrections).
+ * Date-lock rule: time can be logged for today or any past date (org timezone).
+ * Future dates are blocked. Exceptions: admin (always allowed), or the date's
+ * week envelope is REJECTED (fix window).
  */
 export async function assertDateEditable(date: Date, user: AuthUser): Promise<void> {
   if (user.role === 'ADMIN') return;
   const today = todayInOrgTz(await orgTimezone());
-  // Only allow today — block both past and future dates
-  if (date.getTime() === today.getTime()) return;
+  // Allow today and any past date; only block future dates
+  if (date.getTime() <= today.getTime()) return;
   const { isoYear, isoWeek } = isoWeekOf(date);
   const envelope = await prisma.timesheetWeek.findUnique({
     where: { userId_isoYear_isoWeek: { userId: user.id, isoYear, isoWeek } },
     select: { status: true },
   });
   if (envelope?.status === 'REJECTED') return; // fix window after rejection
-  throw new AppError('You can only log time for today. Past and future dates are locked.', 409);
+  throw new AppError('Future dates cannot be filled in advance', 409);
 }
 
 const HM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
