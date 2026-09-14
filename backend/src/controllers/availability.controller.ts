@@ -88,33 +88,29 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const { date, status } = req.query as { date?: string; status?: string };
-    const filterDate = date ? startOfDay(date) : startOfDay(new Date().toISOString());
+    const { status } = req.query as { status?: string };
 
-    // 1. Get all active employees
-    const users = await prisma.user.findMany({
-      where: { isActive: true, role: 'EMPLOYEE' },
-      select: { id: true, name: true, employeeId: true, department: true, designation: true, jobRoles: true },
+    // Fetch all active employees who have AT LEAST ONE availability entry
+    const usersWithAvailability = await db.user.findMany({
+      where: {
+        isActive: true,
+        dailyAvailability: { some: {} },
+      },
+      select: {
+        id: true, name: true, employeeId: true, department: true, designation: true, jobRoles: true,
+        dailyAvailability: {
+          orderBy: { date: 'desc' },
+          take: 1,
+        }
+      }
     });
 
-    // 2. Get today's availability for these employees
-    const availabilities = await db.dailyAvailability.findMany({
-      where: { date: filterDate },
-    });
-    const availMap = new Map(availabilities.map((a: any) => [a.userId, a]));
-
-    // 3. Map users to availability, filling in defaults
-    let records = users.map(user => {
-      const record = availMap.get(user.id);
-      if (record) return { ...record, user };
+    // Map to expected format (extracting the latest availability record)
+    let records = usersWithAvailability.map(u => {
+      const { dailyAvailability, ...user } = u;
+      const record = dailyAvailability[0];
       return {
-        id: `pending_${user.id}`, // pseudo id
-        userId: user.id,
-        date: filterDate,
-        status: 'FULLY_AVAILABLE',
-        note: null,
-        createdAt: filterDate,
-        updatedAt: filterDate,
+        ...record,
         user
       };
     });

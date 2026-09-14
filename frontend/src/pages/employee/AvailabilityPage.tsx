@@ -236,7 +236,6 @@ const ManagerAdminView = () => {
   const { user } = useAppSelector((s) => s.auth);
   const [records, setRecords] = useState<DailyAvailability[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [statusFilter, setStatusFilter] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editRecord, setEditRecord] = useState<DailyAvailability | null>(null);
@@ -244,7 +243,7 @@ const ManagerAdminView = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const res = await availabilityService.getAll({ date: selectedDate, status: statusFilter || undefined });
+      const res = await availabilityService.getAll({ status: statusFilter || undefined });
       setRecords(res.data.data);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -255,7 +254,7 @@ const ManagerAdminView = () => {
     try {
       await availabilityService.updateAdmin({ 
         userId: editRecord.userId, 
-        date: editRecord.date || selectedDate, 
+        date: editRecord.date, 
         status 
       });
       fetchAll();
@@ -267,7 +266,7 @@ const ManagerAdminView = () => {
     setEditRecord(null);
   };
 
-  useEffect(() => { fetchAll(); }, [selectedDate, statusFilter]);
+  useEffect(() => { fetchAll(); }, [statusFilter]);
   useAutoRefresh(fetchAll);
 
   const statusCounts = Object.fromEntries(
@@ -304,15 +303,6 @@ const ManagerAdminView = () => {
 
       {/* Filters */}
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }} flexWrap="wrap" gap={1}>
-        <TextField
-          type="date"
-          label="Date"
-          size="small"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={{ minWidth: 160 }}
-        />
         <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel>Filter by Status</InputLabel>
           <Select
@@ -327,7 +317,7 @@ const ManagerAdminView = () => {
           </Select>
         </FormControl>
         <Typography variant="body2" color="text.secondary">
-          {records.length} {records.length === 1 ? 'employee' : 'employees'} updated for {dayjs(selectedDate).format('MMM D, YYYY')}
+          Showing {records.length} {records.length === 1 ? 'employee' : 'employees'}
         </Typography>
       </Stack>
 
@@ -337,7 +327,7 @@ const ManagerAdminView = () => {
       ) : records.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <GroupIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
-          <Typography color="text.secondary">No availability updates for this date.</Typography>
+          <Typography color="text.secondary">No availability records found.</Typography>
         </Box>
       ) : (
         <Grid container spacing={2}>
