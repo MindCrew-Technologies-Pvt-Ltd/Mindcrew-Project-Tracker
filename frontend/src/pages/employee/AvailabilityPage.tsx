@@ -21,6 +21,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import availabilityService, { AvailabilityStatus, DailyAvailability } from '../../services/availabilityService';
 import PageHeader from '../../components/common/PageHeader';
+import { isAdmin as checkIsAdmin } from '../../utils/roleGuards';
 
 // ---- Status config ----
 const STATUS_CONFIG: Record<AvailabilityStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -433,7 +434,7 @@ const ManagerAdminView = () => {
 // ---- Main Page ----
 export default function AvailabilityPage() {
   const { user } = useAppSelector((s) => s.auth);
-  const isManagerOrAdmin = user?.role === 'ADMIN' || user?.jobRoles?.includes('Manager');
+  const isManagerOrAdmin = checkIsAdmin(user) || user?.jobRoles?.some(r => r.toLowerCase() === 'manager');
 
   return (
     <Box>
