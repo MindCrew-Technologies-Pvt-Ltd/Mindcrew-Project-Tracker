@@ -109,10 +109,17 @@ export async function weekLocked(userId: string, isoYear: number, isoWeek: numbe
   return !!week && (week.status === 'SUBMITTED' || week.status === 'APPROVED');
 }
 
-/** Throw 409 if the user's week is locked — every entry write goes through this. */
+/** Auto-reopen the week to DRAFT if it's locked (SUBMITTED/APPROVED) so entries can be added/edited. */
 export async function assertWeekUnlocked(userId: string, isoYear: number, isoWeek: number): Promise<void> {
-  if (await weekLocked(userId, isoYear, isoWeek)) {
-    throw new AppError('This week has been submitted for approval and is locked', 409);
+  const week = await prisma.timesheetWeek.findUnique({
+    where: { userId_isoYear_isoWeek: { userId, isoYear, isoWeek } },
+    select: { id: true, status: true },
+  });
+  if (week && (week.status === 'SUBMITTED' || week.status === 'APPROVED')) {
+    await prisma.timesheetWeek.update({
+      where: { id: week.id },
+      data: { status: 'DRAFT', submittedAt: null },
+    });
   }
 }
 
