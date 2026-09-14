@@ -158,7 +158,7 @@ export interface UtilizationReport {
   to: string;
 }
 
-export interface MissingUser { id: string; name: string; email: string; }
+export interface MissingUser { id: string; name: string; email: string; managerNames?: string; }
 
 /** GET /timesheets/daily (admin) */
 export interface DailyUserRow {

@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Box, Tabs, Tab, Avatar, Typography, IconButton, Tooltip, Chip, Drawer, Button,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
-  CircularProgress, Divider, ToggleButtonGroup, ToggleButton, List, ListItem, ListItemText,
+  Box, Typography, Avatar, Tabs, Tab, TextField,
+  Chip, IconButton, Tooltip, CircularProgress, Alert, Snackbar,
+  Drawer, List, ListItem, ListItemText, Divider, Button, ToggleButtonGroup, ToggleButton,
+  FormControl, InputLabel, Select, MenuItem,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import ViewIcon from '@mui/icons-material/esm/Visibility';
 import ApproveIcon from '@mui/icons-material/esm/Check';
@@ -67,6 +69,7 @@ const ApprovalsPage = () => {
   const [reviewedStatus, setReviewedStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
   const [snack, setSnack] = useState<{ msg: string; severity: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [managerFilter, setManagerFilter] = useState('');
 
   // My submissions (read-only — where an employee tracks their own approval status)
   const [myWeeks, setMyWeeks] = useState<TimesheetWeek[]>([]);
@@ -182,11 +185,42 @@ const ApprovalsPage = () => {
     processRejects();
   };
 
+  const uniqueManagers = useMemo(() => {
+    const managers = new Set<string>();
+    const extract = (managerNames?: string) => {
+      if (!managerNames) return;
+      managerNames.split(',').map(n => n.trim()).filter(Boolean).forEach(n => managers.add(n));
+    };
+    if (tab === 'pending' || tab === 'reviewed') {
+      pending.items.forEach(r => extract((r.user as any)?.managerNames));
+    } else if (tab === 'missing') {
+      missing.forEach(u => extract(u.managerNames));
+    }
+    return Array.from(managers).sort();
+  }, [pending.items, missing, tab]);
+
   const filteredPending = useMemo(() => {
-    if (!searchQuery) return pending.items;
-    const lowerQ = searchQuery.toLowerCase();
-    return pending.items.filter(r => r.user?.name?.toLowerCase().includes(lowerQ) || ((r.user as any)?.managerNames || '').toLowerCase().includes(lowerQ));
-  }, [pending.items, searchQuery]);
+    let result = pending.items;
+    if (managerFilter) {
+      result = result.filter(r => {
+        const managers = (r.user as any)?.managerNames || '';
+        return managers.includes(managerFilter);
+      });
+    }
+    if (searchQuery) {
+      const lowerQ = searchQuery.toLowerCase();
+      result = result.filter(r => r.user?.name?.toLowerCase().includes(lowerQ) || ((r.user as any)?.managerNames || '').toLowerCase().includes(lowerQ));
+    }
+    return result;
+  }, [pending.items, searchQuery, managerFilter]);
+
+  const filteredMissing = useMemo(() => {
+    let result = missing;
+    if (managerFilter) {
+      result = result.filter(u => (u.managerNames || '').includes(managerFilter));
+    }
+    return result;
+  }, [missing, managerFilter]);
 
   const handleReject = async () => {
     if (!rejecting || rejectNote.trim().length < 3) return;
@@ -344,7 +378,7 @@ const ApprovalsPage = () => {
 
       {tab === 'pending' && (
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2, flexWrap: 'wrap' }}>
             <TextField 
               size="small" 
               placeholder="Search employee..." 
@@ -352,6 +386,21 @@ const ApprovalsPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{ width: 250 }}
             />
+            {uniqueManagers.length > 0 && (
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Filter by Manager</InputLabel>
+                <Select
+                  value={managerFilter}
+                  label="Filter by Manager"
+                  onChange={(e: any) => setManagerFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Managers</MenuItem>
+                  {uniqueManagers.map(m => (
+                    <MenuItem key={m} value={m}>{m}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Box>
           <DataTablePro
             rows={filteredPending}
@@ -379,7 +428,7 @@ const ApprovalsPage = () => {
 
       {tab === 'reviewed' && (
         <>
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <ToggleButtonGroup
               size="small" exclusive value={reviewedStatus}
               onChange={(_, v) => { if (v) setReviewedStatus(v); }}
@@ -387,9 +436,25 @@ const ApprovalsPage = () => {
               <ToggleButton value="APPROVED" sx={{ textTransform: 'none', px: 2 }}>Approved</ToggleButton>
               <ToggleButton value="REJECTED" sx={{ textTransform: 'none', px: 2 }}>Rejected</ToggleButton>
             </ToggleButtonGroup>
+            
+            {uniqueManagers.length > 0 && (
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Filter by Manager</InputLabel>
+                <Select
+                  value={managerFilter}
+                  label="Filter by Manager"
+                  onChange={(e: any) => setManagerFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Managers</MenuItem>
+                  {uniqueManagers.map(m => (
+                    <MenuItem key={m} value={m}>{m}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Box>
           <DataTablePro
-            rows={pending.items}
+            rows={filteredPending}
             columns={reviewedColumns}
             getId={(w) => w.id}
             loading={pendingLoading}
@@ -418,10 +483,26 @@ const ApprovalsPage = () => {
             <Typography sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.875rem' }}>
               {weekLabel(missingRef.year, missingRef.week)}
             </Typography>
+            
+            {uniqueManagers.length > 0 && (
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Filter by Manager</InputLabel>
+                <Select
+                  value={managerFilter}
+                  label="Filter by Manager"
+                  onChange={(e: any) => setManagerFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Managers</MenuItem>
+                  {uniqueManagers.map(m => (
+                    <MenuItem key={m} value={m}>{m}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Box>
           {missingLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
-          ) : missing.length === 0 ? (
+          ) : filteredMissing.length === 0 ? (
             <EmptyState
               icon={<CelebrationIcon sx={{ fontSize: 64 }} />}
               title="Everyone has logged time 🎉"
@@ -429,9 +510,9 @@ const ApprovalsPage = () => {
             />
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {missing.map((u) => (
+              {filteredMissing.map((u) => (
                 <Box key={u.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25, bgcolor: '#fff', border: '1px solid #E9EBF2', borderRadius: '10px' }}>
-                  <EmployeeCell name={u.name} email={u.email} />
+                  <EmployeeCell name={u.name} email={u.email} managerNames={u.managerNames} />
                   <Box sx={{ flex: 1 }} />
                   <Chip label="No entries" size="small" sx={{ bgcolor: '#FDECEC', color: '#B91C1C', fontWeight: 600, fontSize: '0.72rem' }} />
                 </Box>

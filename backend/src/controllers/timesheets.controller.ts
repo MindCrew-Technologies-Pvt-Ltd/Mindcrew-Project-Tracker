@@ -368,13 +368,25 @@ export const missingWeek: RequestHandler = async (req, res, next) => {
     }
     const users = await prisma.user.findMany({
       where: { isActive: true, ...(candidateIds ? { id: { in: candidateIds } } : {}) },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, managerEmployeeIds: true },
     });
     const logged = await prisma.timeEntry.findMany({
       where: { isoYear, isoWeek, userId: { in: users.map((u) => u.id) } },
       select: { userId: true }, distinct: ['userId'],
     });
     const loggedSet = new Set(logged.map((l) => l.userId));
-    success(res, users.filter((u) => !loggedSet.has(u.id)));
+    const missingUsers = users.filter((u) => !loggedSet.has(u.id));
+
+    const allManagerIds = Array.from(new Set(missingUsers.flatMap((u: any) => u.managerEmployeeIds || []))) as string[];
+    const managers = await prisma.user.findMany({ where: { employeeId: { in: allManagerIds } }, select: { employeeId: true, name: true } });
+    const managerMap = new Map(managers.map(m => [m.employeeId, m.name]));
+
+    const missingWithManagers = missingUsers.map(u => {
+      const { managerEmployeeIds, ...rest } = u;
+      const managerNames = (managerEmployeeIds || []).map((id: string) => managerMap.get(id)).filter(Boolean).join(', ');
+      return { ...rest, managerNames };
+    });
+
+    success(res, missingWithManagers);
   } catch (err) { next(err); }
 };

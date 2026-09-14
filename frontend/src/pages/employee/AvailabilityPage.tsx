@@ -238,6 +238,7 @@ const ManagerAdminView = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [managerFilter, setManagerFilter] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editRecord, setEditRecord] = useState<DailyAvailability | null>(null);
 
@@ -270,7 +271,21 @@ const ManagerAdminView = () => {
   useEffect(() => { fetchAll(); }, [statusFilter]);
   useAutoRefresh(fetchAll);
 
+  const uniqueManagers = React.useMemo(() => {
+    const managers = new Set<string>();
+    records.forEach(r => {
+      const names = (r.user as any)?.managerNames;
+      if (names) {
+        names.split(',').map((n: string) => n.trim()).filter(Boolean).forEach((n: string) => managers.add(n));
+      }
+    });
+    return Array.from(managers).sort();
+  }, [records]);
+
   const filteredRecords = records.filter(r => {
+    if (managerFilter && !((r.user as any)?.managerNames || '').includes(managerFilter)) {
+      return false;
+    }
     if (searchQuery) {
       const lowerQ = searchQuery.toLowerCase();
       if (!r.user?.name?.toLowerCase().includes(lowerQ) && !(r.user as any)?.managerNames?.toLowerCase().includes(lowerQ)) return false;
@@ -325,6 +340,21 @@ const ManagerAdminView = () => {
             ))}
           </Select>
         </FormControl>
+        {uniqueManagers.length > 0 && (
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Filter by Manager</InputLabel>
+            <Select
+              value={managerFilter}
+              label="Filter by Manager"
+              onChange={(e) => setManagerFilter(e.target.value)}
+            >
+              <MenuItem value="">All Managers</MenuItem>
+              {uniqueManagers.map(m => (
+                <MenuItem key={m} value={m}>{m}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
         <TextField
           size="small"
           placeholder="Search by name..."

@@ -59,6 +59,7 @@ export default function LeaveManagementPage() {
   const [currentMonth, setCurrentMonth] = useState(dayjs());
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [managerFilter, setManagerFilter] = useState('');
   const [selectedLeaves, setSelectedLeaves] = useState<string[]>([]);
 
   // Modal state
@@ -182,10 +183,29 @@ export default function LeaveManagementPage() {
     }
   };
 
-  const filteredTeamRequests = teamRequests.filter(req => 
-    req.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    req.user?.employeeId?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const uniqueManagers = React.useMemo(() => {
+    const managers = new Set<string>();
+    teamRequests.forEach(req => {
+      const names = (req.user as any)?.managerNames;
+      if (names) {
+        names.split(',').map((n: string) => n.trim()).filter(Boolean).forEach((n: string) => managers.add(n));
+      }
+    });
+    return Array.from(managers).sort();
+  }, [teamRequests]);
+
+  const filteredTeamRequests = teamRequests.filter(req => {
+    if (managerFilter && !((req.user as any)?.managerNames || '').includes(managerFilter)) {
+      return false;
+    }
+    if (searchQuery) {
+      const lowerQ = searchQuery.toLowerCase();
+      if (!req.user?.name?.toLowerCase().includes(lowerQ) && !req.user?.employeeId?.toLowerCase().includes(lowerQ)) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   // Stats calculation
   const approvedLeaves = myRequests.filter(r => r.status === 'APPROVED');
@@ -368,13 +388,31 @@ export default function LeaveManagementPage() {
         <TabPanel value={tabIndex} index={1}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">Team Requests</Typography>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <TextField 
-                size="small" 
-                placeholder="Search by name..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <TextField
+                  size="small"
+                  placeholder="Search by name..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  sx={{ width: 250 }}
+                />
+                {uniqueManagers.length > 0 && (
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Filter by Manager</InputLabel>
+                    <Select
+                      value={managerFilter}
+                      label="Filter by Manager"
+                      onChange={(e) => setManagerFilter(e.target.value)}
+                    >
+                      <MenuItem value="">All Managers</MenuItem>
+                      {uniqueManagers.map(m => (
+                        <MenuItem key={m} value={m}>{m}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </Box>
               {selectedLeaves.length > 0 && (
                 <>
                   <Button variant="contained" color="success" size="small" onClick={() => handleBulkAction('APPROVED')}>
