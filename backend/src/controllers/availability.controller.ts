@@ -106,7 +106,7 @@ export const getAllAvailability: RequestHandler = async (req, res, next) => {
       }
     });
 
-    const allManagerIds = Array.from(new Set(usersWithAvailability.flatMap(u => u.managerEmployeeIds || [])));
+    const allManagerIds = Array.from(new Set(usersWithAvailability.flatMap((u: any) => u.managerEmployeeIds || []))) as string[];
     const managers = await prisma.user.findMany({ where: { employeeId: { in: allManagerIds } }, select: { employeeId: true, name: true } });
     const managerMap = new Map(managers.map(m => [m.employeeId, m.name]));
 

@@ -185,7 +185,7 @@ const ApprovalsPage = () => {
   const filteredPending = useMemo(() => {
     if (!searchQuery) return pending.items;
     const lowerQ = searchQuery.toLowerCase();
-    return pending.items.filter(r => r.user.name.toLowerCase().includes(lowerQ) || ((r.user as any).managerNames || '').toLowerCase().includes(lowerQ));
+    return pending.items.filter(r => r.user?.name?.toLowerCase().includes(lowerQ) || ((r.user as any)?.managerNames || '').toLowerCase().includes(lowerQ));
   }, [pending.items, searchQuery]);
 
   const handleReject = async () => {
