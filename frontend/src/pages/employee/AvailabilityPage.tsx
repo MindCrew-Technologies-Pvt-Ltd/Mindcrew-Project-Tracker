@@ -237,6 +237,7 @@ const ManagerAdminView = () => {
   const [records, setRecords] = useState<DailyAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [editRecord, setEditRecord] = useState<DailyAvailability | null>(null);
 
@@ -269,8 +270,16 @@ const ManagerAdminView = () => {
   useEffect(() => { fetchAll(); }, [statusFilter]);
   useAutoRefresh(fetchAll);
 
+  const filteredRecords = records.filter(r => {
+    if (searchQuery) {
+      const lowerQ = searchQuery.toLowerCase();
+      if (!r.user?.name?.toLowerCase().includes(lowerQ) && !(r.user as any)?.managerNames?.toLowerCase().includes(lowerQ)) return false;
+    }
+    return true;
+  });
+
   const statusCounts = Object.fromEntries(
-    Object.keys(STATUS_CONFIG).map((s) => [s, records.filter(r => r.status === s).length])
+    Object.keys(STATUS_CONFIG).map((s) => [s, filteredRecords.filter(r => r.status === s).length])
   ) as Record<AvailabilityStatus, number>;
 
   return (
@@ -316,22 +325,26 @@ const ManagerAdminView = () => {
             ))}
           </Select>
         </FormControl>
-        <Typography variant="body2" color="text.secondary">
-          Showing {records.length} {records.length === 1 ? 'employee' : 'employees'}
-        </Typography>
+        <TextField
+          size="small"
+          placeholder="Search by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ minWidth: 200 }}
+        />
       </Stack>
 
       {/* Resource Cards */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
-      ) : records.length === 0 ? (
+      ) : filteredRecords.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <GroupIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
           <Typography color="text.secondary">No availability records found.</Typography>
         </Box>
       ) : (
         <Grid container spacing={2}>
-          {records.map((record) => {
+          {filteredRecords.map((record) => {
             const cfg = STATUS_CONFIG[record.status];
             return (
               <Grid item xs={12} sm={6} md={4} key={record.id}>
@@ -351,9 +364,14 @@ const ManagerAdminView = () => {
                       </Avatar>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="subtitle2" fontWeight={700} noWrap>{record.user?.name}</Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
+                        <Typography variant="caption" color="text.secondary" display="block" noWrap>
                           {record.user?.designation || record.user?.department || record.user?.employeeId || '—'}
                         </Typography>
+                        {(record.user as any)?.managerNames && (
+                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                            RM: {(record.user as any).managerNames}
+                          </Typography>
+                        )}
                       </Box>
                     </Stack>
                     <Box mb={1.5} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -57,6 +57,9 @@ export default function LeaveManagementPage() {
   const [loading, setLoading] = useState(true);
   const [myManagers, setMyManagers] = useState<{ id: string, name: string, employeeId: string }[]>([]);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLeaves, setSelectedLeaves] = useState<string[]>([]);
 
   // Modal state
   const [openModal, setOpenModal] = useState(false);
@@ -164,6 +167,25 @@ export default function LeaveManagementPage() {
       alert('Failed to process cancellation request');
     }
   };
+
+  const handleBulkAction = async (action: 'APPROVED' | 'REJECTED') => {
+    if (!window.confirm(`Are you sure you want to ${action.toLowerCase()} ${selectedLeaves.length} requests?`)) return;
+    try {
+      setLoading(true);
+      await Promise.all(selectedLeaves.map(id => leavesService.updateStatus(id, { status: action })));
+      setSelectedLeaves([]);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to process bulk action');
+      setLoading(false);
+    }
+  };
+
+  const filteredTeamRequests = teamRequests.filter(req => 
+    req.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    req.user?.employeeId?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Stats calculation
   const approvedLeaves = myRequests.filter(r => r.status === 'APPROVED');
@@ -344,11 +366,44 @@ export default function LeaveManagementPage() {
 
       {isManager && (
         <TabPanel value={tabIndex} index={1}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Team Requests</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">Team Requests</Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <TextField 
+                size="small" 
+                placeholder="Search by name..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {selectedLeaves.length > 0 && (
+                <>
+                  <Button variant="contained" color="success" size="small" onClick={() => handleBulkAction('APPROVED')}>
+                    Approve ({selectedLeaves.length})
+                  </Button>
+                  <Button variant="contained" color="error" size="small" onClick={() => handleBulkAction('REJECTED')}>
+                    Reject ({selectedLeaves.length})
+                  </Button>
+                </>
+              )}
+            </Box>
+          </Box>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox 
+                      indeterminate={selectedLeaves.length > 0 && selectedLeaves.length < filteredTeamRequests.filter(r => r.status === 'PENDING').length}
+                      checked={filteredTeamRequests.filter(r => r.status === 'PENDING').length > 0 && selectedLeaves.length === filteredTeamRequests.filter(r => r.status === 'PENDING').length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedLeaves(filteredTeamRequests.filter(r => r.status === 'PENDING').map(r => r.id));
+                        } else {
+                          setSelectedLeaves([]);
+                        }
+                      }}
+                    />
+                  </TableCell>
                   <TableCell>Employee</TableCell>
                   <TableCell>Type</TableCell>
                   <TableCell>Dates</TableCell>
@@ -358,11 +413,27 @@ export default function LeaveManagementPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {teamRequests.map((req) => (
+                {filteredTeamRequests.map((req) => (
                   <TableRow key={req.id}>
+                    <TableCell padding="checkbox">
+                      {req.status === 'PENDING' && !req.cancelRequested && (
+                        <Checkbox 
+                          checked={selectedLeaves.includes(req.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedLeaves(prev => [...prev, req.id]);
+                            else setSelectedLeaves(prev => prev.filter(id => id !== req.id));
+                          }}
+                        />
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight="bold">{req.user?.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">{req.user?.employeeId}</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block">{req.user?.employeeId}</Typography>
+                      {req.user?.managerNames && (
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                          RM: {req.user.managerNames}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell><Chip label={req.type.replace('_', ' ')} size="small" /></TableCell>
                     <TableCell>
@@ -403,8 +474,8 @@ export default function LeaveManagementPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {teamRequests.length === 0 && (
-                  <TableRow><TableCell colSpan={6} align="center">No pending team requests</TableCell></TableRow>
+                {filteredTeamRequests.length === 0 && (
+                  <TableRow><TableCell colSpan={7} align="center">No pending team requests</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

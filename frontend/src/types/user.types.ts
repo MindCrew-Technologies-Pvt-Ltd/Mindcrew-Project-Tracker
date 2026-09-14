@@ -11,6 +11,7 @@ export interface User {
   jobRoles: string[];
   pendingJobRoles?: string[];
   managerEmployeeIds: string[];
+  managerNames?: string;
   role: UserRole;
   isActive: boolean;
   createdAt: string;

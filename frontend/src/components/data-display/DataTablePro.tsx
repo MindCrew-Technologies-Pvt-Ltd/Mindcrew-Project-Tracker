@@ -28,12 +28,13 @@ interface Props<T> {
   onRowClick?: (row: T) => void;
   rowActions?: (row: T) => ReactNode;
   onBulkDelete?: (ids: string[]) => void;
+  bulkActions?: (ids: string[], clearSelection: () => void) => ReactNode;
 }
 
 const cellSx = { py: 2, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const;
 const headSx = { py: 1.75, px: 3, textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', borderBottom: '1px solid #E9EBF2', userSelect: 'none' } as const;
 
-function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No records found', pageSize = 10, minWidth = 780, selectable, onRowClick, rowActions, onBulkDelete }: Props<T>) {
+function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No records found', pageSize = 10, minWidth = 780, selectable, onRowClick, rowActions, onBulkDelete, bulkActions }: Props<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
@@ -87,6 +88,7 @@ function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No record
               Delete selected
             </Button>
           )}
+          {bulkActions && bulkActions(Array.from(selected), () => setSelected(new Set()))}
           <Button size="small" sx={{ ml: 'auto' }} onClick={() => setSelected(new Set())}>Clear</Button>
         </Box>
       )}

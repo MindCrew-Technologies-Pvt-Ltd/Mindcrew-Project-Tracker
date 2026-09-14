@@ -24,7 +24,7 @@ import { PendingWeekRow, WeekDetail, MissingUser, TimeEntry, TimesheetWeek } fro
 import { minutesToHM, minutesToPretty, weekLabel, isoWeekOf, shiftIsoWeek, dateKey } from '../../utils/timeFormat';
 import { formatDate } from '../../utils/formatters';
 
-const EmployeeCell = ({ name, email }: { name?: string; email?: string }) => (
+const EmployeeCell = ({ name, email, managerNames }: { name?: string; email?: string; managerNames?: string }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
     <Avatar sx={{ width: 36, height: 36, fontSize: 14, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', color: '#fff' }}>
       {name?.charAt(0).toUpperCase()}
@@ -32,6 +32,11 @@ const EmployeeCell = ({ name, email }: { name?: string; email?: string }) => (
     <Box sx={{ minWidth: 0 }}>
       <Typography noWrap sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary', lineHeight: 1.3 }}>{name}</Typography>
       <Typography noWrap sx={{ fontSize: '0.78rem', color: 'text.secondary' }} title={email}>{email}</Typography>
+      {managerNames && (
+        <Typography noWrap sx={{ fontSize: '0.75rem', color: 'text.secondary', mt: 0.25 }} title={managerNames}>
+          RM: {managerNames}
+        </Typography>
+      )}
     </Box>
   </Box>
 );
@@ -61,6 +66,7 @@ const ApprovalsPage = () => {
   const [tab, setTab] = useState<'mine' | 'pending' | 'reviewed' | 'missing'>(isAdmin ? 'pending' : 'mine');
   const [reviewedStatus, setReviewedStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
   const [snack, setSnack] = useState<{ msg: string; severity: 'success' | 'error' } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // My submissions (read-only — where an employee tracks their own approval status)
   const [myWeeks, setMyWeeks] = useState<TimesheetWeek[]>([]);
@@ -141,6 +147,47 @@ const ApprovalsPage = () => {
     }
   };
 
+  const handleBulkApprove = async (selectedIds: string[], clearSelection: () => void) => {
+    if (!window.confirm(`Approve ${selectedIds.length} timesheets?`)) return;
+    setActionBusy(true);
+    let successCount = 0;
+    for (const id of selectedIds) {
+      const result = await dispatch(approveWeekThunk(id));
+      if (approveWeekThunk.fulfilled.match(result)) successCount++;
+    }
+    setActionBusy(false);
+    clearSelection();
+    setSnack({ msg: `Approved ${successCount} timesheets`, severity: 'success' });
+    refetchQueue();
+  };
+
+  const handleBulkReject = (selectedIds: string[], clearSelection: () => void) => {
+    const note = window.prompt(`Reject ${selectedIds.length} timesheets. Enter reason:`);
+    if (!note || note.trim().length < 3) {
+      alert("A reason (at least 3 characters) is required to reject timesheets.");
+      return;
+    }
+    setActionBusy(true);
+    const processRejects = async () => {
+      let successCount = 0;
+      for (const id of selectedIds) {
+        const result = await dispatch(rejectWeekThunk({ id, note: note.trim() }));
+        if (rejectWeekThunk.fulfilled.match(result)) successCount++;
+      }
+      setActionBusy(false);
+      clearSelection();
+      setSnack({ msg: `Rejected ${successCount} timesheets`, severity: 'success' });
+      refetchQueue();
+    };
+    processRejects();
+  };
+
+  const filteredPending = useMemo(() => {
+    if (!searchQuery) return pending.items;
+    const lowerQ = searchQuery.toLowerCase();
+    return pending.items.filter(r => r.user.name.toLowerCase().includes(lowerQ) || ((r.user as any).managerNames || '').toLowerCase().includes(lowerQ));
+  }, [pending.items, searchQuery]);
+
   const handleReject = async () => {
     if (!rejecting || rejectNote.trim().length < 3) return;
     setActionBusy(true);
@@ -169,42 +216,24 @@ const ApprovalsPage = () => {
     }
   };
 
-  const baseColumns: Column<PendingWeekRow>[] = [
-    {
-      key: 'user', header: 'Employee', width: '22%', sortable: true, value: (w) => w.user?.name || '',
-      render: (w) => <EmployeeCell name={w.user?.name} email={w.user?.email} />,
-    },
-    {
-      key: 'week', header: 'Week', width: '15%', sortable: true, value: (w) => w.isoYear * 100 + w.isoWeek,
-      render: (w) => <Typography sx={{ fontSize: '0.85rem' }}>{weekLabel(w.isoYear, w.isoWeek)}</Typography>,
-    },
-    {
-      key: 'hours', header: 'Hours', width: '8%', sortable: true, value: (w) => w.totalMinutes,
-      render: (w) => <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.totalMinutes)}</Typography>,
-    },
-    {
-      key: 'billable', header: 'Billable', width: '8%', sortable: true, value: (w) => w.billableMinutes,
-      render: (w) => <Typography sx={{ fontSize: '0.85rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.billableMinutes)}</Typography>,
-    },
+  const pendingColumns: Column<PendingWeekRow>[] = useMemo(() => [
+    { key: 'user', header: 'Employee', width: '25%', sortable: true, value: (w) => w.user?.name || '', render: (w) => <EmployeeCell name={w.user?.name} email={w.user?.email} managerNames={(w.user as any).managerNames} /> },
+    { key: 'week', header: 'Week', width: '15%', sortable: true, value: (w) => w.isoYear * 100 + w.isoWeek, render: (w) => <Typography sx={{ fontSize: '0.85rem' }}>{weekLabel(w.isoYear, w.isoWeek)}</Typography> },
+    { key: 'hours', header: 'Hours', width: '8%', sortable: true, value: (w) => w.totalMinutes, render: (w) => <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.totalMinutes)}</Typography> },
+    { key: 'billable', header: 'Billable', width: '8%', sortable: true, value: (w) => w.billableMinutes, render: (w) => <Typography sx={{ fontSize: '0.85rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.billableMinutes)}</Typography> },
     { key: 'projects', header: 'Projects', width: '20%', render: (w) => <ProjectChips projects={w.projects || []} /> },
-  ];
+    { key: 'submittedAt', header: 'Submitted', width: '11%', sortable: true, value: (w) => w.submittedAt || '', render: (w) => formatDate(w.submittedAt) },
+  ], []);
 
-  const pendingColumns: Column<PendingWeekRow>[] = [
-    ...baseColumns,
-    {
-      key: 'submittedAt', header: 'Submitted', width: '11%', sortable: true, value: (w) => w.submittedAt || '',
-      render: (w) => formatDate(w.submittedAt),
-    },
-  ];
-
-  const reviewedColumns: Column<PendingWeekRow>[] = [
-    ...baseColumns,
+  const reviewedColumns: Column<PendingWeekRow>[] = useMemo(() => [
+    { key: 'user', header: 'Employee', width: '25%', sortable: true, value: (w) => w.user?.name || '', render: (w) => <EmployeeCell name={w.user?.name} email={w.user?.email} managerNames={(w.user as any).managerNames} /> },
+    { key: 'week', header: 'Week', width: '15%', sortable: true, value: (w) => w.isoYear * 100 + w.isoWeek, render: (w) => <Typography sx={{ fontSize: '0.85rem' }}>{weekLabel(w.isoYear, w.isoWeek)}</Typography> },
+    { key: 'hours', header: 'Hours', width: '8%', sortable: true, value: (w) => w.totalMinutes, render: (w) => <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.totalMinutes)}</Typography> },
+    { key: 'billable', header: 'Billable', width: '8%', sortable: true, value: (w) => w.billableMinutes, render: (w) => <Typography sx={{ fontSize: '0.85rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.billableMinutes)}</Typography> },
+    { key: 'projects', header: 'Projects', width: '20%', render: (w) => <ProjectChips projects={w.projects || []} /> },
     { key: 'reviewedBy', header: 'Reviewer', width: '12%', render: (w) => w.reviewedBy?.name || '—' },
-    {
-      key: 'reviewedAt', header: 'Reviewed', width: '11%', sortable: true, value: (w) => w.reviewedAt || '',
-      render: (w) => formatDate(w.reviewedAt),
-    },
-  ];
+    { key: 'reviewedAt', header: 'Reviewed', width: '11%', sortable: true, value: (w) => w.reviewedAt || '', render: (w) => formatDate(w.reviewedAt) },
+  ], []);
 
   const pendingActions = (w: PendingWeekRow) => (
     <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
@@ -314,16 +343,38 @@ const ApprovalsPage = () => {
       )}
 
       {tab === 'pending' && (
-        <DataTablePro
-          rows={pending.items}
-          columns={pendingColumns}
-          getId={(w) => w.id}
-          loading={pendingLoading}
-          emptyText="No timesheets waiting for review"
-          onRowClick={(w) => openDrawer(w.id)}
-          rowActions={pendingActions}
-          minWidth={960}
-        />
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <TextField 
+              size="small" 
+              placeholder="Search employee..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ width: 250 }}
+            />
+          </Box>
+          <DataTablePro
+            rows={filteredPending}
+            columns={pendingColumns}
+            getId={(w) => w.id}
+            loading={pendingLoading}
+            emptyText="No timesheets waiting for review"
+            selectable
+            bulkActions={(selectedIds, clearSelection) => (
+              <>
+                <Button size="small" color="success" variant="outlined" startIcon={<ApproveIcon fontSize="small" />} onClick={() => handleBulkApprove(selectedIds, clearSelection)}>
+                  Approve
+                </Button>
+                <Button size="small" color="error" variant="outlined" startIcon={<RejectIcon fontSize="small" />} onClick={() => handleBulkReject(selectedIds, clearSelection)}>
+                  Reject
+                </Button>
+              </>
+            )}
+            onRowClick={(w) => openDrawer(w.id)}
+            rowActions={pendingActions}
+            minWidth={960}
+          />
+        </Box>
       )}
 
       {tab === 'reviewed' && (
