@@ -91,7 +91,10 @@ export const getTeamLeaveRequests: RequestHandler = async (req, res, next) => {
   try {
     const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!currentUser) { error(res, 'User not found', 404); return; }
-    const isAdmin = currentUser.role === 'ADMIN' || currentUser.jobRoles.includes('Admin');
+    const isAdmin = 
+      currentUser.role === 'ADMIN' || 
+      currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
+      (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
 
     if (!isAdmin && !currentUser?.employeeId) {
       success(res, []);
