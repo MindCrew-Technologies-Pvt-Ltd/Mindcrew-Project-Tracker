@@ -231,8 +231,8 @@ const EmployeeView = () => {
   );
 };
 
-// ---- Manager / Admin View ----
 const ManagerAdminView = () => {
+  const { user } = useAppSelector((s) => s.auth);
   const [records, setRecords] = useState<DailyAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
@@ -363,12 +363,14 @@ const ManagerAdminView = () => {
                     </Stack>
                     <Box mb={1.5} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <StatusChip status={record.status} />
-                      <IconButton size="small" onClick={(e) => {
-                        setAnchorEl(e.currentTarget);
-                        setEditRecord(record);
-                      }}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                      {(user?.id === record.userId || user?.role === 'ADMIN') && (
+                        <IconButton size="small" onClick={(e) => {
+                          setAnchorEl(e.currentTarget);
+                          setEditRecord(record);
+                        }}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Box>
                     {record.note ? (
                       <Tooltip title={record.note} placement="bottom">

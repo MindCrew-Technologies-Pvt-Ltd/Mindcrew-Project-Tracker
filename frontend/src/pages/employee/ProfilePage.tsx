@@ -71,7 +71,7 @@ const ProfilePage = () => {
   const { register, handleSubmit, reset, control } = useForm<FormData>();
 
   useEffect(() => {
-    usersService.getManagers().then(res => setManagers(res.data.data)).catch(console.error);
+    usersService.getManagers().then(res => setManagers(res.data.data.filter((m: any) => m.id !== user?.id))).catch(console.error);
 
     if ('PushManager' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
       checkPushSubscription().then((hasSub) => {

@@ -116,7 +116,6 @@ export default function LeaveManagementPage() {
       return;
     }
     if (!formData.notifyManagerIds || formData.notifyManagerIds.length === 0) {
-      alert('Please select at least one manager to notify. This is mandatory for leave/WFH requests.');
       setManagerError(true);
       return;
     }
@@ -499,14 +498,14 @@ export default function LeaveManagementPage() {
                 {myManagers.map((mgr) => (
                   <MenuItem key={mgr.id} value={mgr.employeeId}>
                     <Checkbox checked={formData.notifyManagerIds.indexOf(mgr.employeeId) > -1} />
-                    <ListItemText primary={mgr.name} />
+                    <ListItemText primary={mgr.name} secondary={mgr.employeeId} />
                   </MenuItem>
                 ))}
                 {myManagers.length === 0 && (
                   <MenuItem disabled>No managers assigned</MenuItem>
                 )}
               </Select>
-              {managerError && <FormHelperText error>Please select at least one manager to notify.</FormHelperText>}
+              {managerError && <FormHelperText error>Mandatory field, please fill</FormHelperText>}
             </FormControl>
           </Box>
         </DialogContent>
