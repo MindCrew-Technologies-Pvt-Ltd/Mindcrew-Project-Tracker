@@ -123,7 +123,17 @@ export const createTimeEntry: RequestHandler = async (req, res, next) => {
     }
     // await assertManualEntryAllowed(req.user!);
     await assertDateEditable(day, req.user!);
-    await assertWeekUnlocked(req.user!.id, isoYear, isoWeek);
+    // If the week is locked (SUBMITTED/APPROVED), auto-reopen it to DRAFT so the entry can be added
+    const existingWeek = await prisma.timesheetWeek.findUnique({
+      where: { userId_isoYear_isoWeek: { userId: req.user!.id, isoYear, isoWeek } },
+      select: { id: true, status: true },
+    });
+    if (existingWeek && (existingWeek.status === 'SUBMITTED' || existingWeek.status === 'APPROVED')) {
+      await prisma.timesheetWeek.update({
+        where: { id: existingWeek.id },
+        data: { status: 'DRAFT', submittedAt: null },
+      });
+    }
     await assertDayCapacity(req.user!.id, day, totalMinutes, undefined, req.user!);
     const entry = await prisma.timeEntry.create({
       data: {
