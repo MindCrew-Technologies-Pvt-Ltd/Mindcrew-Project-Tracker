@@ -100,7 +100,8 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
     
     const isAdmin = 
       currentUser.role === 'ADMIN' || 
-      currentUser.jobRoles.some(r => ['ADMIN', 'HR'].includes(r.toUpperCase()));
+      currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
+      (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
     
     let userFilter: Record<string, unknown> = {};
     if (!isAdmin) {
@@ -349,7 +350,8 @@ export const missingWeek: RequestHandler = async (req, res, next) => {
 
     const isAdmin = 
       currentUser.role === 'ADMIN' || 
-      currentUser.jobRoles.some(r => ['ADMIN', 'HR'].includes(r.toUpperCase()));
+      currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
+      (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
 
     let candidateIds: string[] | null = null;
     if (!isAdmin) {
