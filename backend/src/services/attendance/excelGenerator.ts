@@ -8,7 +8,7 @@ import { EmployeeAttendance } from './pdfParser';
 export interface ApprovedLeave {
   employeeId: string; // The numeric part
   date: Date;
-  type: string; // 'WFH'
+  type: string; // 'WFH', 'COMP_OFF', 'FULL_DAY', 'HALF_DAY', 'SHORT_LEAVE'
 }
 
 // Color definitions matching the Python original
@@ -18,6 +18,8 @@ const COLORS = {
   SL: 'FFFF00',          // Yellow
   HD: '92D050',          // Light Green
   WFH: 'CCC0DA',         // Light Purple
+  LWP: 'FF0000',         // Red (same as Absent, or we could use another color like 'FF6666')
+  COMP_OFF: '8EA9DB',    // Blue-grey
   HEADER: 'FCE4D6',      // Light Peach
   NAME_COL: 'F8CBAD',    // Darker Peach
   // Leaves sheet colors
@@ -44,6 +46,8 @@ export const STATUS_FILLS: Record<string, ExcelJS.FillPattern> = {
   SL: fill(COLORS.SL),
   HD: fill(COLORS.HD),
   WFH: fill(COLORS.WFH),
+  LWP: fill(COLORS.LWP),
+  'Comp Off': fill(COLORS.COMP_OFF),
 };
 
 /**
@@ -54,7 +58,9 @@ export async function generateExcel(
   attendanceData: EmployeeAttendance[],
   datesList: Date[],
   existingData?: Buffer | null,
-  wfhLeaves: ApprovedLeave[] = []
+  allLeaves: ApprovedLeave[] = [],
+  dailyLoggedMinutes: Record<string, Record<string, number>> = {},
+  holidayDates: Set<string> = new Set()
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
 
@@ -131,17 +137,35 @@ export async function generateExcel(
       const currentDate = datesList[i];
       let status = emp.attendance[dayNum]?.final_status || '';
 
-      // Check for approved WFH
       const empNumId = (emp.emp_id.match(/\d+/) || [''])[0];
-      const hasWfh = wfhLeaves.some(l => 
+      const currentDateStr = currentDate.toISOString().split('T')[0];
+
+      // Check if they have an approved leave for this date
+      const leaveForDay = allLeaves.find(l => 
         l.employeeId === empNumId && 
         l.date.getDate() === currentDate.getDate() &&
         l.date.getMonth() === currentDate.getMonth() &&
         l.date.getFullYear() === currentDate.getFullYear()
       );
 
-      if (hasWfh) {
-        status = 'WFH';
+      if (leaveForDay) {
+        if (leaveForDay.type === 'WFH') status = 'WFH';
+        else if (leaveForDay.type === 'COMP_OFF') status = 'Comp Off';
+        else if (leaveForDay.type === 'FULL_DAY') status = 'A'; // Or use SL/CL based on specific logic, but defaulting to A for full absent leave
+        else if (leaveForDay.type === 'HALF_DAY') status = 'HD';
+        else if (leaveForDay.type === 'SHORT_LEAVE') status = 'SL';
+      } else {
+        // No approved leave found.
+        // Check if it's a regular weekday (Monday-Friday)
+        const isWeekday = currentDate.getDay() !== 0 && currentDate.getDay() !== 6;
+        const isHoliday = holidayDates.has(currentDateStr);
+        
+        if (isWeekday && !isHoliday) {
+          const loggedMinutes = dailyLoggedMinutes[empNumId]?.[currentDateStr] || 0;
+          if (loggedMinutes === 0) {
+            status = 'LWP';
+          }
+        }
       }
 
       const cell = ws.getCell(currentRow, col);

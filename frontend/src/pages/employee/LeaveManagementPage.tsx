@@ -44,6 +44,7 @@ const getTypeColor = (type: LeaveType) => {
     case 'HALF_DAY': return '#ffeb3b'; // Yellow
     case 'WFH': return '#4caf50'; // Green
     case 'COMP_OFF': return '#9c27b0'; // Purple
+    case 'SHORT_LEAVE': return '#ff9800'; // Orange
     default: return '#ccc';
   }
 };
@@ -369,9 +370,10 @@ export default function LeaveManagementPage() {
                   </Grid>
                 ))}
               </Grid>
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-around', fontSize: '0.8rem' }}>
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-around', fontSize: '0.8rem', flexWrap: 'wrap', gap: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('FULL_DAY'), borderRadius: '50%', width: 12, height: 12 }}/> Leave</Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('HALF_DAY'), borderRadius: '50%', width: 12, height: 12 }}/> Half Day</Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('SHORT_LEAVE'), borderRadius: '50%', width: 12, height: 12 }}/> Short Leave</Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('WFH'), borderRadius: '50%', width: 12, height: 12 }}/> WFH</Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('COMP_OFF'), borderRadius: '50%', width: 12, height: 12 }}/> Comp</Box>
               </Box>
@@ -531,6 +533,7 @@ export default function LeaveManagementPage() {
               >
                 <MenuItem value="FULL_DAY">Full Day Leave</MenuItem>
                 <MenuItem value="HALF_DAY">Half Day Leave</MenuItem>
+                <MenuItem value="SHORT_LEAVE">Short Leave</MenuItem>
                 <MenuItem value="WFH">Work From Home</MenuItem>
                 <MenuItem value="COMP_OFF">Comp-Off</MenuItem>
               </Select>

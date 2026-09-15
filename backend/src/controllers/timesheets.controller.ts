@@ -100,44 +100,11 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
     
     const isAdmin = 
       currentUser.role === 'ADMIN' || 
-      currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
-      (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
+      currentUser.jobRoles.some(r => ['ADMIN', 'MANAGER', 'HR'].includes(r.toUpperCase()));
     
     let userFilter: Record<string, unknown> = {};
     if (!isAdmin) {
-      const myProjects = await ownedProjectIds(req.user!.id);
-      
-      const authors = myProjects.length > 0 ? await prisma.timeEntry.findMany({
-        where: { projectId: { in: myProjects } },
-        select: { userId: true },
-        distinct: ['userId'],
-      }) : [];
-      const projectAuthors = authors.map((a) => a.userId).filter((id) => id !== req.user!.id);
-
-      const empId = currentUser.employeeId;
-      const empIdNum = empId?.replace('MCT-', '');
-      const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
-
-      const directReports = empId ? await prisma.user.findMany({
-        where: {
-          OR: [
-            { managerEmployeeIds: { has: empId } },
-            ...(empIdNum ? [{ managerEmployeeIds: { has: empIdNum } }] : []),
-            ...(empIdFull ? [{ managerEmployeeIds: { has: empIdFull } }] : [])
-          ]
-        },
-        select: { id: true }
-      }) : [];
-      const reportIds = directReports.map(u => u.id).filter(id => id !== req.user!.id);
-
-      const allowedUserIds = Array.from(new Set([...projectAuthors, ...reportIds]));
-      
-      if (allowedUserIds.length === 0) {
-        paginated(res, [], 0, page, pageSize);
-        return;
-      }
-      
-      userFilter = { userId: { in: allowedUserIds } };
+      userFilter = { userId: req.user!.id };
     }
     const where = { status, ...userFilter };
     const [items, total] = await Promise.all([

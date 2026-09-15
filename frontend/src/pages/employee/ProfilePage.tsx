@@ -362,10 +362,19 @@ const ProfilePage = () => {
                           onChange={(_, newValue) => field.onChange(newValue.map(v => String(v.employeeId)))}
                           renderOption={(props, option, { selected }) => {
                             const { key, ...rest } = props as any;
+                            const isDisabled = !option.employeeId;
                             return (
-                              <li key={key} {...rest}>
-                                <Checkbox icon={icon} checkedIcon={checkedIcon} style={{ marginRight: 8 }} checked={selected} />
-                                {option.name}
+                              <li 
+                                key={key} 
+                                {...rest} 
+                                style={{ 
+                                  ...rest.style, 
+                                  opacity: isDisabled ? 0.5 : 1, 
+                                  pointerEvents: isDisabled ? 'none' : 'auto' 
+                                }}
+                              >
+                                <Checkbox icon={icon} checkedIcon={checkedIcon} style={{ marginRight: 8 }} checked={selected} disabled={isDisabled} />
+                                {option.name} {isDisabled && <Typography variant="caption" color="error" sx={{ ml: 1 }}>(Missing Employee ID)</Typography>}
                               </li>
                             );
                           }}

@@ -35,12 +35,11 @@ export const uploadPdf: RequestHandler = async (req, res, next) => {
     // Parse PDF
     const { attendanceData, datesList } = await parsePdfReport(file.buffer);
 
-    // Fetch approved WFH leaves for the month
+    // Fetch ALL approved leaves for the month
     const startOfMonth = datesList[0];
     const endOfMonth = datesList[datesList.length - 1];
-    const wfhRequests = await prisma.leaveRequest.findMany({
+    const leaveRequests = await prisma.leaveRequest.findMany({
       where: {
-        type: 'WFH',
         status: 'APPROVED',
         startDate: { lte: endOfMonth },
         endDate: { gte: startOfMonth }
@@ -48,7 +47,7 @@ export const uploadPdf: RequestHandler = async (req, res, next) => {
       include: { user: true }
     });
 
-    const wfhLeaves = wfhRequests.flatMap(req => {
+    const allLeaves = leaveRequests.flatMap(req => {
       const leaves = [];
       const empNumId = (req.user.employeeId?.match(/\d+/) || [''])[0];
       if (!empNumId) return [];
@@ -59,16 +58,39 @@ export const uploadPdf: RequestHandler = async (req, res, next) => {
         leaves.push({
           employeeId: empNumId,
           date: new Date(curr),
-          type: 'WFH'
+          type: req.type
         });
         curr.setDate(curr.getDate() + 1);
       }
       return leaves;
     });
 
+    // Fetch time entries to check for LWP (0 hours logged)
+    const timeEntries = await prisma.timeEntry.findMany({
+      where: { date: { gte: startOfMonth, lte: endOfMonth } },
+      select: { date: true, minutes: true, user: { select: { employeeId: true } } }
+    });
+
+    // Build a map: employeeId -> { "YYYY-MM-DD": totalMinutes }
+    const dailyLoggedMinutes: Record<string, Record<string, number>> = {};
+    timeEntries.forEach(entry => {
+      const empNumId = (entry.user.employeeId?.match(/\d+/) || [''])[0];
+      if (!empNumId) return;
+      if (!dailyLoggedMinutes[empNumId]) dailyLoggedMinutes[empNumId] = {};
+      
+      const dateStr = entry.date.toISOString().split('T')[0];
+      dailyLoggedMinutes[empNumId][dateStr] = (dailyLoggedMinutes[empNumId][dateStr] || 0) + entry.minutes;
+    });
+
+    // Fetch holidays
+    const holidays = await prisma.holiday.findMany({
+      where: { date: { gte: startOfMonth, lte: endOfMonth } }
+    });
+    const holidayDates = new Set(holidays.map(h => h.date.toISOString().split('T')[0]));
+
     // Load existing master (if any) and generate updated workbook
     const existingMaster = readMaster();
-    const excelBuffer = await generateExcel(attendanceData, datesList, existingMaster, wfhLeaves);
+    const excelBuffer = await generateExcel(attendanceData, datesList, existingMaster, allLeaves, dailyLoggedMinutes, holidayDates);
 
     // Save updated master
     writeMaster(excelBuffer);
