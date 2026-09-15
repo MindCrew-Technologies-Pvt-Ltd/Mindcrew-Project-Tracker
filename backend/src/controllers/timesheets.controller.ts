@@ -104,15 +104,6 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
     
     let userFilter: Record<string, unknown> = {};
     if (!isAdmin) {
-      const myProjects = await ownedProjectIds(req.user!.id);
-      
-      const authors = myProjects.length > 0 ? await prisma.timeEntry.findMany({
-        where: { projectId: { in: myProjects } },
-        select: { userId: true },
-        distinct: ['userId'],
-      }) : [];
-      const projectAuthors = authors.map((a) => a.userId).filter((id) => id !== req.user!.id);
-
       const empId = currentUser.employeeId;
       const empIdNum = empId?.replace('MCT-', '');
       const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
@@ -129,8 +120,8 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
       }) : [];
       const reportIds = directReports.map(u => u.id).filter(id => id !== req.user!.id);
 
-      // They can see their own timesheets, plus timesheets of project members and direct reports.
-      const allowedUserIds = Array.from(new Set([req.user!.id, ...projectAuthors, ...reportIds]));
+      // They can see their own timesheets and timesheets of direct reports.
+      const allowedUserIds = Array.from(new Set([req.user!.id, ...reportIds]));
       
       userFilter = { userId: { in: allowedUserIds } };
     }
@@ -362,11 +353,6 @@ export const missingWeek: RequestHandler = async (req, res, next) => {
 
     let candidateIds: string[] | null = null;
     if (!isAdmin) {
-      const myProjects = await ownedProjectIds(req.user!.id);
-      const projectMemberIds = myProjects.length > 0 
-        ? (await prisma.projectMember.findMany({ where: { projectId: { in: myProjects } }, select: { userId: true } })).map(m => m.userId)
-        : [];
-
       const empId = currentUser.employeeId;
       const empIdNum = empId?.replace('MCT-', '');
       const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
@@ -383,7 +369,7 @@ export const missingWeek: RequestHandler = async (req, res, next) => {
       }) : [];
       const reportIds = directReports.map(u => u.id);
 
-      candidateIds = [...new Set([...projectMemberIds, ...reportIds])].filter((id) => id !== req.user!.id);
+      candidateIds = [...new Set(reportIds)].filter((id) => id !== req.user!.id);
       if (candidateIds.length === 0) { success(res, []); return; }
     }
     const users = await prisma.user.findMany({
