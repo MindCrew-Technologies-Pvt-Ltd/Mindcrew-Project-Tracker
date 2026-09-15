@@ -100,11 +100,39 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
     
     const isAdmin = 
       currentUser.role === 'ADMIN' || 
-      currentUser.jobRoles.some(r => ['ADMIN', 'MANAGER', 'HR'].includes(r.toUpperCase()));
+      currentUser.jobRoles.some(r => ['ADMIN', 'HR'].includes(r.toUpperCase()));
     
     let userFilter: Record<string, unknown> = {};
     if (!isAdmin) {
-      userFilter = { userId: req.user!.id };
+      const myProjects = await ownedProjectIds(req.user!.id);
+      
+      const authors = myProjects.length > 0 ? await prisma.timeEntry.findMany({
+        where: { projectId: { in: myProjects } },
+        select: { userId: true },
+        distinct: ['userId'],
+      }) : [];
+      const projectAuthors = authors.map((a) => a.userId).filter((id) => id !== req.user!.id);
+
+      const empId = currentUser.employeeId;
+      const empIdNum = empId?.replace('MCT-', '');
+      const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
+
+      const directReports = empId ? await prisma.user.findMany({
+        where: {
+          OR: [
+            { managerEmployeeIds: { has: empId } },
+            ...(empIdNum ? [{ managerEmployeeIds: { has: empIdNum } }] : []),
+            ...(empIdFull ? [{ managerEmployeeIds: { has: empIdFull } }] : [])
+          ]
+        },
+        select: { id: true }
+      }) : [];
+      const reportIds = directReports.map(u => u.id).filter(id => id !== req.user!.id);
+
+      // They can see their own timesheets, plus timesheets of project members and direct reports.
+      const allowedUserIds = Array.from(new Set([req.user!.id, ...projectAuthors, ...reportIds]));
+      
+      userFilter = { userId: { in: allowedUserIds } };
     }
     const where = { status, ...userFilter };
     const [items, total] = await Promise.all([
@@ -330,15 +358,32 @@ export const missingWeek: RequestHandler = async (req, res, next) => {
 
     const isAdmin = 
       currentUser.role === 'ADMIN' || 
-      currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
-      (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
+      currentUser.jobRoles.some(r => ['ADMIN', 'HR'].includes(r.toUpperCase()));
 
     let candidateIds: string[] | null = null;
     if (!isAdmin) {
       const myProjects = await ownedProjectIds(req.user!.id);
-      if (myProjects.length === 0) { success(res, []); return; }
-      const members = await prisma.projectMember.findMany({ where: { projectId: { in: myProjects } }, select: { userId: true } });
-      candidateIds = [...new Set(members.map((m) => m.userId))].filter((id) => id !== req.user!.id);
+      const projectMemberIds = myProjects.length > 0 
+        ? (await prisma.projectMember.findMany({ where: { projectId: { in: myProjects } }, select: { userId: true } })).map(m => m.userId)
+        : [];
+
+      const empId = currentUser.employeeId;
+      const empIdNum = empId?.replace('MCT-', '');
+      const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
+
+      const directReports = empId ? await prisma.user.findMany({
+        where: {
+          OR: [
+            { managerEmployeeIds: { has: empId } },
+            ...(empIdNum ? [{ managerEmployeeIds: { has: empIdNum } }] : []),
+            ...(empIdFull ? [{ managerEmployeeIds: { has: empIdFull } }] : [])
+          ]
+        },
+        select: { id: true }
+      }) : [];
+      const reportIds = directReports.map(u => u.id);
+
+      candidateIds = [...new Set([...projectMemberIds, ...reportIds])].filter((id) => id !== req.user!.id);
       if (candidateIds.length === 0) { success(res, []); return; }
     }
     const users = await prisma.user.findMany({
