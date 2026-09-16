@@ -11,35 +11,35 @@ type AuthUser = { id: string; email: string; role?: string };
 
 /** All projects, the user's own (owned or member) first — for agent pickers. */
 export async function listProjectsForUser(user: AuthUser) {
-  const [mine, all] = await Promise.all([
-    prisma.project.findMany({
-      where: { OR: [{ ownerId: user.id }, { teamMembers: { some: { userId: user.id } } }] },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.project.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' }, take: 300 }),
-  ]);
-  const mineIds = new Set(mine.map((p) => p.id));
-  return [...mine.map((p) => ({ ...p, mine: true })), ...all.filter((p) => !mineIds.has(p.id)).map((p) => ({ ...p, mine: false }))];
+  const mine = await prisma.project.findMany({
+    where: { OR: [{ ownerId: user.id }, { teamMembers: { some: { userId: user.id } } }] },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+  return mine.map((p) => ({ ...p, mine: true }));
 }
 
-/** Resolve a project by id, exact name, then case-insensitive contains. */
-export async function resolveProject(ref: string) {
-  const byId = await prisma.project.findUnique({ where: { id: ref }, select: { id: true, name: true } }).catch(() => null);
-  if (byId) return byId;
+/** Resolve a project by id, exact name, then case-insensitive contains, restricted to user's projects. */
+export async function resolveProject(ref: string, user: AuthUser) {
+  const whereAccess = { OR: [{ ownerId: user.id }, { teamMembers: { some: { userId: user.id } } }] };
+  const byId = await prisma.project.findUnique({ where: { id: ref }, select: { id: true, name: true, ownerId: true } }).catch(() => null);
+  if (byId) {
+    const isMember = await prisma.project.findFirst({ where: { id: ref, ...whereAccess } });
+    if (isMember) return isMember;
+  }
   const exact = await prisma.project.findFirst({
-    where: { name: { equals: ref, mode: 'insensitive' } }, select: { id: true, name: true },
+    where: { name: { equals: ref, mode: 'insensitive' }, ...whereAccess }, select: { id: true, name: true },
   });
   if (exact) return exact;
   const matches = await prisma.project.findMany({
-    where: { name: { contains: ref, mode: 'insensitive' } }, select: { id: true, name: true }, take: 5,
+    where: { name: { contains: ref, mode: 'insensitive' }, ...whereAccess }, select: { id: true, name: true }, take: 5,
   });
   if (matches.length === 1) return matches[0];
   if (matches.length > 1) {
     throw new AppError(`Project "${ref}" is ambiguous — did you mean: ${matches.map((m) => m.name).join(', ')}?`, 404);
   }
-  const sample = await prisma.project.findMany({ select: { name: true }, take: 8, orderBy: { updatedAt: 'desc' } });
-  throw new AppError(`No project matches "${ref}". Recent projects: ${sample.map((s) => s.name).join(', ')}`, 404);
+  const sample = await prisma.project.findMany({ where: whereAccess, select: { name: true }, take: 8, orderBy: { updatedAt: 'desc' } });
+  throw new AppError(`No project matches "${ref}" in your assigned projects. Recent projects: ${sample.map((s) => s.name).join(', ')}`, 404);
 }
 
 /** Create a same-day AI work-log entry. Shared by REST and the MCP tool. */
@@ -50,7 +50,7 @@ export async function logWorkForUser(
   const totalMinutes = input.hours * 60 + input.minutes;
   if (totalMinutes < 1) throw new AppError('Entry must be at least 1 minute', 400);
   if (totalMinutes > 24 * 60) throw new AppError('Entry cannot exceed 24 hours', 400);
-  const project = await resolveProject(input.project);
+  const project = await resolveProject(input.project, user);
   const today = todayInOrgTz(await orgTimezone());
   const { isoYear, isoWeek } = isoWeekOf(today);
   await assertDateEditable(today, user); // trivially true, but keeps one rule-source
