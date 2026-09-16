@@ -24,7 +24,7 @@ const StatCard = ({ label, value, sub }: { label: string; value: string; sub?: s
 );
 
 const ProjectTimesheetTab = ({ project }: Props) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [data, setData] = useState<ProjectTimePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,8 +42,8 @@ const ProjectTimesheetTab = ({ project }: Props) => {
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!data) return null;
 
-  const isAdminOrManager = user?.role === 'ADMIN' || user?.jobRoles?.includes('Admin') || user?.jobRoles?.includes('Manager') || project.ownerId === user?.id;
-  const isLearningProject = project.name.toLowerCase() === 'learning';
+  const isAdminOrManager = isAdmin || !!user?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER') || project.ownerId === user?.id;
+  const isLearningProject = project.name.trim().toLowerCase() === 'learning';
   const showDropdown = isAdminOrManager;
 
   const uniqueUsers = Array.from(new Map(data.entries.map((e) => [e.user?.id, e.user])).values()).filter(Boolean);

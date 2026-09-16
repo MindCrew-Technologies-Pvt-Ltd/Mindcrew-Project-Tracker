@@ -85,10 +85,10 @@ export const getProjectTimeEntries: RequestHandler = async (req, res, next) => {
     });
     if (!project) return next(new AppError('Project not found', 404));
 
-    const isAdminOrManager = req.user!.role === 'ADMIN' || req.user!.jobRoles?.includes('Admin') || req.user!.jobRoles?.includes('Manager');
+    const isAdminOrManager = req.user!.role === 'ADMIN' || !!req.user!.jobRoles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'MANAGER');
     const isOwner = project.ownerId === req.user!.id;
     const isTeamMember = project.teamMembers.some((m) => m.userId === req.user!.id);
-    const isLearningProject = project.name.toLowerCase() === 'learning';
+    const isLearningProject = project.name.trim().toLowerCase() === 'learning';
 
     let canSeeAll = false;
     if (isAdminOrManager || isOwner) {
