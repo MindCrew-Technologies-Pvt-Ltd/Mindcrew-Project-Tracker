@@ -1,5 +1,5 @@
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, Typography, Divider, Tooltip, IconButton } from '@mui/material';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import BrandMark from '../common/BrandMark';
 import DashboardIcon from '@mui/icons-material/esm/Dashboard';
 import FolderIcon from '@mui/icons-material/esm/Folder';
@@ -128,9 +128,8 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
 
     const btn = (
       <ListItemButton
-        component={NavLink}
+        component={Link}
         to={item.to}
-        end={item.end}
         onClick={onClose}
         sx={navItemSx(collapsed)}
         className={isActive ? 'active' : ''}
