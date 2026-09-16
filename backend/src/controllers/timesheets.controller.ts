@@ -298,6 +298,11 @@ export const reviewWeek: RequestHandler = async (req, res, next) => {
   try {
     const { userId, isoYear, isoWeek, action, note } = req.body as
       { userId: string; isoYear: number; isoWeek: number; action: 'approve' | 'reject'; note?: string };
+    
+    if (userId === req.user!.id) {
+      return next(new AppError('You cannot review your own timesheet', 403));
+    }
+
     const target = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true } });
     if (!target) return next(new AppError('User not found', 404));
     const entries = await prisma.timeEntry.findMany({ where: { userId, isoYear, isoWeek } });

@@ -12,6 +12,7 @@ import PageHeader from '../../components/common/PageHeader';
 import timesheetService from '../../services/timesheetService';
 import { DailyTimesheets, TimesheetStatus } from '../../types/timesheet.types';
 import { minutesToHM, minutesToPretty, dateKey } from '../../utils/timeFormat';
+import { useAuth } from '../../hooks/useAuth';
 
 const INDIGO = '#4F46E5';
 
@@ -24,6 +25,7 @@ const statusStyles: Record<TimesheetStatus, { bg: string; fg: string; label: str
 
 /** Admin daily review: everyone's entries for one day, approve/reject the week. */
 const DailyTimesheetsPage = () => {
+  const { user } = useAuth();
   const [selected, setSelected] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [data, setData] = useState<DailyTimesheets | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +121,7 @@ const DailyTimesheetsPage = () => {
                   <Typography sx={{ fontWeight: 800, color: INDIGO, fontVariantNumeric: 'tabular-nums', mr: 1 }}>{minutesToHM(row.totalMinutes)}</Typography>
                   <Button
                     size="small" variant="outlined" color="success" startIcon={<ApproveIcon />}
-                    disabled={busy === row.user.id || status === 'APPROVED'}
+                    disabled={busy === row.user.id || status === 'APPROVED' || row.user.id === user?.id}
                     onClick={() => review(row.user.id, 'approve')}
                     sx={{ textTransform: 'none' }}
                   >
@@ -127,7 +129,7 @@ const DailyTimesheetsPage = () => {
                   </Button>
                   <Button
                     size="small" variant="outlined" color="error" startIcon={<RejectIcon />}
-                    disabled={busy === row.user.id || status === 'REJECTED'}
+                    disabled={busy === row.user.id || status === 'REJECTED' || row.user.id === user?.id}
                     onClick={() => { setRejectNote(''); setRejectDialog({ userId: row.user.id, name: row.user.name }); }}
                     sx={{ textTransform: 'none' }}
                   >

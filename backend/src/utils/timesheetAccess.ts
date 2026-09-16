@@ -141,11 +141,12 @@ export async function assertWeekReviewer(
   week: { userId: string; isoYear: number; isoWeek: number },
   user: AuthUser,
 ): Promise<void> {
+  if (week.userId === user.id) throw new AppError('You cannot review your own timesheet', 403);
+
   const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
   const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.includes('Admin');
   
   if (isAdmin) return;
-  if (week.userId === user.id) throw new AppError('You cannot review your own timesheet', 403);
   
   // Check if current user is reporting manager
   const targetUser = await prisma.user.findUnique({ where: { id: week.userId }, select: { managerEmployeeIds: true } });
