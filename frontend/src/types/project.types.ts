@@ -52,6 +52,7 @@ export interface CreateProjectPayload {
   liveUrls?: string[];
   videoUrls?: string[];
   teamMemberIds?: string[];
+  ownerId?: string;
 }
 
 export interface ProjectFilters {

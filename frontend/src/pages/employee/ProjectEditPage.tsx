@@ -13,7 +13,9 @@ import ImageIcon from '@mui/icons-material/esm/ImageOutlined';
 import ExistingImageIcon from '@mui/icons-material/esm/InsertPhoto';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAuth } from '../../hooks/useAuth';
 import { fetchProjectByIdThunk, updateProjectThunk } from '../../store/slices/projectsSlice';
+import projectsService from '../../services/projectsService';
 import documentsService from '../../services/documentsService';
 import { ProjectDocument } from '../../types/document.types';
 import { projectSchema } from '../../utils/validators';
@@ -28,6 +30,15 @@ const ProjectEditPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { currentProject: project, loading, error } = useAppSelector((s) => s.projects);
+  const { user, isAdmin } = useAuth();
+  const isAdminOrManager = isAdmin || !!user?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER');
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (isAdminOrManager) {
+      projectsService.getAssignableUsers().then(r => setUsers(r.data?.data || [])).catch(() => {});
+    }
+  }, [isAdminOrManager]);
 
   // Same editing model as the Create page: URL lists and the Ongoing flag live
   // in local state, everything else in react-hook-form.
@@ -90,6 +101,7 @@ const ProjectEditPage = () => {
         priority: project.priority,
         technologies: project.technologies,
         tags: project.tags,
+        ownerId: project.ownerId || '',
       });
       setRepoUrls(project.repositoryUrls?.length ? project.repositoryUrls : ['']);
       setLiveUrls(project.liveUrls?.length ? project.liveUrls : ['']);
@@ -307,6 +319,17 @@ const ProjectEditPage = () => {
                       />
                     )} />
                   </Grid>
+                  {isAdminOrManager && (
+                    <Grid item xs={12}>
+                      <FormControl fullWidth><InputLabel>Project Owner</InputLabel>
+                        <Controller name="ownerId" control={control} render={({ field }) => (
+                          <Select value={field.value || ''} onChange={field.onChange} onBlur={field.onBlur} label="Project Owner">
+                            {users.map(u => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
+                          </Select>
+                        )} />
+                      </FormControl>
+                    </Grid>
+                  )}
                   <Grid item xs={12}>
                     <Controller name="tags" control={control} render={({ field }) => (
                       <Autocomplete
