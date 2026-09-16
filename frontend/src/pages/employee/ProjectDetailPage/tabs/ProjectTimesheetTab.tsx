@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Box, Card, CardContent, Typography, Chip, CircularProgress, Alert, Avatar } from '@mui/material';
+import { Box, Card, CardContent, Typography, Chip, CircularProgress, Alert, Avatar, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import dayjs from 'dayjs';
 import { Project } from '../../../../types/project.types';
 import { ProjectTimePayload, TimeEntry } from '../../../../types/timesheet.types';
 import timesheetService from '../../../../services/timesheetService';
 import { minutesToHM, minutesToPretty, dateKey } from '../../../../utils/timeFormat';
+import { useAuth } from '../../../../hooks/useAuth';
 
 const INDIGO = '#4F46E5';
 
@@ -23,9 +24,11 @@ const StatCard = ({ label, value, sub }: { label: string; value: string; sub?: s
 );
 
 const ProjectTimesheetTab = ({ project }: Props) => {
+  const { user } = useAuth();
   const [data, setData] = useState<ProjectTimePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
 
   useEffect(() => {
     setLoading(true);
@@ -39,27 +42,55 @@ const ProjectTimesheetTab = ({ project }: Props) => {
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!data) return null;
 
+  const isAdminOrManager = user?.role === 'ADMIN' || user?.jobRoles?.includes('Admin') || user?.jobRoles?.includes('Manager') || project.ownerId === user?.id;
+  const isLearningProject = project.name.toLowerCase() === 'learning';
+  const showDropdown = isAdminOrManager;
+
+  const uniqueUsers = Array.from(new Map(data.entries.map((e) => [e.user?.id, e.user])).values()).filter(Boolean);
+  const filteredEntries = selectedUserId ? data.entries.filter(e => e.user?.id === selectedUserId) : data.entries;
+  
+  const totalMinutes = filteredEntries.reduce((s, e) => s + e.minutes, 0);
+  const billableMinutes = filteredEntries.filter((e) => e.billable).reduce((s, e) => s + e.minutes, 0);
+
   // Group by day, newest first (entries arrive date-desc from the API).
   const byDay = new Map<string, TimeEntry[]>();
-  for (const e of data.entries) {
+  for (const e of filteredEntries) {
     const dk = dateKey(e.date);
     (byDay.get(dk) ?? byDay.set(dk, []).get(dk)!).push(e);
   }
   const days = [...byDay.entries()];
-  const contributors = new Set(data.entries.map((e) => e.user?.id ?? '')).size;
-  const billablePct = data.totalMinutes > 0 ? Math.round((data.billableMinutes / data.totalMinutes) * 100) : 0;
+  const contributors = new Set(filteredEntries.map((e) => e.user?.id ?? '')).size;
+  const billablePct = totalMinutes > 0 ? Math.round((billableMinutes / totalMinutes) * 100) : 0;
 
   return (
     <Box>
       <Box sx={{ display: 'flex', gap: 2, mb: 2.5, flexWrap: 'wrap' }}>
-        <StatCard label="Total logged" value={minutesToPretty(data.totalMinutes)} sub={`${data.entries.length} entr${data.entries.length === 1 ? 'y' : 'ies'}`} />
-        <StatCard label="Billable" value={data.totalMinutes > 0 ? `${billablePct}%` : '–'} sub={minutesToPretty(data.billableMinutes)} />
+        <StatCard label="Total logged" value={minutesToPretty(totalMinutes)} sub={`${filteredEntries.length} entr${filteredEntries.length === 1 ? 'y' : 'ies'}`} />
+        <StatCard label="Billable" value={totalMinutes > 0 ? `${billablePct}%` : '–'} sub={minutesToPretty(billableMinutes)} />
         <StatCard label="People" value={String(contributors)} sub="logged time here" />
       </Box>
 
+      {showDropdown && uniqueUsers.length > 0 && (
+        <FormControl size="small" sx={{ mb: 2, minWidth: 250 }}>
+          <InputLabel>Filter by Team Member</InputLabel>
+          <Select
+            value={selectedUserId}
+            label="Filter by Team Member"
+            onChange={(e) => setSelectedUserId(e.target.value)}
+          >
+            <MenuItem value="">All Team Members</MenuItem>
+            {uniqueUsers.map(u => (
+              <MenuItem key={u?.id} value={u?.id}>{u?.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+
       {data.scope === 'own' && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          You're seeing only your own entries — the full project timesheet is visible to the owner, team members and admins.
+          {isLearningProject && !isAdminOrManager
+            ? "You're seeing only your own entries."
+            : "You're seeing only your own entries — the full project timesheet is visible to the owner, team members and admins."}
         </Alert>
       )}
 

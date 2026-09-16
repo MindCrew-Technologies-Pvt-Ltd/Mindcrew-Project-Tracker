@@ -81,22 +81,31 @@ export const getProjectTimeEntries: RequestHandler = async (req, res, next) => {
     const projectId = sp(req.params.projectId);
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, ownerId: true, teamMembers: { select: { userId: true } } },
+      select: { id: true, name: true, ownerId: true, teamMembers: { select: { userId: true } } },
     });
     if (!project) return next(new AppError('Project not found', 404));
-    const isContributor =
-      req.user!.role === 'ADMIN' ||
-      project.ownerId === req.user!.id ||
-      project.teamMembers.some((m) => m.userId === req.user!.id);
+
+    const isAdminOrManager = req.user!.role === 'ADMIN' || req.user!.jobRoles?.includes('Admin') || req.user!.jobRoles?.includes('Manager');
+    const isOwner = project.ownerId === req.user!.id;
+    const isTeamMember = project.teamMembers.some((m) => m.userId === req.user!.id);
+    const isLearningProject = project.name.toLowerCase() === 'learning';
+
+    let canSeeAll = false;
+    if (isAdminOrManager || isOwner) {
+       canSeeAll = true;
+    } else if (isTeamMember) {
+       canSeeAll = !isLearningProject;
+    }
+
     const entries = await prisma.timeEntry.findMany({
-      where: { projectId, ...(isContributor ? {} : { userId: req.user!.id }) },
+      where: { projectId, ...(canSeeAll ? {} : { userId: req.user!.id }) },
       orderBy: [{ date: 'desc' }, { createdAt: 'asc' }],
       take: 1000,
       include: { user: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },
     });
     const totalMinutes = entries.reduce((s, e) => s + e.minutes, 0);
     const billableMinutes = entries.filter((e) => e.billable).reduce((s, e) => s + e.minutes, 0);
-    success(res, { entries, totalMinutes, billableMinutes, scope: isContributor ? 'all' : 'own' });
+    success(res, { entries, totalMinutes, billableMinutes, scope: canSeeAll ? 'all' : 'own' });
   } catch (err) { next(err); }
 };
 

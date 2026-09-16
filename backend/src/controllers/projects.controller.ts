@@ -61,6 +61,11 @@ export const getProject: RequestHandler = async (req, res, next) => {
 export const createProject: RequestHandler = async (req, res, next) => {
   try {
     const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, teamMemberIds } = req.body;
+    
+    if (name?.toLowerCase() === 'learning') {
+      return next(new AppError('Creating a project named "Learning" is not allowed.', 400));
+    }
+
     // Guard against double-submits (and accidental copies): one owner cannot
     // have two projects with the same name.
     const duplicate = await prisma.project.findFirst({ where: { ownerId: req.user!.id, name: { equals: name, mode: 'insensitive' } }, select: { id: true } });
@@ -87,6 +92,11 @@ export const updateProject: RequestHandler = async (req, res, next) => {
       if (!approved) return next(new AppError('No permission to update this project', 403));
     }
     const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget } = req.body;
+
+    if (name?.toLowerCase() === 'learning') {
+      return next(new AppError('Renaming a project to "Learning" is not allowed.', 400));
+    }
+
     const updated = await prisma.project.update({
       where: { id },
       data: { ...(name !== undefined && { name }), ...(clientName !== undefined && { clientName }), ...(clientLocation !== undefined && { clientLocation }), ...(clientWhatsapp !== undefined && { clientWhatsapp }), ...(clientGmail !== undefined && { clientGmail }), ...(description !== undefined && { description }), ...(status !== undefined && { status }), ...(priority !== undefined && { priority }), ...(technologies !== undefined && { technologies }), ...(tags !== undefined && { tags }), ...(repositoryUrls !== undefined && { repositoryUrls }), ...(liveUrls !== undefined && { liveUrls }), ...(videoUrls !== undefined && { videoUrls }), ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }), ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }), ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }), ...(budget !== undefined && { budget }) },
