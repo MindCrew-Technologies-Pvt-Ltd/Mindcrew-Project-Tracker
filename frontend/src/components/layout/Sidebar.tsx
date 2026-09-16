@@ -1,5 +1,5 @@
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, Typography, Divider, Tooltip, IconButton } from '@mui/material';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import BrandMark from '../common/BrandMark';
 import DashboardIcon from '@mui/icons-material/esm/Dashboard';
 import FolderIcon from '@mui/icons-material/esm/Folder';
@@ -106,6 +106,26 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
   const { user, isAdmin } = useAuth();
 
   const NavItem = ({ item }: { item: { label: string; icon: React.ReactNode; to: string; end?: boolean } }) => {
+    const { pathname, state } = useLocation();
+    const isProjectDetail = pathname.match(/^\/projects\/[a-zA-Z0-9_-]+$/) || pathname.match(/^\/admin\/projects\/[a-zA-Z0-9_-]+$/);
+    
+    let isActive = false;
+    if (item.end) {
+      isActive = pathname === item.to;
+    } else {
+      isActive = pathname.startsWith(item.to);
+    }
+
+    if (isProjectDetail) {
+      if (item.to === ROUTES.MY_PROJECTS && state?.from === ROUTES.MY_PROJECTS) {
+        isActive = true;
+      } else if (item.to === ROUTES.PROJECTS && state?.from === ROUTES.PROJECTS) {
+        isActive = true;
+      } else if (item.to === ROUTES.PROJECTS && state?.from !== ROUTES.PROJECTS) {
+        isActive = false;
+      }
+    }
+
     const btn = (
       <ListItemButton
         component={NavLink}
@@ -113,6 +133,7 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
         end={item.end}
         onClick={onClose}
         sx={navItemSx(collapsed)}
+        className={isActive ? 'active' : ''}
       >
         <ListItemIcon>{item.icon}</ListItemIcon>
         {!collapsed && (

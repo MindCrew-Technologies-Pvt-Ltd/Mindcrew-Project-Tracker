@@ -152,7 +152,7 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
         <EmptyState title="No projects found" description={scopeMine ? "You haven't created any projects yet, and you're not on any project team." : 'Try adjusting your filters or create the first project.'} action={<Button variant="contained" onClick={() => navigate(ROUTES.PROJECT_NEW)}>Create Project</Button>} />
       ) : view === 'grid' ? (
         <Grid container spacing={3}>
-          {list.map(p => <Grid item key={p.id} xs={12} sm={6} md={4}><ProjectCard project={p} canDelete={isAdmin || p.owner?.id === user?.id} onDelete={setToDelete} /></Grid>)}
+          {list.map(p => <Grid item key={p.id} xs={12} sm={6} md={4}><ProjectCard project={p} canDelete={isAdmin || p.owner?.id === user?.id} onDelete={setToDelete} scopeMine={scopeMine} /></Grid>)}
         </Grid>
       ) : (
         <DataTablePro
@@ -161,7 +161,7 @@ const ProjectsListPage = ({ scopeMine = false }: Props) => {
           getId={(p) => p.id}
           loading={loading}
           emptyText="No projects found"
-          onRowClick={(p) => navigate(ROUTES.PROJECT_DETAIL(p.id))}
+          onRowClick={(p) => navigate(ROUTES.PROJECT_DETAIL(p.id), { state: { from: scopeMine ? ROUTES.MY_PROJECTS : ROUTES.PROJECTS } })}
           rowActions={rowActions}
         />
       )}

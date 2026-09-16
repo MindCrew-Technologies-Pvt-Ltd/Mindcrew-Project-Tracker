@@ -10,13 +10,13 @@ import PriorityChip from './PriorityChip';
 import { formatDate, truncate } from '../../utils/formatters';
 import { ROUTES } from '../../constants/routes';
 
-interface Props { project: Project; canDelete?: boolean; onDelete?: (project: Project) => void; }
+interface Props { project: Project; canDelete?: boolean; onDelete?: (project: Project) => void; scopeMine?: boolean; }
 
-const ProjectCard = ({ project, canDelete, onDelete }: Props) => {
+const ProjectCard = ({ project, canDelete, onDelete, scopeMine }: Props) => {
   const navigate = useNavigate();
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer', '&:hover': { boxShadow: 4 }, transition: 'box-shadow 0.2s' }} onClick={() => navigate(ROUTES.PROJECT_DETAIL(project.id))}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer', '&:hover': { boxShadow: 4 }, transition: 'box-shadow 0.2s' }} onClick={() => navigate(ROUTES.PROJECT_DETAIL(project.id), { state: { from: scopeMine ? ROUTES.MY_PROJECTS : ROUTES.PROJECTS } })}>
       <CardContent sx={{ flex: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <ProjectStatusChip status={project.status} />
@@ -36,7 +36,7 @@ const ProjectCard = ({ project, canDelete, onDelete }: Props) => {
         </Box>
       </CardContent>
       <CardActions sx={{ px: 2, pb: 2 }}>
-        <Button size="small" startIcon={<ViewIcon fontSize="small" />} onClick={(e) => { e.stopPropagation(); navigate(ROUTES.PROJECT_DETAIL(project.id)); }}>View Details</Button>
+        <Button size="small" startIcon={<ViewIcon fontSize="small" />} onClick={(e) => { e.stopPropagation(); navigate(ROUTES.PROJECT_DETAIL(project.id), { state: { from: scopeMine ? ROUTES.MY_PROJECTS : ROUTES.PROJECTS } }); }}>View Details</Button>
         {canDelete && (
           <Tooltip title="Delete project" arrow>
             <IconButton size="small" sx={{ ml: 'auto', color: '#DC2626' }} onClick={(e) => { e.stopPropagation(); onDelete?.(project); }}>
