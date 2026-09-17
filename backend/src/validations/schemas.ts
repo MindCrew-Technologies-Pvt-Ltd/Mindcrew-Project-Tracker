@@ -229,6 +229,7 @@ export const timesheetSettingsSchema = Joi.object({
   timezone: Joi.string().min(3).optional(),
   manualEntryEnabled: Joi.boolean().optional(),
   workdayStartHour: Joi.number().integer().min(0).max(12).optional(),
+  disableTimeLock: Joi.boolean().optional(),
 });
 
 export const holidaySchema = Joi.object({
