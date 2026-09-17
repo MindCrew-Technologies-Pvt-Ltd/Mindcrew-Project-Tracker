@@ -216,9 +216,6 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
           .filter(item => !(isAdmin && item.to === ROUTES.DASHBOARD))
           .map((item) => <NavItem key={item.to} item={item} />)}
 
-        {user?.jobRoles?.includes('Manager') && (
-          <NavItem key={ROUTES.MY_TEAM} item={{ label: 'My Team', icon: <GroupIcon fontSize="small" />, to: ROUTES.MY_TEAM }} />
-        )}
 
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }} />
         {!collapsed && (
