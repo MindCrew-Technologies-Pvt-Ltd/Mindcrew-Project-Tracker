@@ -22,6 +22,9 @@ export function startDailyReminderJob(): void {
       if (hourNow !== settings.reminderHour) return;
 
       const today = todayInOrgTz(tz);
+      const dayOfWeek = today.getUTCDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekends
+
       const holiday = await prisma.holiday.findUnique({ where: { date: today } });
       if (holiday) return;
 

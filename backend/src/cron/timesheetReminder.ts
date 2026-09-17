@@ -13,7 +13,7 @@ import { createNotification } from '../utils/notifications';
 export const startTimesheetReminderCron = () => {
   // We use Node-cron to schedule it
   cron.schedule(
-    '0 17,18,19 * * *',   // 17:00, 18:00, 19:00 every day
+    '0 17,18,19 * * 1-5',   // 17:00, 18:00, 19:00 Mon-Fri
     async () => {
       logger.info('[Cron] Running daily timesheet reminder...');
       try {

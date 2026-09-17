@@ -23,8 +23,8 @@ const NotificationBanner = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Admins don't need push notifications (they get no reminders)
-    if (!user || user.role === 'ADMIN') return;
+    // Admins also need push notifications (for leave requests from their team)
+    if (!user) return;
     // Already dismissed by this user in this browser
     if (localStorage.getItem(DISMISSED_KEY) === 'true') return;
     // Browser doesn't support push
