@@ -39,12 +39,6 @@ const todayISO = () => {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 };
 
-const pastISO = (daysAgo: number) => {
-  const n = new Date();
-  n.setDate(n.getDate() - daysAgo);
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-};
-
 const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocked, saving, errorMsg, onSave, onClose }: Props) => {
   const [projects, setProjects] = useState<ProjectRef[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
