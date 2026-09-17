@@ -153,9 +153,9 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocke
             <TextField
               label="Date" type="date" fullWidth InputLabelProps={{ shrink: true }}
               disabled={dateLocked}
-              inputProps={{ min: pastISO(2), max: todayISO() }}
+              inputProps={{ max: todayISO() }}
               error={!!errors.date}
-              helperText={errors.date?.message || (dateLocked ? 'Date is locked for this entry' : 'Select today or up to 2 days in the past')}
+              helperText={errors.date?.message || (dateLocked ? 'Date is locked for this entry' : 'Select a date')}
               {...register('date')}
             />
           </Grid>
