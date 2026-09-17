@@ -15,7 +15,7 @@ import InsightsIcon from '@mui/icons-material/esm/Insights';
 import EventNoteIcon from '@mui/icons-material/esm/EventNote';
 import TuneIcon from '@mui/icons-material/esm/Tune';
 import AiIcon from '@mui/icons-material/esm/SmartToyOutlined';
-import GroupIcon from '@mui/icons-material/esm/Group';
+
 import PersonSearchIcon from '@mui/icons-material/esm/PersonSearch';
 import { ROUTES } from '../../constants/routes';
 import { useAuth } from '../../hooks/useAuth';
