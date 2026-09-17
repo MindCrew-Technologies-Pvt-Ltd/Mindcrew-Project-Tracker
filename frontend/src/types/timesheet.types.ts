@@ -78,6 +78,7 @@ export interface WeekGridPayload {
   today: string;
   /** False = AI-only mode: no manual add/edit/delete/timer/submit (admins always true). */
   manualEntryEnabled: boolean;
+  disableTimeLock?: boolean;
 }
 
 export interface ActiveTimer {

@@ -10,6 +10,7 @@ interface TimesheetState {
   weekLoading: boolean;
   timer: ActiveTimer | null;
   manualEntryEnabled: boolean;
+  disableTimeLock: boolean;
   pending: { items: PendingWeekRow[]; total: number; page: number; pageSize: number; totalPages: number };
   pendingLoading: boolean;
   myWeeks: TimesheetWeek[];
@@ -21,6 +22,7 @@ const initialState: TimesheetState = {
   weekLoading: false,
   timer: null,
   manualEntryEnabled: true,
+  disableTimeLock: false,
   pending: { items: [], total: 0, page: 1, pageSize: 50, totalPages: 0 },
   pendingLoading: false,
   myWeeks: [],
@@ -146,7 +148,12 @@ const timesheetSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchWeekThunk.pending, (state) => { state.weekLoading = true; state.error = null; })
-      .addCase(fetchWeekThunk.fulfilled, (state, action) => { state.weekLoading = false; state.week = action.payload; })
+      .addCase(fetchWeekThunk.fulfilled, (state, action) => { 
+        state.weekLoading = false; 
+        state.week = action.payload; 
+        state.manualEntryEnabled = action.payload.manualEntryEnabled;
+        state.disableTimeLock = action.payload.disableTimeLock ?? false;
+      })
       .addCase(fetchWeekThunk.rejected, (state, action) => { state.weekLoading = false; state.error = action.payload as string; })
 
       .addCase(fetchTimerThunk.fulfilled, (state, action) => {

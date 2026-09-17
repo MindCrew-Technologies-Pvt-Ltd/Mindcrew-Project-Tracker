@@ -62,11 +62,12 @@ export const getWeekEntries: RequestHandler = async (req, res, next) => {
     // is allowed (AI-only mode hides add/edit/submit/timer entirely).
     const [today, settings] = await Promise.all([
       orgTimezone().then(todayInOrgTz),
-      prisma.timesheetSettings.findUnique({ where: { id: 'singleton' }, select: { manualEntryEnabled: true } }),
+      prisma.timesheetSettings.findUnique({ where: { id: 'singleton' }, select: { manualEntryEnabled: true, disableTimeLock: true } }),
     ]);
     success(res, {
       entries, week: envelope, dates: isoWeekDates(isoYear, isoWeek), holidays, today,
       manualEntryEnabled: req.user!.role === 'ADMIN' ? true : (settings?.manualEntryEnabled ?? false),
+      disableTimeLock: settings?.disableTimeLock ?? false,
     });
   } catch (err) { next(err); }
 };

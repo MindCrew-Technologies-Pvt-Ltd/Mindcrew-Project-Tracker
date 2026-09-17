@@ -9,6 +9,7 @@ import { timeEntrySchema } from '../../utils/validators';
 import timesheetService from '../../services/timesheetService';
 import { CreateTimeEntryPayload, TimeEntry, ProjectRef } from '../../types/timesheet.types';
 import { dateKey } from '../../utils/timeFormat';
+import { useAppSelector } from '../../hooks/useAppSelector';
 
 interface FormValues {
   projectId: string;
@@ -39,7 +40,14 @@ const todayISO = () => {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 };
 
+const pastISO = (daysAgo: number) => {
+  const n = new Date();
+  n.setDate(n.getDate() - daysAgo);
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+};
+
 const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocked, saving, errorMsg, onSave, onClose }: Props) => {
+  const { disableTimeLock } = useAppSelector((s) => s.timesheet);
   const [projects, setProjects] = useState<ProjectRef[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
 
@@ -147,9 +155,9 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocke
             <TextField
               label="Date" type="date" fullWidth InputLabelProps={{ shrink: true }}
               disabled={dateLocked}
-              inputProps={{ max: todayISO() }}
+              inputProps={{ max: todayISO(), ...(disableTimeLock ? {} : { min: pastISO(2) }) }}
               error={!!errors.date}
-              helperText={errors.date?.message || (dateLocked ? 'Date is locked for this entry' : 'Select a date')}
+              helperText={errors.date?.message || (dateLocked ? 'Date is locked for this entry' : (disableTimeLock ? 'Select a date' : 'Select today or up to 2 days in the past'))}
               {...register('date')}
             />
           </Grid>
