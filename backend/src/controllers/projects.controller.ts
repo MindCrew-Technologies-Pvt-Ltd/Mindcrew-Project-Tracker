@@ -161,7 +161,8 @@ export const addTeamMember: RequestHandler = async (req, res, next) => {
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return next(new AppError('Project not found', 404));
     const isAdmin = req.user?.role === 'ADMIN' || req.user?.jobRoles?.includes('Admin');
-    if (!isAdmin && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
+    const isManager = req.user?.jobRoles?.some((r) => r.toUpperCase() === 'MANAGER');
+    if (!isAdmin && !isManager && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
     if (userId === project.ownerId) { error(res, 'The project owner is already on the team', 400); return; }
     const existing = await prisma.projectMember.findFirst({ where: { projectId: id, userId } });
     if (existing) { error(res, 'This user is already a team member', 400); return; }
@@ -178,7 +179,9 @@ export const removeTeamMember: RequestHandler = async (req, res, next) => {
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return next(new AppError('Project not found', 404));
     const isAdmin = req.user?.role === 'ADMIN' || req.user?.jobRoles?.includes('Admin');
-    if (!isAdmin && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
+    const isManager = req.user?.jobRoles?.some((r) => r.toUpperCase() === 'MANAGER');
+    if (!isAdmin && !isManager && project.ownerId !== req.user!.id) return next(new AppError('Forbidden', 403));
+    if (userId === project.ownerId) { error(res, 'Cannot remove the project owner', 400); return; }
     const member = await prisma.projectMember.findFirst({ where: { projectId: id, userId } });
     if (!member) return next(new AppError('Member not found', 404));
     await prisma.projectMember.delete({ where: { id: member.id } });

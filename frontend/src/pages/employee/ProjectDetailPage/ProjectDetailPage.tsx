@@ -51,6 +51,7 @@ const ProjectDetailPage = () => {
 
   const isOwner = project.owner?.id === user?.id;
   const isMember = project.teamMembers?.some((m) => m.user?.id === user?.id) ?? false;
+  const isManager = user?.jobRoles?.some((r) => r.toUpperCase() === 'MANAGER') ?? false;
   // Edit button: owner/admin, or an approved unexpired edit grant.
   const canEdit = isAdmin || isOwner || hasEditGrant;
   // Contributing (weekly updates, documents, team): owner/admin/team member.
@@ -109,7 +110,7 @@ const ProjectDetailPage = () => {
       {tab === 0 && <OverviewTab project={project} />}
       {tab === 1 && <WeeklyUpdatesTab project={project} canEdit={canContribute} />}
       {tab === 2 && <DocumentsTab project={project} canEdit={canContribute} />}
-      {tab === 3 && <TeamMembersTab project={project} canEdit={isAdmin || isOwner} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
+      {tab === 3 && <TeamMembersTab project={project} canEdit={isAdmin || isOwner || isManager} onChanged={() => dispatch(fetchProjectByIdThunk(project.id))} />}
       {tab === 4 && <EditRequestsTab project={project} isOwner={isOwner} isAdmin={isAdmin} />}
       {tab === 5 && <TimelineTab project={project} />}
       {tab === 6 && <ProjectTimesheetTab project={project} />}
