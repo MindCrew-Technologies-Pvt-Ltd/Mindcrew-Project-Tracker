@@ -102,6 +102,7 @@ export interface TimesheetSettings {
   timezone: string;
   manualEntryEnabled: boolean;
   workdayStartHour: number;
+  disableTimeLock: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

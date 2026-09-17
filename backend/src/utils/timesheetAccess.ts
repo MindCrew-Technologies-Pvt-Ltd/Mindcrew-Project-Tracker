@@ -32,6 +32,19 @@ export async function assertManualEntryAllowed(user: AuthUser): Promise<void> {
 export async function assertDateEditable(date: Date, user: AuthUser): Promise<void> {
   if (user.role === 'ADMIN') return;
   const today = todayInOrgTz(await orgTimezone());
+  
+  const settings = await prisma.timesheetSettings.findUnique({
+    where: { id: 'singleton' },
+    select: { disableTimeLock: true }
+  });
+
+  if (date.getTime() > today.getTime()) {
+    throw new AppError('Future dates cannot be filled in advance', 409);
+  }
+
+  // If the global lock is disabled, we allow any past date, so skip the minDate check
+  if (settings?.disableTimeLock) return;
+
   const minDate = new Date(today);
   minDate.setDate(minDate.getDate() - 2);
 
@@ -45,11 +58,7 @@ export async function assertDateEditable(date: Date, user: AuthUser): Promise<vo
   });
   if (envelope?.status === 'REJECTED') return; // fix window after rejection
   
-  if (date.getTime() > today.getTime()) {
-    throw new AppError('Future dates cannot be filled in advance', 409);
-  } else {
-    throw new AppError('You can only log time for the current date and up to 2 days in the past', 409);
-  }
+  throw new AppError('You can only log time for the current date and up to 2 days in the past', 409);
 }
 
 const HM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;

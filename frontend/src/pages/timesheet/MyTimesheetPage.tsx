@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, IconButton, Button, Tooltip, Alert, Snackbar,
   TextField, CircularProgress, Chip,
@@ -59,6 +60,10 @@ const MyTimesheetPage = () => {
   const dispatch = useAppDispatch();
   const { isAdmin } = useAuth();
   const { week, weekLoading } = useAppSelector((s) => s.timesheet);
+
+  if (isAdmin) {
+    return <Navigate to="/timesheet/daily" replace />;
+  }
 
   // Daily view: one selected date; the week payload behind it powers status,
   // holidays, org-today and the weekly total.

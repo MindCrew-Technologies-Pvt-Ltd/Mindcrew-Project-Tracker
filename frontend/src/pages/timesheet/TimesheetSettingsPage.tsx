@@ -102,6 +102,26 @@ const TimesheetSettingsPage = () => {
     setSavingMode(false);
   };
 
+  const saveTimeLock = async (disableTimeLock: boolean) => {
+    if (!settings) return;
+    setSavingMode(true);
+    setSettings({ ...settings, disableTimeLock }); // optimistic
+    try {
+      const res = await timesheetService.updateSettings({ disableTimeLock });
+      setSettings(res.data?.data);
+      setSnack({
+        msg: disableTimeLock
+          ? '2-Day lock disabled — users can log time for any past date'
+          : '2-Day lock enabled — users can only log time for the past 2 days',
+        severity: 'success',
+      });
+    } catch (err: any) {
+      setSettings(settings); // revert
+      fail(err, 'Could not save the time lock setting');
+    }
+    setSavingMode(false);
+  };
+
   const saveWorkdayStart = async (workdayStartHour: number) => {
     if (!settings) return;
     setSavingMode(true);
@@ -271,6 +291,29 @@ const TimesheetSettingsPage = () => {
                   ))}
                 </Select>
               </FormControl>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Global Time Lock */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} mb={0.5}>Time Entry Lock</Typography>
+              <Typography variant="body2" color="text.secondary" mb={1.5}>
+                By default, users can only log time for today and up to 2 days in the past.
+                Enable this to temporarily unlock all past dates, allowing users to log missing timesheets from any date.
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={settings?.disableTimeLock ?? false}
+                    disabled={savingMode}
+                    onChange={(e) => saveTimeLock(e.target.checked)}
+                  />
+                }
+                label="Disable 2-Day Lock (Allow any past date)"
+              />
             </CardContent>
           </Card>
         </Grid>

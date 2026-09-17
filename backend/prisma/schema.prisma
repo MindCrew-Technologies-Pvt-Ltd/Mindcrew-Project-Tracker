@@ -263,6 +263,8 @@ model TimesheetSettings {
   // since this hour (org timezone). 8 = 08:00. Midnight-based capping let a
   // "full 8h day" through at 2 PM because 14h had already elapsed.
   workdayStartHour   Int     @default(8)
+  // Global lock toggle: if true, allows users to log time for any past date, bypassing the 2-day restriction
+  disableTimeLock    Boolean @default(false)
 }
 
 model ApiToken {
