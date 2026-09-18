@@ -1,5 +1,6 @@
 import prisma from '../config/prisma';
 import { sendPushNotification } from '../config/firebase';
+import { sendWebPushNotification } from '../services/webPush.service';
 
 interface CreateNotificationParams {
   userId: string;
@@ -22,11 +23,26 @@ export const createNotification = async (params: CreateNotificationParams): Prom
         relatedId: params.relatedId,
       },
     });
-    const user = await prisma.user.findUnique({ where: { id: params.userId }, select: { fcmToken: true } });
+    const user = await prisma.user.findUnique({ 
+      where: { id: params.userId }, 
+      select: { fcmToken: true, pushSubscription: true } 
+    });
+    
     if (user?.fcmToken) {
       await sendPushNotification(user.fcmToken, params.title, params.message);
     }
-  } catch {
-    // swallow
+    if (user?.pushSubscription) {
+      await sendWebPushNotification(user.pushSubscription, {
+        title: params.title,
+        body: params.message,
+        url: '/'
+      }).catch(err => {
+        if (err.isGone) {
+          prisma.user.update({ where: { id: params.userId }, data: { pushSubscription: null } }).catch(() => {});
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error in createNotification:', error);
   }
 };
