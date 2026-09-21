@@ -111,7 +111,7 @@ function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No record
                   </Box>
                 </Box>
               ))}
-              {rowActions && <Box component="th" sx={{ ...headSx, width: '10%', textAlign: 'right' }}>Actions</Box>}
+              {rowActions && <Box component="th" sx={{ ...headSx, width: 130, textAlign: 'right' }}>Actions</Box>}
             </Box>
           </Box>
           <Box component="tbody">
@@ -133,7 +133,7 @@ function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No record
                       {c.render ? c.render(row) : (c.value ? c.value(row) : (row as any)[c.key])}
                     </Box>
                   ))}
-                  {rowActions && <Box component="td" sx={{ ...cellSx, textAlign: 'right', pr: 2 }}>{rowActions(row)}</Box>}
+                  {rowActions && <Box component="td" sx={{ ...cellSx, textAlign: 'right', pr: 2, overflow: 'visible' }}>{rowActions(row)}</Box>}
                 </Box>
               );
             })}
