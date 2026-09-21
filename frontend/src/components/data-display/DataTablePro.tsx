@@ -29,12 +29,13 @@ interface Props<T> {
   rowActions?: (row: T) => ReactNode;
   onBulkDelete?: (ids: string[]) => void;
   bulkActions?: (ids: string[], clearSelection: () => void) => ReactNode;
+  isRowSelectable?: (row: T) => boolean;
 }
 
 const cellSx = { py: 2, px: 3, fontSize: '0.875rem', color: 'text.secondary', borderBottom: '1px solid #EEF0F5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const;
 const headSx = { py: 1.75, px: 3, textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', borderBottom: '1px solid #E9EBF2', userSelect: 'none' } as const;
 
-function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No records found', pageSize = 10, minWidth = 780, selectable, onRowClick, rowActions, onBulkDelete, bulkActions }: Props<T>) {
+function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No records found', pageSize = 10, minWidth = 780, selectable, onRowClick, rowActions, onBulkDelete, bulkActions, isRowSelectable }: Props<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
@@ -63,15 +64,15 @@ function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No record
     else { setSortKey(key); setSortDir('asc'); }
   };
 
-  const pageIds = pageRows.map(getId);
-  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
-  const someOnPageSelected = pageIds.some((id) => selected.has(id));
+  const selectableIds = pageRows.filter((r) => (isRowSelectable ? isRowSelectable(r) : true)).map(getId);
+  const allOnPageSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+  const someOnPageSelected = selectableIds.some((id) => selected.has(id));
 
   const toggleRow = (id: string) => setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAllOnPage = () => setSelected((prev) => {
     const n = new Set(prev);
-    if (allOnPageSelected) pageIds.forEach((id) => n.delete(id));
-    else pageIds.forEach((id) => n.add(id));
+    if (allOnPageSelected) selectableIds.forEach((id) => n.delete(id));
+    else selectableIds.forEach((id) => n.add(id));
     return n;
   });
 
@@ -118,12 +119,13 @@ function DataTablePro<T>({ rows, columns, getId, loading, emptyText = 'No record
             {pageRows.map((row) => {
               const id = getId(row);
               const isSel = selected.has(id);
+              const canSelect = isRowSelectable ? isRowSelectable(row) : true;
               return (
                 <Box component="tr" key={id}
                   sx={{ transition: 'background 0.15s ease', bgcolor: isSel ? '#F5F6FF' : 'transparent', '&:hover': { bgcolor: '#F7F8FD' }, '&:last-of-type td': { borderBottom: 'none' } }}>
                   {selectable && (
                     <Box component="td" sx={{ ...cellSx, px: 1.5 }}>
-                      <Checkbox size="small" checked={isSel} onChange={() => toggleRow(id)} />
+                      {canSelect && <Checkbox size="small" checked={isSel} onChange={() => toggleRow(id)} />}
                     </Box>
                   )}
                   {columns.map((c) => (

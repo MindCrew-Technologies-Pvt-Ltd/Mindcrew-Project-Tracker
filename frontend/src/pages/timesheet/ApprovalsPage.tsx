@@ -405,13 +405,14 @@ const ApprovalsPage = () => {
               </FormControl>
             )}
           </Box>
-          <DataTablePro
+            <DataTablePro
             rows={filteredPending}
             columns={pendingColumns}
             getId={(w) => w.id}
             loading={pendingLoading}
             emptyText="No timesheets waiting for review"
             selectable
+            isRowSelectable={(w) => w.user?.id !== user?.id}
             bulkActions={(selectedIds, clearSelection) => isManagerOrAdmin ? (
               <>
                 <Button size="small" color="success" variant="outlined" startIcon={<ApproveIcon fontSize="small" />} onClick={() => handleBulkApprove(selectedIds, clearSelection)}>

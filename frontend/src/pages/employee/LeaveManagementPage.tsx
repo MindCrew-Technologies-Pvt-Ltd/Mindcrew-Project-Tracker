@@ -435,45 +435,48 @@ export default function LeaveManagementPage() {
               )}
             </Box>
           </Box>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">
-                    <Checkbox 
-                      indeterminate={selectedLeaves.length > 0 && selectedLeaves.length < filteredTeamRequests.filter(r => r.status === 'PENDING').length}
-                      checked={filteredTeamRequests.filter(r => r.status === 'PENDING').length > 0 && selectedLeaves.length === filteredTeamRequests.filter(r => r.status === 'PENDING').length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedLeaves(filteredTeamRequests.filter(r => r.status === 'PENDING').map(r => r.id));
-                        } else {
-                          setSelectedLeaves([]);
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>Employee</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Dates</TableCell>
-                  <TableCell>Reason</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredTeamRequests.map((req) => (
-                  <TableRow key={req.id}>
-                    <TableCell padding="checkbox">
-                      {req.status === 'PENDING' && !req.cancelRequested && (
+          {(() => {
+            const selectableTeamRequests = filteredTeamRequests.filter(r => r.status === 'PENDING' && !r.cancelRequested && r.user?.id !== user?.id);
+            return (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell padding="checkbox">
                         <Checkbox 
-                          checked={selectedLeaves.includes(req.id)}
+                          indeterminate={selectedLeaves.length > 0 && selectedLeaves.length < selectableTeamRequests.length}
+                          checked={selectableTeamRequests.length > 0 && selectedLeaves.length === selectableTeamRequests.length}
                           onChange={(e) => {
-                            if (e.target.checked) setSelectedLeaves(prev => [...prev, req.id]);
-                            else setSelectedLeaves(prev => prev.filter(id => id !== req.id));
+                            if (e.target.checked) {
+                              setSelectedLeaves(selectableTeamRequests.map(r => r.id));
+                            } else {
+                              setSelectedLeaves([]);
+                            }
                           }}
                         />
-                      )}
-                    </TableCell>
+                      </TableCell>
+                      <TableCell>Employee</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Dates</TableCell>
+                      <TableCell>Reason</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredTeamRequests.map((req) => (
+                      <TableRow key={req.id}>
+                        <TableCell padding="checkbox">
+                          {req.status === 'PENDING' && !req.cancelRequested && req.user?.id !== user?.id && (
+                            <Checkbox 
+                              checked={selectedLeaves.includes(req.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedLeaves(prev => [...prev, req.id]);
+                                else setSelectedLeaves(prev => prev.filter(id => id !== req.id));
+                              }}
+                            />
+                          )}
+                        </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight="bold">{req.user?.name}</Typography>
                       <Typography variant="caption" color="text.secondary" display="block">{req.user?.employeeId}</Typography>
@@ -528,6 +531,8 @@ export default function LeaveManagementPage() {
               </TableBody>
             </Table>
           </TableContainer>
+            );
+          })()}
         </TabPanel>
       )}
 
