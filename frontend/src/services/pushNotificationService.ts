@@ -99,3 +99,45 @@ export async function unsubscribeFromPush(): Promise<void> {
     console.error('[Push] Error unsubscribing:', err);
   }
 }
+
+/**
+ * Silently re-subscribe to push notifications if permission is already granted.
+ * This is called on every page load to ensure the subscription is always fresh
+ * (handles new device, cleared browser data, expired subscription, etc.)
+ *
+ * Returns true if a subscription was saved/refreshed, false otherwise.
+ */
+export async function silentResubscribe(): Promise<boolean> {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  if (Notification.permission !== 'granted') return false;
+
+  try {
+    // Fetch the VAPID public key from our backend
+    const keyRes = await axiosInstance.get(`${API}/vapid-public-key`);
+    const vapidPublicKey: string = keyRes.data?.data?.publicKey;
+    if (!vapidPublicKey) return false;
+
+    // Register/get our service worker
+    const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+
+    // Check existing subscription
+    let subscription = await registration.pushManager.getSubscription();
+
+    // If no subscription or endpoint changed, create a new one
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as unknown as ArrayBuffer,
+      });
+    }
+
+    // Always save to backend (handles device changes, expired tokens, etc.)
+    await axiosInstance.post(`${API}/subscribe`, { subscription });
+    console.log('[Push] Silent re-subscribe successful');
+    return true;
+  } catch (err) {
+    console.error('[Push] Silent re-subscribe failed:', err);
+    return false;
+  }
+}

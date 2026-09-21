@@ -3,7 +3,7 @@ import prisma from '../config/prisma';
 import { success, error } from '../utils/response';
 import { LeaveType, LeaveStatus } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
-import { sendWebPushNotification, sendWebPushToMany } from '../services/webPush.service';
+import { createNotification } from '../utils/notifications';
 
 const sp = (v: string | string[]): string => Array.isArray(v) ? v[0]! : v;
 
@@ -45,30 +45,48 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
       }
     });
 
-    // Notify all reporting managers about the new request
+    // Notify selected managers and all admins about the new request
     const employee = await prisma.user.findUnique({
       where: { id: req.user!.id },
       select: { name: true, employeeId: true, managerEmployeeIds: true },
     });
 
-    if (employee && employee.managerEmployeeIds.length > 0) {
+    const typeLabel = type === 'FULL_DAY' ? 'Full Day Leave' : type === 'HALF_DAY' ? 'Half Day Leave' : type === 'SHORT_LEAVE' ? 'Short Leave' : type === 'COMP_OFF' ? 'Comp-Off' : 'WFH';
+
+    if (employee) {
+      // 1. Notify selected managers
       const managersToNotify = Array.isArray(notifyManagerIds) && notifyManagerIds.length > 0 
         ? notifyManagerIds 
         : employee.managerEmployeeIds;
 
-      const managers = await (prisma.user.findMany as any)({
-        where: { employeeId: { in: managersToNotify }, pushSubscription: { not: null } },
-        select: { pushSubscription: true },
-      }) as Array<{ pushSubscription: string }>;
+      const managers = await prisma.user.findMany({
+        where: { employeeId: { in: managersToNotify } },
+        select: { id: true },
+      });
       
-      const subs = managers.map((m) => m.pushSubscription).filter(Boolean);
-      const typeLabel = type === 'FULL_DAY' ? 'Full Day Leave' : type === 'HALF_DAY' ? 'Half Day Leave' : 'WFH';
-      if (subs.length > 0) {
-        await sendWebPushToMany(subs, {
+      for (const mgr of managers) {
+        await createNotification({
+          userId: mgr.id,
           title: '📋 New Leave Request',
-          body: `${employee.name} has requested ${typeLabel}. Please review it.`,
-          tag: `leave-request-${leave.id}`,
-          url: '/leaves',
+          message: `${employee.name} has requested ${typeLabel}. Please review it.`,
+          type: 'LEAVE_REQUEST',
+          relatedId: leave.id,
+        });
+      }
+
+      // 2. Notify all admin users (who aren't already notified as managers)
+      const managerUserIds = new Set(managers.map(m => m.id));
+      const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN', id: { notIn: Array.from(managerUserIds) }, isActive: true },
+        select: { id: true },
+      });
+      for (const admin of admins) {
+        await createNotification({
+          userId: admin.id,
+          title: '📋 New Leave Request',
+          message: `${employee.name} has requested ${typeLabel}. Please review it.`,
+          type: 'LEAVE_REQUEST',
+          relatedId: leave.id,
         });
       }
     }
@@ -199,21 +217,16 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
       }
     });
 
-    // Notify the employee that their request was reviewed
-    const employee = await (prisma.user.findUnique as any)({
-      where: { id: leave.userId },
-      select: { name: true, pushSubscription: true },
-    }) as { name: string; pushSubscription: string | null } | null;
-    if (employee?.pushSubscription) {
-      const emoji = status === 'APPROVED' ? '✅' : '❌';
-      const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : 'WFH';
-      await sendWebPushNotification(employee.pushSubscription, {
-        title: `${emoji} ${typeLabel} ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
-        body: `Your ${typeLabel} request from ${new Date(leave.startDate).toLocaleDateString('en-IN')} has been ${status.toLowerCase()}.`,
-        tag: `leave-status-${leave.id}`,
-        url: '/leaves',
-      });
-    }
+    // Notify the employee that their request was reviewed (in-app + push)
+    const emoji = status === 'APPROVED' ? '✅' : '❌';
+    const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'SHORT_LEAVE' ? 'Short Leave' : leave.type === 'COMP_OFF' ? 'Comp-Off' : 'WFH';
+    await createNotification({
+      userId: leave.userId,
+      title: `${emoji} ${typeLabel} ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
+      message: `Your ${typeLabel} request from ${new Date(leave.startDate).toLocaleDateString('en-IN')} has been ${status.toLowerCase()}.`,
+      type: 'LEAVE_STATUS',
+      relatedId: leave.id,
+    });
 
     success(res, updatedLeave, `Leave request ${status.toLowerCase()} successfully`);
   } catch (err) { next(err); }
@@ -242,30 +255,46 @@ export const cancelLeaveRequest: RequestHandler = async (req, res, next) => {
       data: { cancelRequested: true }
     });
 
-    // Notify managers
+    // Notify managers and admins about cancellation request
     const employee = await prisma.user.findUnique({
       where: { id: req.user!.id },
       select: { name: true, employeeId: true, managerEmployeeIds: true },
     });
 
-    if (employee && employee.managerEmployeeIds.length > 0) {
+    if (employee) {
       const managersToNotify = leave.notifiedManagerIds.length > 0 
         ? leave.notifiedManagerIds 
         : employee.managerEmployeeIds;
 
-      const managers = await (prisma.user.findMany as any)({
-        where: { employeeId: { in: managersToNotify }, pushSubscription: { not: null } },
-        select: { pushSubscription: true },
-      }) as Array<{ pushSubscription: string }>;
+      const managers = await prisma.user.findMany({
+        where: { employeeId: { in: managersToNotify } },
+        select: { id: true },
+      });
       
-      const subs = managers.map((m) => m.pushSubscription).filter(Boolean);
-      const typeLabel = leave.type === 'FULL_DAY' ? 'Full Day Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'WFH' ? 'WFH' : 'Comp-Off';
-      if (subs.length > 0) {
-        await sendWebPushToMany(subs, {
+      const typeLabel = leave.type === 'FULL_DAY' ? 'Full Day Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'WFH' ? 'WFH' : leave.type === 'SHORT_LEAVE' ? 'Short Leave' : 'Comp-Off';
+      for (const mgr of managers) {
+        await createNotification({
+          userId: mgr.id,
           title: '⚠️ Leave Cancellation Request',
-          body: `${employee.name} has requested to cancel their ${typeLabel}. Please review it.`,
-          tag: `leave-cancel-${leave.id}`,
-          url: '/leaves',
+          message: `${employee.name} has requested to cancel their ${typeLabel}. Please review it.`,
+          type: 'LEAVE_CANCEL',
+          relatedId: leave.id,
+        });
+      }
+
+      // Also notify admins
+      const managerUserIds = new Set(managers.map(m => m.id));
+      const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN', id: { notIn: Array.from(managerUserIds) }, isActive: true },
+        select: { id: true },
+      });
+      for (const admin of admins) {
+        await createNotification({
+          userId: admin.id,
+          title: '⚠️ Leave Cancellation Request',
+          message: `${employee.name} has requested to cancel their ${typeLabel}. Please review it.`,
+          type: 'LEAVE_CANCEL',
+          relatedId: leave.id,
         });
       }
     }
@@ -326,22 +355,16 @@ export const reviewCancellation: RequestHandler = async (req, res, next) => {
       }
     });
 
-    // Notify employee
-    const employee = await (prisma.user.findUnique as any)({
-      where: { id: leave.userId },
-      select: { name: true, pushSubscription: true },
-    }) as { name: string; pushSubscription: string | null } | null;
-    
-    if (employee?.pushSubscription) {
-      const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'WFH' ? 'WFH' : 'Comp-Off';
-      const actionStr = approved ? 'approved' : 'rejected';
-      await sendWebPushNotification(employee.pushSubscription, {
-        title: `🚫 Cancellation ${approved ? 'Approved' : 'Rejected'}`,
-        body: `Your request to cancel ${typeLabel} from ${new Date(leave.startDate).toLocaleDateString('en-IN')} has been ${actionStr}.`,
-        tag: `leave-cancel-status-${leave.id}`,
-        url: '/leaves',
-      });
-    }
+    // Notify employee (in-app + push)
+    const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'WFH' ? 'WFH' : leave.type === 'SHORT_LEAVE' ? 'Short Leave' : 'Comp-Off';
+    const actionStr = approved ? 'approved' : 'rejected';
+    await createNotification({
+      userId: leave.userId,
+      title: `🚫 Cancellation ${approved ? 'Approved' : 'Rejected'}`,
+      message: `Your request to cancel ${typeLabel} from ${new Date(leave.startDate).toLocaleDateString('en-IN')} has been ${actionStr}.`,
+      type: 'LEAVE_CANCEL_STATUS',
+      relatedId: leave.id,
+    });
 
     success(res, updatedLeave, `Cancellation ${approved ? 'approved' : 'rejected'} successfully`);
   } catch (err) { next(err); }

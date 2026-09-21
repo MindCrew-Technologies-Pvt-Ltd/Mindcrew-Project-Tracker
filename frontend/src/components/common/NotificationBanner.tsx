@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/esm/Close';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import {
   requestNotificationPermission,
-  checkPushSubscription,
+  silentResubscribe,
 } from '../../services/pushNotificationService';
 
 const DISMISSED_KEY = 'push_notification_banner_dismissed';
@@ -14,8 +14,8 @@ const DISMISSED_KEY = 'push_notification_banner_dismissed';
  * NotificationBanner
  * Shows a slim banner asking the user to enable push notifications.
  * - Only shows once: disappears permanently if the user clicks "Enable" or "Dismiss".
- * - Admin users are excluded (they don't receive reminders).
  * - Already-subscribed users never see it.
+ * - Auto-re-subscribes silently if permission was previously granted.
  */
 const NotificationBanner = () => {
   const { user } = useAppSelector((s) => s.auth);
@@ -23,23 +23,23 @@ const NotificationBanner = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Admins also need push notifications (for leave requests from their team)
     if (!user) return;
-    // Already dismissed by this user in this browser
-    if (localStorage.getItem(DISMISSED_KEY) === 'true') return;
     // Browser doesn't support push
     if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
-    // Already has permission granted
+
     if (Notification.permission === 'granted') {
-      // Make sure we have a subscription stored (could have been lost after refresh)
-      checkPushSubscription().then((has) => {
-        if (!has) setShow(true); // subscription lost, ask again
+      // Permission already granted — silently re-subscribe to ensure backend has fresh subscription
+      // This handles: new device, cleared data, expired subscription, different browser
+      silentResubscribe().then((ok) => {
+        if (!ok) setShow(true); // failed to subscribe, show banner
       });
       return;
     }
-    // permission is 'default' (not asked yet)
+    // permission is 'default' (not asked yet) — show banner unless dismissed
     if (Notification.permission === 'default') {
-      setShow(true);
+      if (localStorage.getItem(DISMISSED_KEY) !== 'true') {
+        setShow(true);
+      }
     }
     // permission is 'denied' — we can't ask again, browser blocks it
   }, [user]);
