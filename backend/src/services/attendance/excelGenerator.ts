@@ -60,7 +60,8 @@ export async function generateExcel(
   existingData?: Buffer | null,
   allLeaves: ApprovedLeave[] = [],
   dailyLoggedMinutes: Record<string, Record<string, number>> = {},
-  holidayDates: Set<string> = new Set()
+  holidayDates: Set<string> = new Set(),
+  flexibleResourceIds: Set<string> = new Set()
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
 
@@ -151,19 +152,32 @@ export async function generateExcel(
       if (leaveForDay) {
         if (leaveForDay.type === 'WFH') status = 'WFH';
         else if (leaveForDay.type === 'COMP_OFF') status = 'Comp Off';
-        else if (leaveForDay.type === 'FULL_DAY') status = 'A'; // Or use SL/CL based on specific logic, but defaulting to A for full absent leave
+        else if (leaveForDay.type === 'FULL_DAY') status = 'A'; 
         else if (leaveForDay.type === 'HALF_DAY') status = 'HD';
         else if (leaveForDay.type === 'SHORT_LEAVE') status = 'SL';
       } else {
-        // No approved leave found.
-        // Check if it's a regular weekday (Monday-Friday)
+        const isFlexible = flexibleResourceIds.has(empNumId);
         const isWeekday = currentDate.getDay() !== 0 && currentDate.getDay() !== 6;
         const isHoliday = holidayDates.has(currentDateStr);
+        const loggedMinutes = dailyLoggedMinutes[empNumId]?.[currentDateStr] || 0;
         
-        if (isWeekday && !isHoliday) {
-          const loggedMinutes = dailyLoggedMinutes[empNumId]?.[currentDateStr] || 0;
-          if (loggedMinutes === 0) {
-            status = 'LWP';
+        if (isFlexible) {
+          // If they have any biometric swipe (A, P, HD, SL, etc but meaning they were present)
+          // Actually, pdfParser defaults to 'A' if no in/out time. 
+          // So if status is NOT 'A' and NOT 'Weekly Off', they swiped.
+          const hasBiometric = status && status !== 'A' && status !== 'Weekly Off';
+          
+          if (hasBiometric || loggedMinutes > 0) {
+            status = 'P'; // Force present if there is any logged time or biometric swipe
+          } else if (isWeekday && !isHoliday) {
+            status = 'LWP'; // No leave, no login, no biometric = LWP
+          }
+        } else {
+          // Regular resource
+          if (isWeekday && !isHoliday) {
+            if (loggedMinutes === 0) {
+              status = 'LWP';
+            }
           }
         }
       }

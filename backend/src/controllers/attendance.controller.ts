@@ -88,9 +88,27 @@ export const uploadPdf: RequestHandler = async (req, res, next) => {
     });
     const holidayDates = new Set(holidays.map(h => h.date.toISOString().split('T')[0]));
 
+    // Fetch flexible resources
+    const flexibleResources = await prisma.flexibleResource.findMany({
+      include: { user: { select: { employeeId: true } } }
+    });
+    const flexibleResourceIds = new Set(
+      flexibleResources
+        .map(fr => (fr.user.employeeId?.match(/\d+/) || [])[0])
+        .filter((id): id is string => !!id)
+    );
+
     // Load existing master (if any) and generate updated workbook
     const existingMaster = readMaster();
-    const excelBuffer = await generateExcel(attendanceData, datesList, existingMaster, allLeaves, dailyLoggedMinutes, holidayDates);
+    const excelBuffer = await generateExcel(
+      attendanceData, 
+      datesList, 
+      existingMaster, 
+      allLeaves, 
+      dailyLoggedMinutes, 
+      holidayDates,
+      flexibleResourceIds
+    );
 
     // Save updated master
     writeMaster(excelBuffer);
