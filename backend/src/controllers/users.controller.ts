@@ -123,6 +123,7 @@ export const getManagers: RequestHandler = async (req, res, next) => {
       where: {
         isActive: true,
         name: { not: 'Admin' },
+        employeeId: { not: '001' },
       },
       select: { id: true, name: true, email: true, employeeId: true, jobRoles: true, role: true },
     });
