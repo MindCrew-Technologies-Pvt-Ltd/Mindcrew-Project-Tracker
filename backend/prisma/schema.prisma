@@ -265,6 +265,8 @@ model TimesheetSettings {
   workdayStartHour   Int     @default(8)
   // Global lock toggle: if true, allows users to log time for any past date, bypassing the 2-day restriction
   disableTimeLock    Boolean @default(false)
+  // Global leave lock toggle: if true, allows users to request leave/WFH for any past date, bypassing the current-week restriction
+  disableLeaveLock   Boolean @default(false)
 }
 
 model ApiToken {

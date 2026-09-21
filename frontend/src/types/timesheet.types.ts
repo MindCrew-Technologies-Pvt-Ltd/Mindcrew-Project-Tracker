@@ -104,6 +104,7 @@ export interface TimesheetSettings {
   manualEntryEnabled: boolean;
   workdayStartHour: number;
   disableTimeLock: boolean;
+  disableLeaveLock: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

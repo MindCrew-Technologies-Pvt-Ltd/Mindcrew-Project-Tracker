@@ -122,6 +122,26 @@ const TimesheetSettingsPage = () => {
     setSavingMode(false);
   };
 
+  const saveLeaveLock = async (disableLeaveLock: boolean) => {
+    if (!settings) return;
+    setSavingMode(true);
+    setSettings({ ...settings, disableLeaveLock }); // optimistic
+    try {
+      const res = await timesheetService.updateSettings({ disableLeaveLock });
+      setSettings(res.data?.data);
+      setSnack({
+        msg: disableLeaveLock
+          ? 'Leave Backdate Lock disabled — users can request leave/WFH for any past date'
+          : 'Leave Backdate Lock enabled — users can only request leave/WFH from current week onwards',
+        severity: 'success',
+      });
+    } catch (err: any) {
+      setSettings(settings); // revert
+      fail(err, 'Could not save the leave lock setting');
+    }
+    setSavingMode(false);
+  };
+
   const saveWorkdayStart = async (workdayStartHour: number) => {
     if (!settings) return;
     setSavingMode(true);
@@ -313,6 +333,29 @@ const TimesheetSettingsPage = () => {
                   />
                 }
                 label="Disable 2-Day Lock (Allow any past date)"
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Global Leave Lock */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} mb={0.5}>Leave / WFH Backdate Lock</Typography>
+              <Typography variant="body2" color="text.secondary" mb={1.5}>
+                By default, users can only request Leave/WFH for dates starting from the current week (Monday onwards).
+                Enable this to temporarily unlock past dates, allowing backdated leave requests.
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={settings?.disableLeaveLock ?? false}
+                    disabled={savingMode}
+                    onChange={(e) => saveLeaveLock(e.target.checked)}
+                  />
+                }
+                label="Disable Backdate Lock (Allow past dates)"
               />
             </CardContent>
           </Card>

@@ -25,7 +25,10 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
     currentWeekMonday.setDate(now.getDate() - mondayOffset);
     currentWeekMonday.setHours(0, 0, 0, 0);
     
-    if (reqStart < currentWeekMonday) {
+    const settings = await prisma.timesheetSettings.findUnique({ where: { id: 'singleton' } });
+    const disableLeaveLock = settings?.disableLeaveLock ?? false;
+    
+    if (!disableLeaveLock && reqStart < currentWeekMonday) {
       error(res, 'Cannot request leaves for dates in completed weeks. Earliest allowed date is ' + currentWeekMonday.toISOString().split('T')[0], 400);
       return;
     }

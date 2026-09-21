@@ -60,6 +60,7 @@ export default function LeaveManagementPage() {
   const [myManagers, setMyManagers] = useState<{ id: string, name: string, employeeId: string }[]>([]);
   const [allManagers, setAllManagers] = useState<{ id: string; name: string }[]>([]);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
+  const [settings, setSettings] = useState<any>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [managerFilter, setManagerFilter] = useState('');
@@ -78,6 +79,7 @@ export default function LeaveManagementPage() {
 
   // Week-based date restriction: minimum selectable date is the Monday of the current week
   const getMinDate = () => {
+    if (settings?.disableLeaveLock) return ''; // No restriction if lock is disabled
     const now = dayjs();
     const dayOfWeek = now.day(); // 0=Sun, 1=Mon, ..., 6=Sat
     // If today is Sunday (0), the current week started on the previous Monday
@@ -94,6 +96,9 @@ export default function LeaveManagementPage() {
 
       const managersRes = await leavesService.getMyManagers();
       setMyManagers(managersRes.data.data);
+
+      const settingsRes = await import('../../services/timesheetService').then(m => m.default.getSettings());
+      setSettings(settingsRes.data.data);
 
       if (isManager) {
         const teamRes = await leavesService.getTeamRequests();
@@ -114,8 +119,8 @@ export default function LeaveManagementPage() {
   useAutoRefresh(fetchData);
 
   const handleSubmit = async () => {
-    // Validate dates against week restriction
-    if (formData.startDate < minSelectableDate) {
+    // Validate dates against week restriction if lock is enabled
+    if (!settings?.disableLeaveLock && formData.startDate < minSelectableDate) {
       alert(`Cannot select dates before ${dayjs(minSelectableDate).format('MMM D, YYYY')} (start of current week)`);
       return;
     }
@@ -554,7 +559,7 @@ export default function LeaveManagementPage() {
                   endDate: formData.endDate < newStart ? newStart : formData.endDate
                 });
               }}
-              helperText={`Earliest: ${dayjs(minSelectableDate).format('ddd, MMM D')}`}
+              helperText={minSelectableDate ? `Earliest: ${dayjs(minSelectableDate).format('ddd, MMM D')}` : ''}
             />
             <TextField
               label="End Date"
