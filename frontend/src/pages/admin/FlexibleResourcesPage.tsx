@@ -35,7 +35,7 @@ const FlexibleResourcesPage = () => {
         usersService.getUsers({ isActive: true, limit: 1000 })
       ]);
       setResources(resData.data.data);
-      setAllUsers(usersData.data.data.users || []);
+      setAllUsers(usersData.data.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch data');
     }
