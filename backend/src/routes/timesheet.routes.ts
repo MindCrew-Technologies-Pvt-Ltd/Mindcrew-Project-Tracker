@@ -59,7 +59,7 @@ router.get('/reports/time/export', exportSummary);
 router.get('/reports/time/exceptions', timeExceptions);
 
 // Admin configuration
-router.get('/timesheet-settings', requireAdmin, getSettings);
+router.get('/timesheet-settings', getSettings);
 router.put('/timesheet-settings', requireAdmin, validate(timesheetSettingsSchema), updateSettings);
 router.get('/holidays', listHolidays); // read open to all (grid shows holiday dots)
 router.post('/holidays', requireAdmin, validate(holidaySchema), addHoliday);
