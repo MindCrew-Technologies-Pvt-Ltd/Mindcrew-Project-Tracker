@@ -98,7 +98,7 @@ const FlexibleResourcesPage = () => {
             <Autocomplete
               sx={{ flexGrow: 1 }}
               options={availableUsers}
-              getOptionLabel={(option) => `${option.name} (${option.employeeId || 'No ID'})`}
+              getOptionLabel={(option) => option.name}
               value={selectedUser}
               onChange={(_, newValue) => setSelectedUser(newValue)}
               disabled={loading || actionLoading}
