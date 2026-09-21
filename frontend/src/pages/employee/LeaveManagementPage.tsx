@@ -548,7 +548,7 @@ export default function LeaveManagementPage() {
               type="date"
               fullWidth
               InputLabelProps={{ shrink: true }}
-              inputProps={{ min: minSelectableDate }}
+              inputProps={minSelectableDate ? { min: minSelectableDate } : {}}
               value={formData.startDate}
               onChange={(e) => {
                 const newStart = e.target.value;
