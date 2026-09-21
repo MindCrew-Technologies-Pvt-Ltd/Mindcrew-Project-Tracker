@@ -222,7 +222,8 @@ export default function LeaveManagementPage() {
   };
 
   const totalFull = calculateDays('FULL_DAY');
-  const totalHalf = calculateDays('HALF_DAY') * 0.5;
+  const totalHalf = calculateDays('HALF_DAY');
+  const totalShort = calculateDays('SHORT_LEAVE');
   const totalWfh = calculateDays('WFH');
   const totalCompOff = calculateDays('COMP_OFF');
 
@@ -261,25 +262,31 @@ export default function LeaveManagementPage() {
       <TabPanel value={tabIndex} index={0}>
         {/* Stats Grid */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} md>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.light', color: 'primary.contrastText' }}>
               <Typography variant="subtitle1">Total Leaves</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalFull}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} md>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'warning.contrastText' }}>
               <Typography variant="subtitle1">Half Days</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalHalf}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} md>
+            <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'info.contrastText' }}>
+              <Typography variant="subtitle1">Short Leaves</Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalShort}</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
               <Typography variant="subtitle1">WFH Days</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalWfh}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} md>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'secondary.light', color: 'secondary.contrastText' }}>
               <Typography variant="subtitle1">Comp-Off</Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>{totalCompOff}</Typography>
