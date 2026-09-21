@@ -17,7 +17,7 @@ export const getSettings: RequestHandler = async (_req, res, next) => {
 
 export const updateSettings: RequestHandler = async (req, res, next) => {
   try {
-    const { weeklyTargetHours, reminderEnabled, reminderDay, reminderHour, timezone, manualEntryEnabled, workdayStartHour, disableTimeLock } = req.body;
+    const { weeklyTargetHours, reminderEnabled, reminderDay, reminderHour, timezone, manualEntryEnabled, workdayStartHour, disableTimeLock, disableLeaveLock } = req.body;
     const patch = {
       ...(weeklyTargetHours !== undefined && { weeklyTargetHours }),
       ...(reminderEnabled !== undefined && { reminderEnabled }),
@@ -27,6 +27,7 @@ export const updateSettings: RequestHandler = async (req, res, next) => {
       ...(manualEntryEnabled !== undefined && { manualEntryEnabled }),
       ...(workdayStartHour !== undefined && { workdayStartHour }),
       ...(disableTimeLock !== undefined && { disableTimeLock }),
+      ...(disableLeaveLock !== undefined && { disableLeaveLock }),
     };
     const settings = await prisma.timesheetSettings.upsert({
       where: { id: 'singleton' },
