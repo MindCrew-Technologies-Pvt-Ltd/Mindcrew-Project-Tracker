@@ -25,6 +25,7 @@ import MyTeamPage from '../pages/employee/MyTeamPage';
 import LeaveManagementPage from '../pages/employee/LeaveManagementPage';
 import AvailabilityPage from '../pages/employee/AvailabilityPage';
 import AttendanceTrackerPage from '../pages/admin/AttendanceTrackerPage';
+import FlexibleResourcesPage from '../pages/admin/FlexibleResourcesPage';
 import ChangePasswordPage from '../pages/employee/ChangePasswordPage';
 import SearchPage from '../pages/employee/SearchPage';
 
@@ -78,6 +79,7 @@ const AppRouter = () => (
         
         {/* HR & Admin only - guarded by backend and UI checks */}
         <Route path="/admin/attendance-tracker" element={<AttendanceTrackerPage />} />
+        <Route path="/admin/flexible-resources" element={<FlexibleResourcesPage />} />
       </Route>
     </Route>
 

@@ -28,6 +28,7 @@ import leavesRoutes from './routes/leaves.routes';
 import pushRoutes from './routes/push.routes';
 import availabilityRoutes from './routes/availability.routes';
 import attendanceRoutes from './routes/attendance.routes';
+import flexibleResourcesRoutes from './routes/flexible-resources.routes';
 import mcpRouter from './mcp/mcpServer';
 
 const app = express();
@@ -73,6 +74,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/flexible-resources', flexibleResourcesRoutes);
 
 // MCP endpoint for AI agents (Claude/Cursor/Antigravity/...). Auth = personal
 // API token; carries its own rate limit; outside the /api limiter.

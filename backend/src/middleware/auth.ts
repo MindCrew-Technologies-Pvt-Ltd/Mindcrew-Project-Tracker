@@ -39,6 +39,17 @@ export const requireAdmin: RequestHandler = (req, res, next) => {
   next();
 };
 
+export const requireAdminOrHR: RequestHandler = (req, res, next) => {
+  const hasAdminRole = req.user?.role === 'ADMIN' || req.user?.jobRoles?.includes('Admin');
+  const isHRManager = req.user?.jobRoles?.some(r => r.toUpperCase() === 'HR') && req.user?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER');
+  
+  if (!hasAdminRole && !isHRManager) {
+    res.status(403).json({ success: false, message: 'Forbidden' });
+    return;
+  }
+  next();
+};
+
 export const optionalAuth: RequestHandler = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {

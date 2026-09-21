@@ -117,23 +117,24 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  ownedProjects    Project[]       @relation("owner")
-  projectMembers   ProjectMember[]
-  weeklyUpdates    WeeklyUpdate[]
-  documents        Document[]
-  notifications    Notification[]
-  editRequests     EditRequest[]   @relation("requester")
-  reviewedRequests EditRequest[]   @relation("reviewer")
-  activityLogs     ActivityLog[]
-  timeEntries      TimeEntry[]
-  timesheetWeeks   TimesheetWeek[] @relation("tsWeekUser")
-  reviewedWeeks    TimesheetWeek[] @relation("tsWeekReviewer")
-  activeTimer      ActiveTimer?
-  billableRate     BillableRate?
-  apiTokens        ApiToken[]
-  leaveRequests    LeaveRequest[]  @relation("LeaveRequester")
-  reviewedLeaves   LeaveRequest[]  @relation("LeaveReviewer")
+  ownedProjects     Project[]           @relation("owner")
+  projectMembers    ProjectMember[]
+  weeklyUpdates     WeeklyUpdate[]
+  documents         Document[]
+  notifications     Notification[]
+  editRequests      EditRequest[]       @relation("requester")
+  reviewedRequests  EditRequest[]       @relation("reviewer")
+  activityLogs      ActivityLog[]
+  timeEntries       TimeEntry[]
+  timesheetWeeks    TimesheetWeek[]     @relation("tsWeekUser")
+  reviewedWeeks     TimesheetWeek[]     @relation("tsWeekReviewer")
+  activeTimer       ActiveTimer?
+  billableRate      BillableRate?
+  apiTokens         ApiToken[]
+  leaveRequests     LeaveRequest[]      @relation("LeaveRequester")
+  reviewedLeaves    LeaveRequest[]      @relation("LeaveReviewer")
   dailyAvailability DailyAvailability[]
+  flexibleResource  FlexibleResource?
 }
 
 model Project {
@@ -420,4 +421,12 @@ model DailyAvailability {
 
   @@unique([userId, date]) // One update per user per day
   @@index([date])
+}
+
+model FlexibleResource {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -15,6 +15,7 @@ import InsightsIcon from '@mui/icons-material/esm/Insights';
 import EventNoteIcon from '@mui/icons-material/esm/EventNote';
 import TuneIcon from '@mui/icons-material/esm/Tune';
 import AiIcon from '@mui/icons-material/esm/SmartToyOutlined';
+import SwapHorizIcon from '@mui/icons-material/esm/SwapHoriz';
 
 import PersonSearchIcon from '@mui/icons-material/esm/PersonSearch';
 import { ROUTES } from '../../constants/routes';
@@ -246,6 +247,9 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
             )}
             <NavItem 
               item={{ label: 'Attendance Sheet', icon: <EventNoteIcon fontSize="small" />, to: ROUTES.ATTENDANCE_TRACKER }} 
+            />
+            <NavItem 
+              item={{ label: 'Flexible Resource', icon: <SwapHorizIcon fontSize="small" />, to: ROUTES.FLEXIBLE_RESOURCES }} 
             />
           </>
         )}
