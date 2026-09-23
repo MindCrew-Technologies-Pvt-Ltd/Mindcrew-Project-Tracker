@@ -6,14 +6,14 @@ import { createNotification } from '../utils/notifications';
 
 /**
  * Daily Timesheet Reminder Cron Job
- * Runs every day at 5:00 PM, 6:00 PM, and 7:00 PM IST (Asia/Kolkata)
+ * Runs every day at 5:00 PM, 6:00 PM, 7:00 PM, and 10:00 PM IST (Asia/Kolkata)
  * Sends a push notification to ALL active EMPLOYEE users (not ADMINs)
  * who have a push subscription registered in the DB.
  */
 export const startTimesheetReminderCron = () => {
   // We use Node-cron to schedule it
   cron.schedule(
-    '0 17,18,19 * * 1-5',   // 17:00, 18:00, 19:00 Mon-Fri
+    '0 17,18,19,22 * * 1-5',   // 17:00, 18:00, 19:00, 22:00 Mon-Fri
     async () => {
       logger.info('[Cron] Running daily timesheet reminder...');
       try {
@@ -60,5 +60,5 @@ export const startTimesheetReminderCron = () => {
     }
   );
 
-  logger.info('[Cron] Daily timesheet reminder cron scheduled at 5, 6, 7 PM IST');
+  logger.info('[Cron] Daily timesheet reminder cron scheduled at 5, 6, 7, 10 PM IST');
 }
