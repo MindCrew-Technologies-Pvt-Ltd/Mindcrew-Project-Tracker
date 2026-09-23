@@ -32,13 +32,13 @@ export const authenticate: RequestHandler = (req, res, next) => {
 };
 
 export const requireAdmin: RequestHandler = async (req, res, next) => {
-  let hasAdminRole = req.user?.role === 'ADMIN' || req.user?.jobRoles?.includes('Admin');
+  let hasAdminRole = req.user?.role === 'ADMIN' || req.user?.jobRoles?.some(r => r.trim().toUpperCase() === 'ADMIN');
   
   if (!hasAdminRole && req.user) {
     try {
       const dbUser = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (dbUser) {
-        hasAdminRole = dbUser.role === 'ADMIN' || dbUser.jobRoles.includes('Admin');
+        hasAdminRole = dbUser.role === 'ADMIN' || dbUser.jobRoles.some(r => r.trim().toUpperCase() === 'ADMIN');
         // Update req.user so downstream handlers have fresh roles
         req.user.jobRoles = dbUser.jobRoles;
         req.user.role = dbUser.role as 'ADMIN' | 'EMPLOYEE';
@@ -56,17 +56,17 @@ export const requireAdmin: RequestHandler = async (req, res, next) => {
 };
 
 export const requireAdminOrHR: RequestHandler = async (req, res, next) => {
-  let hasAdminRole = req.user?.role === 'ADMIN' || req.user?.jobRoles?.includes('Admin');
-  let isHRManager = (req.user?.jobRoles?.some(r => r.toUpperCase() === 'HR') ?? false) && 
-                    (req.user?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER') ?? false);
+  let hasAdminRole = req.user?.role === 'ADMIN' || req.user?.jobRoles?.some(r => r.trim().toUpperCase() === 'ADMIN');
+  let isHRManager = (req.user?.jobRoles?.some(r => r.trim().toUpperCase() === 'HR') ?? false) && 
+                    (req.user?.jobRoles?.some(r => r.trim().toUpperCase() === 'MANAGER') ?? false);
   
   if (!hasAdminRole && !isHRManager && req.user) {
     try {
       const dbUser = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (dbUser) {
-        hasAdminRole = dbUser.role === 'ADMIN' || dbUser.jobRoles.includes('Admin');
-        isHRManager = dbUser.jobRoles.some(r => r.toUpperCase() === 'HR') && 
-                      dbUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER');
+        hasAdminRole = dbUser.role === 'ADMIN' || dbUser.jobRoles.some(r => r.trim().toUpperCase() === 'ADMIN');
+        isHRManager = dbUser.jobRoles.some(r => r.trim().toUpperCase() === 'HR') && 
+                      dbUser.jobRoles.some(r => r.trim().toUpperCase() === 'MANAGER');
         // Update req.user so downstream handlers have fresh roles
         req.user.jobRoles = dbUser.jobRoles;
         req.user.role = dbUser.role as 'ADMIN' | 'EMPLOYEE';
