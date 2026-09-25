@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Box, Card, Typography, IconButton, Button, Tooltip, Alert, Snackbar,
-  TextField, CircularProgress, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, CircularProgress, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox,
 } from '@mui/material';
 import PrevIcon from '@mui/icons-material/esm/ChevronLeft';
 import NextIcon from '@mui/icons-material/esm/ChevronRight';
@@ -30,12 +30,14 @@ const DailyTimesheetsPage = () => {
   const [data, setData] = useState<DailyTimesheets | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null); // userId being acted on
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [rejectDialog, setRejectDialog] = useState<{ userId: string; name: string } | null>(null);
   const [rejectNote, setRejectNote] = useState('');
   const [snack, setSnack] = useState<{ msg: string; severity: 'success' | 'error' } | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
+    setSelectedUsers([]);
     timesheetService.getDaily(selected)
       .then((r) => setData(r.data?.data || null))
       .catch((err) => { setData(null); setSnack({ msg: err.response?.data?.message || 'Failed to load the day', severity: 'error' }); })
@@ -58,8 +60,25 @@ const DailyTimesheetsPage = () => {
     setBusy(null);
   };
 
+  const handleBulkReview = async (action: 'approve' | 'reject', note?: string) => {
+    if (!data || selectedUsers.length === 0) return;
+    setLoading(true);
+    try {
+      await Promise.all(selectedUsers.map(userId => 
+        timesheetService.reviewWeek({ userId, isoYear: data.isoYear, isoWeek: data.isoWeek, action, note })
+      ));
+      setSnack({ msg: `Successfully ${action === 'approve' ? 'approved' : 'rejected'} ${selectedUsers.length} weeks`, severity: 'success' });
+      setSelectedUsers([]);
+      load();
+    } catch (err: any) {
+      setSnack({ msg: err.response?.data?.message || 'Bulk action failed', severity: 'error' });
+      setLoading(false);
+    }
+  };
+
   const isToday = selected === dayjs().format('YYYY-MM-DD');
   const dayTotal = (data?.rows || []).reduce((s, r) => s + r.totalMinutes, 0);
+  const selectableUsers = data?.rows.filter(r => r.user.id !== user?.id) || [];
 
   return (
     <Box>
@@ -92,6 +111,37 @@ const DailyTimesheetsPage = () => {
         )}
       </Box>
 
+      {!loading && data && selectableUsers.length > 0 && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, px: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Checkbox
+              indeterminate={selectedUsers.length > 0 && selectedUsers.length < selectableUsers.length}
+              checked={selectableUsers.length > 0 && selectedUsers.length === selectableUsers.length}
+              onChange={(e) => {
+                if (e.target.checked) setSelectedUsers(selectableUsers.map(r => r.user.id));
+                else setSelectedUsers([]);
+              }}
+              size="small"
+              sx={{ p: 0 }}
+            />
+            <Typography variant="body2" fontWeight={600}>Select All</Typography>
+          </Box>
+          {selectedUsers.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button variant="contained" color="success" size="small" onClick={() => handleBulkReview('approve')}>
+                Approve ({selectedUsers.length})
+              </Button>
+              <Button variant="contained" color="error" size="small" onClick={() => {
+                setRejectNote('');
+                setRejectDialog({ userId: 'BULK', name: `${selectedUsers.length} selected users` });
+              }}>
+                Reject ({selectedUsers.length})
+              </Button>
+            </Box>
+          )}
+        </Box>
+      )}
+
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
       ) : !data ? null : (
@@ -110,6 +160,17 @@ const DailyTimesheetsPage = () => {
             return (
               <Card key={row.user.id} sx={{ p: 0, mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#F8FAFC', borderBottom: '1px solid #EEF0F5', flexWrap: 'wrap' }}>
+                  {row.user.id !== user?.id && (
+                    <Checkbox
+                      size="small"
+                      checked={selectedUsers.includes(row.user.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedUsers(prev => [...prev, row.user.id]);
+                        else setSelectedUsers(prev => prev.filter(id => id !== row.user.id));
+                      }}
+                      sx={{ p: 0, ml: -0.5 }}
+                    />
+                  )}
                   <Box sx={{ minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>{row.user.name}</Typography>
                     <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{row.user.email}</Typography>
@@ -202,7 +263,16 @@ const DailyTimesheetsPage = () => {
           <Button
             variant="contained" color="error"
             disabled={rejectNote.trim().length < 3 || !!busy}
-            onClick={() => { if (rejectDialog) { review(rejectDialog.userId, 'reject', rejectNote.trim()); setRejectDialog(null); } }}
+            onClick={() => { 
+              if (rejectDialog) { 
+                if (rejectDialog.userId === 'BULK') {
+                  handleBulkReview('reject', rejectNote.trim());
+                } else {
+                  review(rejectDialog.userId, 'reject', rejectNote.trim()); 
+                }
+                setRejectDialog(null); 
+              } 
+            }}
           >
             Reject week
           </Button>
