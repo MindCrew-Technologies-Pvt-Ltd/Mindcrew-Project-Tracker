@@ -358,7 +358,7 @@ export default function LeaveManagementPage() {
                 count={myRequests.length}
                 rowsPerPage={myRowsPerPage}
                 page={myPage}
-                onPageChange={(e, newPage) => setMyPage(newPage)}
+                onPageChange={(_, newPage) => setMyPage(newPage)}
                 onRowsPerPageChange={(e) => {
                   setMyRowsPerPage(parseInt(e.target.value, 10));
                   setMyPage(0);
@@ -559,7 +559,7 @@ export default function LeaveManagementPage() {
               count={filteredTeamRequests.length}
               rowsPerPage={teamRowsPerPage}
               page={teamPage}
-              onPageChange={(e, newPage) => setTeamPage(newPage)}
+              onPageChange={(_, newPage) => setTeamPage(newPage)}
               onRowsPerPageChange={(e) => {
                 setTeamRowsPerPage(parseInt(e.target.value, 10));
                 setTeamPage(0);
