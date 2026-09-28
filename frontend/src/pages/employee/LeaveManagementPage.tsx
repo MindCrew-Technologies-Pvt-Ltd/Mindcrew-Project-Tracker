@@ -3,7 +3,8 @@ import {
   Box, Typography, Paper, Grid, Tabs, Tab, Button, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, MenuItem, Select, FormControl,
   InputLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, IconButton, CircularProgress, Checkbox, ListItemText, FormHelperText
+  Chip, IconButton, CircularProgress, Checkbox, ListItemText, FormHelperText,
+  TablePagination
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckIcon, Cancel as CancelIcon, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -76,6 +77,12 @@ export default function LeaveManagementPage() {
     notifyManagerIds: [] as string[]
   });
   const [managerError, setManagerError] = useState(false);
+
+  // Pagination states
+  const [myPage, setMyPage] = useState(0);
+  const [myRowsPerPage, setMyRowsPerPage] = useState(5);
+  const [teamPage, setTeamPage] = useState(0);
+  const [teamRowsPerPage, setTeamRowsPerPage] = useState(10);
 
   // Week-based date restriction: minimum selectable date is the Monday of the current week
   const getMinDate = () => {
@@ -309,7 +316,9 @@ export default function LeaveManagementPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {myRequests.map((req) => (
+                  {myRequests
+                    .slice(myPage * myRowsPerPage, myPage * myRowsPerPage + myRowsPerPage)
+                    .map((req) => (
                     <TableRow key={req.id}>
                       <TableCell><Chip label={req.type.replace('_', ' ')} size="small" /></TableCell>
                       <TableCell>
@@ -343,6 +352,18 @@ export default function LeaveManagementPage() {
                   )}
                 </TableBody>
               </Table>
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}
+                component="div"
+                count={myRequests.length}
+                rowsPerPage={myRowsPerPage}
+                page={myPage}
+                onPageChange={(e, newPage) => setMyPage(newPage)}
+                onRowsPerPageChange={(e) => {
+                  setMyRowsPerPage(parseInt(e.target.value, 10));
+                  setMyPage(0);
+                }}
+              />
             </TableContainer>
           </Grid>
           
@@ -464,7 +485,9 @@ export default function LeaveManagementPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredTeamRequests.map((req) => (
+                    {filteredTeamRequests
+                      .slice(teamPage * teamRowsPerPage, teamPage * teamRowsPerPage + teamRowsPerPage)
+                      .map((req) => (
                       <TableRow key={req.id}>
                         <TableCell padding="checkbox">
                           {req.status === 'PENDING' && !req.cancelRequested && req.user?.id !== user?.id && (
@@ -530,6 +553,18 @@ export default function LeaveManagementPage() {
                 )}
               </TableBody>
             </Table>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              component="div"
+              count={filteredTeamRequests.length}
+              rowsPerPage={teamRowsPerPage}
+              page={teamPage}
+              onPageChange={(e, newPage) => setTeamPage(newPage)}
+              onRowsPerPageChange={(e) => {
+                setTeamRowsPerPage(parseInt(e.target.value, 10));
+                setTeamPage(0);
+              }}
+            />
           </TableContainer>
             );
           })()}
