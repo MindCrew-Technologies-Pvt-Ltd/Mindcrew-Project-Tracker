@@ -25,7 +25,14 @@ export const getUsers: RequestHandler = async (req, res, next) => {
       prisma.user.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, pendingJobRoles: true, managerEmployeeIds: true, role: true, isActive: true, createdAt: true, updatedAt: true, _count: { select: { ownedProjects: true } } } }),
       prisma.user.count({ where }),
     ]);
-    paginated(res, items.map(({ _count, ...u }) => ({ ...u, projectCount: _count.ownedProjects })), total, page, pageSize);
+    // Resolve managerEmployeeIds → manager names
+    const allManagerEmpIds = [...new Set(items.flatMap(u => u.managerEmployeeIds))];
+    const managerMap = new Map<string, string>();
+    if (allManagerEmpIds.length > 0) {
+      const managers = await prisma.user.findMany({ where: { employeeId: { in: allManagerEmpIds } }, select: { employeeId: true, name: true } });
+      managers.forEach(m => { if (m.employeeId) managerMap.set(m.employeeId, m.name); });
+    }
+    paginated(res, items.map(({ _count, ...u }) => ({ ...u, projectCount: _count.ownedProjects, managerNames: (u.managerEmployeeIds || []).map(id => managerMap.get(id)).filter(Boolean).join(', ') })), total, page, pageSize);
   } catch (err) { next(err); }
 };
 

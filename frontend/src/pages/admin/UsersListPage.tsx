@@ -62,6 +62,11 @@ const UsersListPage = () => {
           <Box sx={{ minWidth: 0 }}>
             <Typography noWrap sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', lineHeight: 1.3 }}>{u.name}</Typography>
             <Typography noWrap sx={{ fontSize: '0.8rem', color: 'text.secondary' }} title={u.email}>{u.email}</Typography>
+            {u.managerNames && (
+              <Typography noWrap sx={{ fontSize: '0.72rem', color: '#6366F1', fontWeight: 500, lineHeight: 1.3, mt: 0.25 }} title={`Reporting Manager: ${u.managerNames}`}>
+                👤 {u.managerNames}
+              </Typography>
+            )}
           </Box>
         </Box>
       ),
