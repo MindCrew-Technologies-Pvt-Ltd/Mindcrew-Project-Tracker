@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin, requireAdminOrHR } from '../middleware/auth';
-import { getUsers, getUser, updateUser, deactivateUser, resetUserPassword, deleteUser } from '../controllers/users.controller';
+import { getUsers, getUser, updateUser, deactivateUser, resetUserPassword, deleteUser, exportUsers } from '../controllers/users.controller';
 import { getEditRequests, getEditRequest, approveEditRequest, rejectEditRequest } from '../controllers/editRequests.controller';
 import { generateReport, exportReport, getEmployeeAnalytics } from '../controllers/reports.controller';
 import { getActivityLogs } from '../controllers/activityLogs.controller';
@@ -12,6 +12,7 @@ router.use(authenticate);
 
 // Allow Admin or HR Manager to fetch the user list (needed for Flexible Resources)
 router.get('/users', requireAdminOrHR, getUsers);
+router.get('/users/export', requireAdmin, exportUsers);
 router.get('/users/:id', requireAdmin, getUser);
 router.put('/users/:id', requireAdmin, validate(updateUserSchema), updateUser);
 router.put('/users/:id/deactivate', requireAdmin, deactivateUser);

@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import prisma from '../config/prisma';
+import ExcelJS from 'exceljs';
 import { success, paginated, error } from '../utils/response';
 import { hashPassword } from '../utils/password';
 import { logActivity } from '../utils/activityLogger';
@@ -214,4 +215,58 @@ export const getMyManagers: RequestHandler = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+export const exportUsers: RequestHandler = async (_req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { name: 'asc' },
+      select: { name: true, email: true, phone: true, department: true, designation: true, employeeId: true, jobRoles: true, managerEmployeeIds: true, role: true, isActive: true, createdAt: true },
+    });
+    const empIdToName = new Map<string, string>();
+    users.forEach(u => { if (u.employeeId) empIdToName.set(u.employeeId, u.name); });
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'MindCrew Project Tracker';
+    const sheet = workbook.addWorksheet('Users & Reporting Managers', { views: [{ state: 'frozen', ySplit: 1 }] });
+    sheet.columns = [
+      { header: 'S.No', key: 'sno', width: 6 },
+      { header: 'Employee Name', key: 'name', width: 25 },
+      { header: 'Email', key: 'email', width: 32 },
+      { header: 'Phone', key: 'phone', width: 16 },
+      { header: 'Employee ID', key: 'employeeId', width: 14 },
+      { header: 'Department', key: 'department', width: 18 },
+      { header: 'Designation', key: 'designation', width: 22 },
+      { header: 'Job Roles', key: 'jobRoles', width: 22 },
+      { header: 'Role', key: 'role', width: 12 },
+      { header: 'Status', key: 'status', width: 10 },
+      { header: 'Reporting Manager', key: 'reportingManager', width: 30 },
+      { header: 'Joined', key: 'joined', width: 14 },
+    ];
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 28;
+
+    users.forEach((u, idx) => {
+      const mgr = (u.managerEmployeeIds || []).map(id => empIdToName.get(id)).filter(Boolean).join(', ');
+      const row = sheet.addRow({
+        sno: idx + 1, name: u.name, email: u.email, phone: u.phone || '', employeeId: u.employeeId || '',
+        department: u.department || '', designation: u.designation || '', jobRoles: (u.jobRoles || []).join(', '),
+        role: u.role, status: u.isActive ? 'Active' : 'Inactive', reportingManager: mgr || 'Not Assigned',
+        joined: u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+      });
+      if (idx % 2 === 1) row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F3FF' } }; });
+      const rmCell = row.getCell('reportingManager');
+      rmCell.font = mgr ? { bold: true, color: { argb: 'FF4F46E5' } } : { italic: true, color: { argb: 'FF94A3B8' } };
+      row.getCell('status').font = { bold: true, color: { argb: u.isActive ? 'FF15803D' : 'FFB91C1C' } };
+    });
+    sheet.autoFilter = { from: 'A1', to: 'L1' };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=Users_Reporting_Managers.xlsx');
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) { next(err); }
 };
