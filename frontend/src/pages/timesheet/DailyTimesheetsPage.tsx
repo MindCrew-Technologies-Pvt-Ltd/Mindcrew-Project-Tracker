@@ -30,6 +30,7 @@ const DailyTimesheetsPage = () => {
   const [data, setData] = useState<DailyTimesheets | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null); // userId being acted on
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [rejectDialog, setRejectDialog] = useState<{ userId: string; name: string } | null>(null);
   const [rejectNote, setRejectNote] = useState('');
@@ -77,8 +78,15 @@ const DailyTimesheetsPage = () => {
   };
 
   const isToday = selected === dayjs().format('YYYY-MM-DD');
-  const dayTotal = (data?.rows || []).reduce((s, r) => s + r.totalMinutes, 0);
-  const selectableUsers = data?.rows.filter(r => r.user.id !== user?.id) || [];
+  
+  const filteredRows = (data?.rows || []).filter(r => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (r.user.name || '').toLowerCase().includes(q) || (r.user.email || '').toLowerCase().includes(q);
+  });
+  
+  const dayTotal = filteredRows.reduce((s, r) => s + r.totalMinutes, 0);
+  const selectableUsers = filteredRows.filter(r => r.user.id !== user?.id) || [];
 
   return (
     <Box>
@@ -104,9 +112,16 @@ const DailyTimesheetsPage = () => {
           />
         </Box>
         <Box sx={{ flex: 1 }} />
+        <TextField
+          size="small"
+          placeholder="Search by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ width: 250, mr: 2 }}
+        />
         {data && (
           <Typography variant="body2" color="text.secondary">
-            <strong>{minutesToPretty(dayTotal)}</strong> logged by <strong>{data.rows.length}</strong> {data.rows.length === 1 ? 'person' : 'people'}
+            <strong>{minutesToPretty(dayTotal)}</strong> logged by <strong>{filteredRows.length}</strong> {filteredRows.length === 1 ? 'person' : 'people'}
           </Typography>
         )}
       </Box>
@@ -146,15 +161,15 @@ const DailyTimesheetsPage = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
       ) : !data ? null : (
         <>
-          {data.rows.length === 0 && (
+          {filteredRows.length === 0 && (
             <Card sx={{ mb: 2.5 }}>
               <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
-                <Typography variant="body2">Nobody has logged time on this day.</Typography>
+                <Typography variant="body2">Nobody matches this search or has logged time on this day.</Typography>
               </Box>
             </Card>
           )}
 
-          {data.rows.map((row) => {
+          {filteredRows.map((row) => {
             const status: TimesheetStatus = row.week?.status ?? 'DRAFT';
             const s = statusStyles[status];
             return (
