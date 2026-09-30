@@ -153,9 +153,11 @@ export async function assertWeekReviewer(
   if (week.userId === user.id) throw new AppError('You cannot review your own timesheet', 403);
 
   const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
-  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.includes('Admin');
+  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.some(r => r.trim().toUpperCase() === 'ADMIN');
+  const isHRManager = (fullUser?.jobRoles?.some(r => r.trim().toUpperCase() === 'HR') ?? false) && 
+                      (fullUser?.jobRoles?.some(r => r.trim().toUpperCase() === 'MANAGER') ?? false);
   
-  if (isAdmin) return;
+  if (isAdmin || isHRManager) return;
   
   // Check if current user is reporting manager
   const targetUser = await prisma.user.findUnique({ where: { id: week.userId }, select: { managerEmployeeIds: true } });
@@ -197,8 +199,11 @@ export async function canReadUserTime(targetUserId: string, user: AuthUser): Pro
   if (targetUserId === user.id) return true;
   
   const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
-  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.includes('Admin');
-  if (isAdmin) return true;
+  const isAdmin = fullUser?.role === 'ADMIN' || fullUser?.jobRoles?.some(r => r.trim().toUpperCase() === 'ADMIN');
+  const isHRManager = (fullUser?.jobRoles?.some(r => r.trim().toUpperCase() === 'HR') ?? false) && 
+                      (fullUser?.jobRoles?.some(r => r.trim().toUpperCase() === 'MANAGER') ?? false);
+                      
+  if (isAdmin || isHRManager) return true;
 
   // Check if reporting manager
   const targetUser = await prisma.user.findUnique({ where: { id: targetUserId }, select: { managerEmployeeIds: true } });
