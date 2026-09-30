@@ -73,6 +73,7 @@ const ApprovalsPage = () => {
   const [reviewedStatus, setReviewedStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
   const [snack, setSnack] = useState<{ msg: string; severity: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [mySearch, setMySearch] = useState('');
   const [managerFilter, setManagerFilter] = useState('');
   const [allManagers, setAllManagers] = useState<{ id: string; name: string }[]>([]);
 
@@ -208,7 +209,7 @@ const ApprovalsPage = () => {
     }
     if (searchQuery) {
       const lowerQ = searchQuery.toLowerCase();
-      result = result.filter(r => r.user?.name?.toLowerCase().includes(lowerQ) || ((r.user as any)?.managerNames || '').toLowerCase().includes(lowerQ));
+      result = result.filter(r => r.user?.name?.toLowerCase().includes(lowerQ) || r.user?.email?.toLowerCase().includes(lowerQ) || ((r.user as any)?.managerNames || '').toLowerCase().includes(lowerQ));
     }
     return result;
   }, [pending.items, searchQuery, managerFilter]);
@@ -317,7 +318,7 @@ const ApprovalsPage = () => {
     <Box>
       <PageHeader title="Timesheet Approvals" subtitle="Track your own submissions and review your project members' weeks" />
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2.5, borderBottom: '1px solid #E9EBF2' }}>
+      <Tabs value={tab} onChange={(_, v) => { setTab(v); setSearchQuery(''); setMySearch(''); }} sx={{ mb: 2.5, borderBottom: '1px solid #E9EBF2' }}>
         {!isAdmin && <Tab value="mine" label="My submissions" sx={{ textTransform: 'none', fontWeight: 600 }} />}
         <Tab value="pending" label="Pending review" sx={{ textTransform: 'none', fontWeight: 600 }} />
         <Tab value="reviewed" label="Reviewed" sx={{ textTransform: 'none', fontWeight: 600 }} />
@@ -325,58 +326,69 @@ const ApprovalsPage = () => {
       </Tabs>
 
       {tab === 'mine' && (
-        <DataTablePro
-          rows={myWeeks}
-          columns={[
-            {
-              key: 'week', header: 'Week', width: '20%', sortable: true, value: (w: TimesheetWeek) => w.isoYear * 100 + w.isoWeek,
-              render: (w: TimesheetWeek) => <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>{weekLabel(w.isoYear, w.isoWeek)}</Typography>,
-            },
-            {
-              key: 'hours', header: 'Hours', width: '10%', sortable: true, value: (w: TimesheetWeek) => w.totalMinutes,
-              render: (w: TimesheetWeek) => <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.totalMinutes)}</Typography>,
-            },
-            {
-              key: 'status', header: 'Status', width: '16%', sortable: true, value: (w: TimesheetWeek) => w.status,
-              render: (w: TimesheetWeek) => (
-                <Chip
-                  label={w.status === 'SUBMITTED' ? 'Pending approval' : w.status === 'APPROVED' ? 'Approved' : 'Rejected'}
-                  size="small"
-                  sx={{
-                    fontWeight: 700, fontSize: '0.7rem',
-                    ...(w.status === 'SUBMITTED' ? { bgcolor: '#FEF3E2', color: '#B45309' }
-                      : w.status === 'APPROVED' ? { bgcolor: '#E9F9EF', color: '#15803D' }
-                        : { bgcolor: '#FDECEC', color: '#B91C1C' }),
-                  }}
-                />
-              ),
-            },
-            {
-              key: 'submittedAt', header: 'Submitted', width: '13%', sortable: true, value: (w: TimesheetWeek) => w.submittedAt || '',
-              render: (w: TimesheetWeek) => formatDate(w.submittedAt),
-            },
-            {
-              key: 'reviewedBy', header: 'Reviewed by', width: '14%',
-              render: (w: TimesheetWeek) => (w.reviewedBy?.name ? `${w.reviewedBy.name} · ${formatDate(w.reviewedAt)}` : '—'),
-            },
-            {
-              key: 'reviewNote', header: 'Note', width: '17%',
-              render: (w: TimesheetWeek) => w.reviewNote
-                ? <Typography noWrap sx={{ fontSize: '0.8rem', color: '#B45309' }} title={w.reviewNote}>{w.reviewNote}</Typography>
-                : '—',
-            },
-          ] as Column<TimesheetWeek>[]}
-          getId={(w) => w.id}
-          loading={myWeeksLoading}
-          emptyText="You haven't submitted any weeks yet — submit one from My Timesheet"
-          onRowClick={(w) => openDrawer(w.id, true)}
-          rowActions={(w) => (
-            <Tooltip title="View week" arrow>
-              <IconButton size="small" sx={{ color: '#4F46E5' }} onClick={(e) => { e.stopPropagation(); openDrawer(w.id, true); }}><ViewIcon fontSize="small" /></IconButton>
-            </Tooltip>
-          )}
-          minWidth={880}
-        />
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="Search by week, status or reviewer..."
+              value={mySearch}
+              onChange={(e) => setMySearch(e.target.value)}
+              sx={{ width: 300 }}
+            />
+          </Box>
+          <DataTablePro
+            rows={mySearch ? myWeeks.filter((w) => { const q = mySearch.toLowerCase(); const label = weekLabel(w.isoYear, w.isoWeek).toLowerCase(); const status = (w.status === 'SUBMITTED' ? 'pending approval' : w.status.toLowerCase()); const reviewer = (w.reviewedBy?.name || '').toLowerCase(); return label.includes(q) || status.includes(q) || reviewer.includes(q); }) : myWeeks}
+            columns={[
+              {
+                key: 'week', header: 'Week', width: '20%', sortable: true, value: (w: TimesheetWeek) => w.isoYear * 100 + w.isoWeek,
+                render: (w: TimesheetWeek) => <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>{weekLabel(w.isoYear, w.isoWeek)}</Typography>,
+              },
+              {
+                key: 'hours', header: 'Hours', width: '10%', sortable: true, value: (w: TimesheetWeek) => w.totalMinutes,
+                render: (w: TimesheetWeek) => <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>{minutesToHM(w.totalMinutes)}</Typography>,
+              },
+              {
+                key: 'status', header: 'Status', width: '16%', sortable: true, value: (w: TimesheetWeek) => w.status,
+                render: (w: TimesheetWeek) => (
+                  <Chip
+                    label={w.status === 'SUBMITTED' ? 'Pending approval' : w.status === 'APPROVED' ? 'Approved' : 'Rejected'}
+                    size="small"
+                    sx={{
+                      fontWeight: 700, fontSize: '0.7rem',
+                      ...(w.status === 'SUBMITTED' ? { bgcolor: '#FEF3E2', color: '#B45309' }
+                        : w.status === 'APPROVED' ? { bgcolor: '#E9F9EF', color: '#15803D' }
+                          : { bgcolor: '#FDECEC', color: '#B91C1C' }),
+                    }}
+                  />
+                ),
+              },
+              {
+                key: 'submittedAt', header: 'Submitted', width: '13%', sortable: true, value: (w: TimesheetWeek) => w.submittedAt || '',
+                render: (w: TimesheetWeek) => formatDate(w.submittedAt),
+              },
+              {
+                key: 'reviewedBy', header: 'Reviewed by', width: '14%',
+                render: (w: TimesheetWeek) => (w.reviewedBy?.name ? `${w.reviewedBy.name} · ${formatDate(w.reviewedAt)}` : '—'),
+              },
+              {
+                key: 'reviewNote', header: 'Note', width: '17%',
+                render: (w: TimesheetWeek) => w.reviewNote
+                  ? <Typography noWrap sx={{ fontSize: '0.8rem', color: '#B45309' }} title={w.reviewNote}>{w.reviewNote}</Typography>
+                  : '—',
+              },
+            ] as Column<TimesheetWeek>[]}
+            getId={(w) => w.id}
+            loading={myWeeksLoading}
+            emptyText="You haven't submitted any weeks yet — submit one from My Timesheet"
+            onRowClick={(w) => openDrawer(w.id, true)}
+            rowActions={(w) => (
+              <Tooltip title="View week" arrow>
+                <IconButton size="small" sx={{ color: '#4F46E5' }} onClick={(e) => { e.stopPropagation(); openDrawer(w.id, true); }}><ViewIcon fontSize="small" /></IconButton>
+              </Tooltip>
+            )}
+            minWidth={880}
+          />
+        </Box>
       )}
 
       {tab === 'pending' && (
@@ -433,6 +445,13 @@ const ApprovalsPage = () => {
       {tab === 'reviewed' && (
         <>
           <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ width: 250 }}
+            />
             <ToggleButtonGroup
               size="small" exclusive value={reviewedStatus}
               onChange={(_, v) => { if (v) setReviewedStatus(v); }}
