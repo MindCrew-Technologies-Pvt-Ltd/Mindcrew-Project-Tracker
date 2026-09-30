@@ -351,13 +351,14 @@ const ApprovalsPage = () => {
                 key: 'status', header: 'Status', width: '16%', sortable: true, value: (w: TimesheetWeek) => w.status,
                 render: (w: TimesheetWeek) => (
                   <Chip
-                    label={w.status === 'SUBMITTED' ? 'Pending approval' : w.status === 'APPROVED' ? 'Approved' : 'Rejected'}
+                    label={w.status === 'SUBMITTED' ? 'Pending approval' : w.status === 'APPROVED' ? 'Approved' : w.status === 'DRAFT' ? 'Draft' : 'Rejected'}
                     size="small"
                     sx={{
                       fontWeight: 700, fontSize: '0.7rem',
                       ...(w.status === 'SUBMITTED' ? { bgcolor: '#FEF3E2', color: '#B45309' }
                         : w.status === 'APPROVED' ? { bgcolor: '#E9F9EF', color: '#15803D' }
-                          : { bgcolor: '#FDECEC', color: '#B91C1C' }),
+                        : w.status === 'DRAFT' ? { bgcolor: '#F1F5F9', color: '#64748B' }
+                        : { bgcolor: '#FDECEC', color: '#B91C1C' }),
                     }}
                   />
                 ),
