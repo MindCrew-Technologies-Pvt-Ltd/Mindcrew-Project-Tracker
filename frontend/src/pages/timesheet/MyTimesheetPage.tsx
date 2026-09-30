@@ -59,7 +59,7 @@ const StatCard = ({ label, value, sub }: { label: string; value: string; sub?: s
 const MyTimesheetPage = () => {
   const dispatch = useAppDispatch();
   const { isAdmin } = useAuth();
-  const { week, weekLoading } = useAppSelector((s) => s.timesheet);
+  const { week, weekLoading, manualEntryEnabled } = useAppSelector((s) => s.timesheet);
 
   if (isAdmin) {
     return <Navigate to="/timesheet/daily" replace />;
@@ -166,7 +166,7 @@ const MyTimesheetPage = () => {
           />
         </Box>
         <StatusChip status={status} note={envelope?.reviewNote} />
-        {(status === 'DRAFT' || status === 'REJECTED') && (
+        {(status === 'DRAFT' || status === 'REJECTED') && manualEntryEnabled && (
           <Button variant="contained" size="small" onClick={handleSubmitWeek} sx={{ bgcolor: INDIGO, textTransform: 'none', borderRadius: 2 }}>
             Submit Week
           </Button>
