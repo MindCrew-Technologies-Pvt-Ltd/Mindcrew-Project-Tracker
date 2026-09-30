@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Avatar, Typography, IconButton, Tooltip, Snackbar, Alert, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Avatar, Typography, IconButton, Tooltip, Snackbar, Alert, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
 import ViewIcon from '@mui/icons-material/esm/Visibility';
 import DeleteIcon from '@mui/icons-material/esm/DeleteOutline';
+import DownloadIcon from '@mui/icons-material/esm/Download';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -104,9 +105,30 @@ const UsersListPage = () => {
     </Box>
   );
 
+
+  const handleExport = () => {
+    const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const token = localStorage.getItem('token');
+    fetch(`${apiUrl}/admin/users/export`, { headers: { Authorization: `Bearer ${token}` } })
+    .then(res => res.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Users_Reporting_Managers.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    })
+    .catch(err => console.error('Export failed', err));
+  };
+
   return (
     <Box>
-      <PageHeader title="Users" subtitle={filtered.length + ' users'} />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+        <PageHeader title="Users" subtitle={filtered.length + ' users'} />
+        <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleExport} sx={{ mt: 1, textTransform: 'none', borderRadius: 2, borderColor: '#E2E8F0', color: '#475569', '&:hover': { borderColor: '#4F46E5', color: '#4F46E5', bgcolor: '#EEF0FF' } }}>Export Excel</Button>
+      </Box>
       <Box sx={{ display: 'flex', gap: 2, mb: 2.5, flexWrap: 'wrap' }}>
         <SearchBar value={search} onChange={setSearch} placeholder="Search by name or email..." />
         <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -155,3 +177,4 @@ const UsersListPage = () => {
 };
 
 export default UsersListPage;
+
