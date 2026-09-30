@@ -18,7 +18,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  fetchWeekThunk, createEntryThunk, updateEntryThunk, deleteEntryThunk,
+  fetchWeekThunk, createEntryThunk, updateEntryThunk, deleteEntryThunk, submitWeekThunk
 } from '../../store/slices/timesheetSlice';
 import { TimeEntry, TimesheetStatus, CreateTimeEntryPayload } from '../../types/timesheet.types';
 import { isoWeekOf, weekDates, dateKey, minutesToHM, minutesToPretty } from '../../utils/timeFormat';
@@ -130,6 +130,16 @@ const MyTimesheetPage = () => {
     }
   };
 
+  const handleSubmitWeek = async () => {
+    if (!window.confirm('Are you sure you want to submit this week for approval?')) return;
+    const result = await dispatch(submitWeekThunk({ isoYear: wkRef.year, isoWeek: wkRef.week }));
+    if (submitWeekThunk.fulfilled.match(result)) {
+      setSnack({ msg: 'Week submitted successfully', severity: 'success' });
+    } else {
+      setSnack({ msg: (result.payload as string) || 'Submit failed', severity: 'error' });
+    }
+  };
+
   const isToday = selected === todayKey;
 
   return (
@@ -156,6 +166,11 @@ const MyTimesheetPage = () => {
           />
         </Box>
         <StatusChip status={status} note={envelope?.reviewNote} />
+        {(status === 'DRAFT' || status === 'REJECTED') && (
+          <Button variant="contained" size="small" onClick={handleSubmitWeek} sx={{ bgcolor: INDIGO, textTransform: 'none', borderRadius: 2 }}>
+            Submit Week
+          </Button>
+        )}
         {holiday && <Chip label={`Holiday: ${holiday.name}`} size="small" sx={{ bgcolor: '#FDECEC', color: '#B91C1C', fontWeight: 600, fontSize: '0.72rem' }} />}
         <Tooltip title="You can log time for today and up to 2 days in the past. Older and future dates are locked." arrow>
           <Chip icon={<TodayIcon sx={{ fontSize: 15 }} />} label="Flexible entry" size="small" sx={{ bgcolor: '#EEF0FF', color: '#4338CA', fontWeight: 600, fontSize: '0.72rem' }} />
