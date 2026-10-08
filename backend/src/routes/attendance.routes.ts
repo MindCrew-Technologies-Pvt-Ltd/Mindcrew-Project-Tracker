@@ -38,16 +38,19 @@ const requireHrOrAdmin: RequestHandler = async (req, res, next) => {
   }
 };
 
-// All routes require authentication + HR/Admin role
-router.use(authenticate, requireHrOrAdmin);
+// All routes require authentication
+router.use(authenticate);
 
-router.post('/upload-pdf', uploadMiddleware, uploadPdf);
-router.post('/upload-excel', uploadExcelMiddleware, uploadDirectExcel);
+// Read-only routes (accessible to all authenticated users)
 router.get('/get-sheets', getSheets);
 router.get('/get-sheet-data/:sheetName', getSheetData);
-router.post('/save-sheet/:sheetName', saveSheet);
 router.get('/download-master', downloadMaster);
-router.post('/send-report', sendReport);
-router.delete('/delete-master', deleteMasterFile);
+
+// Write/Edit routes (restricted to HR/Admin)
+router.post('/upload-pdf', requireHrOrAdmin, uploadMiddleware, uploadPdf);
+router.post('/upload-excel', requireHrOrAdmin, uploadExcelMiddleware, uploadDirectExcel);
+router.post('/save-sheet/:sheetName', requireHrOrAdmin, saveSheet);
+router.post('/send-report', requireHrOrAdmin, sendReport);
+router.delete('/delete-master', requireHrOrAdmin, deleteMasterFile);
 
 export default router;

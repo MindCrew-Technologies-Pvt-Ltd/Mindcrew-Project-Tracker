@@ -33,6 +33,7 @@ const employeeNav = [
   { label: 'All Projects', icon: <FolderCopyIcon fontSize="small" />, to: ROUTES.PROJECTS },
   { label: 'Leaves & WFH', icon: <EventNoteIcon fontSize="small" />, to: ROUTES.LEAVES },
   { label: 'Available Resources', icon: <PersonSearchIcon fontSize="small" />, to: ROUTES.AVAILABILITY },
+  { label: 'Attendance Sheet', icon: <EventNoteIcon fontSize="small" />, to: ROUTES.ATTENDANCE_TRACKER },
 ];
 
 // Employees log/see their own time; admins never fill a timesheet — they get
@@ -245,9 +246,6 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
                 HR TOOLS
               </Typography>
             )}
-            <NavItem 
-              item={{ label: 'Attendance Sheet', icon: <EventNoteIcon fontSize="small" />, to: ROUTES.ATTENDANCE_TRACKER }} 
-            />
             <NavItem 
               item={{ label: 'Flexible Resource', icon: <SwapHorizIcon fontSize="small" />, to: ROUTES.FLEXIBLE_RESOURCES }} 
             />

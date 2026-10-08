@@ -10,6 +10,7 @@ import { Save, Download, CloudUpload, Description, DeleteOutline, TableChart, Cl
 import PageHeader from '../../components/common/PageHeader';
 import attendanceService, { SheetData } from '../../services/attendanceService';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useAuth } from '../../hooks/useAuth';
 
 // Status options for attendance sheet
 const STATUS_OPTIONS = ['P', 'A', 'HD', 'SL', 'Weekly Off', 'WFH', ''];
@@ -37,9 +38,14 @@ export default function AttendanceTrackerPage() {
   const [excelMonth, setExcelMonth] = useState<number>(new Date().getMonth() + 1);
   const [excelYear, setExcelYear] = useState<number>(new Date().getFullYear());
   const [uploadingExcel, setUploadingExcel] = useState(false);
+  const [userLeaveBalance, setUserLeaveBalance] = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const excelFileRef = useRef<HTMLInputElement>(null);
+
+  const { user, isAdmin } = useAuth();
+  const isHR = user?.jobRoles?.some((r: string) => r.toUpperCase().includes('HR')) || false;
+  const canEdit = isAdmin || isHR;
 
   const fetchSheets = useCallback(async () => {
     try {
@@ -60,10 +66,34 @@ export default function AttendanceTrackerPage() {
   useEffect(() => {
     if (activeSheet) {
       loadSheet(activeSheet);
+      fetchUserBalance(activeSheet);
     } else {
       setSheetData(null);
+      setUserLeaveBalance(null);
     }
   }, [activeSheet]);
+
+  const fetchUserBalance = async (sheetName: string) => {
+    if (!user) return;
+    const leavesSheetName = sheetName.includes(' leaves ') ? sheetName : sheetName.replace(' ', ' leaves ');
+    try {
+      const res = await attendanceService.getSheetData(leavesSheetName);
+      const data = res.data.data;
+      if (data && data.is_leaves) {
+        const userRow = data.rows.find((r: string[]) => r[0] === user.name);
+        if (userRow) {
+          const balIdx = data.headers.findIndex((h: string) => h === 'Total Leave Balance');
+          if (balIdx !== -1) {
+            setUserLeaveBalance(userRow[balIdx]);
+          } else {
+            setUserLeaveBalance(null);
+          }
+        }
+      }
+    } catch {
+      setUserLeaveBalance(null);
+    }
+  };
 
   const loadSheet = async (name: string) => {
     setLoadingSheet(true);
@@ -223,18 +253,20 @@ export default function AttendanceTrackerPage() {
         title="Attendance Master Sheet"
         action={
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Tooltip title="Clear all data">
-              <span>
-                <IconButton
-                  color="error"
-                  onClick={handleDeleteData}
-                  disabled={sheets.length === 0}
-                  sx={{ border: '1px solid', borderColor: 'error.main' }}
-                >
-                  <DeleteOutline />
-                </IconButton>
-              </span>
-            </Tooltip>
+            {canEdit && (
+              <Tooltip title="Clear all data">
+                <span>
+                  <IconButton
+                    color="error"
+                    onClick={handleDeleteData}
+                    disabled={sheets.length === 0}
+                    sx={{ border: '1px solid', borderColor: 'error.main' }}
+                  >
+                    <DeleteOutline />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
             <Button
               variant="outlined"
               color="secondary"
@@ -244,24 +276,27 @@ export default function AttendanceTrackerPage() {
             >
               Download Excel
             </Button>
-            {/* Upload Excel button (replaces Send Report) */}
-            <Button
-              variant="outlined"
-              color="success"
-              startIcon={<TableChart />}
-              onClick={handleOpenExcelDialog}
-            >
-              Upload Excel
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Save />}
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
+            {canEdit && (
+              <>
+                <Button
+                  variant="outlined"
+                  color="success"
+                  startIcon={<TableChart />}
+                  onClick={handleOpenExcelDialog}
+                >
+                  Upload Excel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<Save />}
+                  onClick={handleSave}
+                  disabled={saving || !hasChanges}
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </>
+            )}
           </Box>
         }
       />
@@ -270,50 +305,69 @@ export default function AttendanceTrackerPage() {
         {/* ---- Sidebar ---- */}
         <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-          {/* PDF Upload Card */}
-          <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Upload Report</Typography>
-              <Box
-                onClick={() => fileRef.current?.click()}
-                sx={{
-                  border: '2px dashed',
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  p: 2,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  bgcolor: 'background.default',
-                  '&:hover': { bgcolor: 'action.hover' }
-                }}
-              >
-                <input
-                  type="file"
-                  ref={fileRef}
-                  onChange={handleFileSelect}
-                  accept=".pdf"
-                  style={{ display: 'none' }}
-                />
-                <CloudUpload sx={{ fontSize: 32, color: 'text.secondary', mb: 0.5 }} />
-                {file ? (
-                  <Typography variant="body1" color="primary">{file.name}</Typography>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    Click to browse or drop PDF here
-                  </Typography>
-                )}
-              </Box>
-              <Button
-                variant="contained"
-                fullWidth
-                sx={{ mt: 2 }}
-                disabled={!file || uploading}
-                onClick={handleUpload}
-              >
-                {uploading ? <CircularProgress size={24} color="inherit" /> : 'Process PDF'}
-              </Button>
-            </CardContent>
-          </Card>
+          {/* User Leave Balance Card (for all users) */}
+          {!isAdmin && userLeaveBalance !== null && (
+            <Card sx={{ mb: 2, bgcolor: '#e8f5e9', border: '1px solid #a5d6a7' }}>
+              <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+                <Typography variant="subtitle2" color="success.dark" fontWeight="bold" gutterBottom>
+                  Available Leave Balance
+                </Typography>
+                <Typography variant="h3" color="success.main" fontWeight={800}>
+                  {userLeaveBalance}
+                </Typography>
+                <Typography variant="caption" color="success.dark">
+                  For the selected month
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* PDF Upload Card - ONLY FOR HR/ADMIN */}
+          {canEdit && (
+            <Card sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>Upload Report</Typography>
+                <Box
+                  onClick={() => fileRef.current?.click()}
+                  sx={{
+                    border: '2px dashed',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    p: 2,
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    bgcolor: 'background.default',
+                    '&:hover': { bgcolor: 'action.hover' }
+                  }}
+                >
+                  <input
+                    type="file"
+                    ref={fileRef}
+                    onChange={handleFileSelect}
+                    accept=".pdf"
+                    style={{ display: 'none' }}
+                  />
+                  <CloudUpload sx={{ fontSize: 32, color: 'text.secondary', mb: 0.5 }} />
+                  {file ? (
+                    <Typography variant="body1" color="primary">{file.name}</Typography>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Click to browse or drop PDF here
+                    </Typography>
+                  )}
+                </Box>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  disabled={!file || uploading}
+                  onClick={handleUpload}
+                >
+                  {uploading ? <CircularProgress size={24} color="inherit" /> : 'Process PDF'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Legend Card */}
           <Card sx={{ mb: 2, flexGrow: 1 }}>
@@ -407,27 +461,33 @@ export default function AttendanceTrackerPage() {
                               if (ci === 1) return <TableCell key={ci} sx={{ position: 'sticky', left: 180, minWidth: 120, bgcolor: '#F8CBAD', zIndex: 1, border: '1px solid #ccc', px: 1, py: 0.5 }}>{cell}</TableCell>;
                               const cellColor = getStatusColor(cell);
                               return (
-                                <TableCell key={ci} sx={{ p: 0, border: '1px solid #ccc', bgcolor: cellColor, minWidth: 40 }}>
-                                  <select
-                                    value={cell || ''}
-                                    onChange={(e) => handleCellChange(ri, ci, e.target.value)}
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      minHeight: '28px',
-                                      backgroundColor: 'transparent',
-                                      border: 'none',
-                                      outline: 'none',
-                                      textAlign: 'center',
-                                      appearance: 'none',
-                                      cursor: 'pointer',
-                                      fontWeight: cellColor !== 'transparent' ? '500' : 'normal',
-                                    }}
-                                  >
-                                    {STATUS_OPTIONS.map(opt => (
-                                      <option key={opt} value={opt}>{opt === 'Weekly Off' ? 'WO' : opt || '-'}</option>
-                                    ))}
-                                  </select>
+                                <TableCell key={ci} sx={{ p: 0, border: '1px solid #ccc', bgcolor: cellColor, minWidth: 40, textAlign: 'center' }}>
+                                  {canEdit ? (
+                                    <select
+                                      value={cell || ''}
+                                      onChange={(e) => handleCellChange(ri, ci, e.target.value)}
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        minHeight: '28px',
+                                        backgroundColor: 'transparent',
+                                        border: 'none',
+                                        outline: 'none',
+                                        textAlign: 'center',
+                                        appearance: 'none',
+                                        cursor: 'pointer',
+                                        fontWeight: cellColor !== 'transparent' ? '500' : 'normal',
+                                      }}
+                                    >
+                                      {STATUS_OPTIONS.map(opt => (
+                                        <option key={opt} value={opt}>{opt === 'Weekly Off' ? 'WO' : opt || '-'}</option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <Box sx={{ width: '100%', minHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: cellColor === 'transparent' ? '#000' : '#000', fontWeight: cellColor !== 'transparent' ? '600' : 'normal' }}>
+                                      {cell === 'Weekly Off' ? 'WO' : cell}
+                                    </Box>
+                                  )}
                                 </TableCell>
                               );
                             }
@@ -439,22 +499,28 @@ export default function AttendanceTrackerPage() {
                               }
                               return (
                                 <TableCell key={ci} sx={{ p: 0, border: '1px solid #ccc' }}>
-                                  <input
-                                    type="text"
-                                    value={cell}
-                                    onChange={(e) => handleCellChange(ri, ci, e.target.value)}
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      minHeight: '28px',
-                                      minWidth: 60,
-                                      padding: '0 8px',
-                                      border: 'none',
-                                      outline: 'none',
-                                      background: 'transparent',
-                                      fontFamily: 'inherit',
-                                    }}
-                                  />
+                                  {canEdit ? (
+                                    <input
+                                      type="text"
+                                      value={cell}
+                                      onChange={(e) => handleCellChange(ri, ci, e.target.value)}
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        minHeight: '28px',
+                                        minWidth: 60,
+                                        padding: '0 8px',
+                                        border: 'none',
+                                        outline: 'none',
+                                        background: 'transparent',
+                                        fontFamily: 'inherit',
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box sx={{ minHeight: '28px', minWidth: 60, px: 1, display: 'flex', alignItems: 'center' }}>
+                                      {cell}
+                                    </Box>
+                                  )}
                                 </TableCell>
                               );
                             }
