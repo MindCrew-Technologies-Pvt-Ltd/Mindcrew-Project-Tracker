@@ -1,15 +1,19 @@
 /**
  * Direct Excel Upload Service
- * 
- * Parses a user-uploaded Excel sheet and merges it (as a new sheet)
- * into the master attendance workbook, preserving cell colors.
- * If a sheet with the same month name already exists it is replaced.
+ *
+ * Parses a user-uploaded Excel workbook and copies ALL sheets that match the
+ * selected month into the master attendance workbook (preserving colors).
+ *
+ * Sheet name matching (case-insensitive, flexible):
+ *   Attendance : "September 2026"
+ *   Leaves     : "September leaves 2026" / "September Leaves 2026"
  */
 import ExcelJS from 'exceljs';
 
 // Known status → ARGB color mapping (used when a cell has no fill)
 const STATUS_COLORS: Record<string, string> = {
   'Weekly Off': 'FFFFC000',
+  WO:           'FFFFC000',
   A:            'FFFF0000',
   SL:           'FFFFFF00',
   HD:           'FF92D050',
@@ -23,49 +27,30 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-/**
- * Build the sheet name that will appear in the master workbook tab.
- * Format:  "September 2026"  (to match what the PDF processor creates)
- */
+/** Build attendance sheet name e.g. "September 2026" */
 export function buildSheetName(month: number, year: number): string {
   return `${MONTHS[month - 1]} ${year}`;
 }
 
+/** Build leaves sheet name e.g. "September leaves 2026" */
+export function buildLeavesSheetName(month: number, year: number): string {
+  return `${MONTHS[month - 1]} leaves ${year}`;
+}
+
 /**
- * Merge the uploaded Excel buffer into the master workbook buffer.
- *
- * @param masterBuffer  Existing master (may be null if no master exists yet)
- * @param uploadBuffer  The Excel file the user uploaded
- * @param sheetName     The target sheet name ("September 2026")
- * @returns Updated master workbook buffer
+ * Copy one worksheet from `uploaded` workbook into `master` workbook,
+ * replacing an existing sheet of the same `targetName` if present.
  */
-export async function mergeUploadedSheet(
-  masterBuffer: Buffer | null,
-  uploadBuffer: Buffer,
-  sheetName: string,
-): Promise<Buffer> {
-  // --- Load master (or create empty) ---
-  const master = new ExcelJS.Workbook();
-  if (masterBuffer) {
-    await master.xlsx.load(masterBuffer as any);
-  }
+async function copySheet(
+  master: ExcelJS.Workbook,
+  sourceWs: ExcelJS.Worksheet,
+  targetName: string,
+): Promise<void> {
+  // Remove existing sheet with same name
+  const existingWs = master.getWorksheet(targetName);
+  if (existingWs) master.removeWorksheet(existingWs.id);
 
-  // --- Load the uploaded file ---
-  const uploaded = new ExcelJS.Workbook();
-  await uploaded.xlsx.load(uploadBuffer as any);
-
-  // Use the first sheet in the uploaded file
-  const sourceWs = uploaded.worksheets[0];
-  if (!sourceWs) throw new Error('Uploaded Excel has no sheets.');
-
-  // --- Remove the existing sheet with the same name (override) ---
-  const existingWs = master.getWorksheet(sheetName);
-  if (existingWs) {
-    master.removeWorksheet(existingWs.id);
-  }
-
-  // --- Create fresh target sheet in master ---
-  const targetWs = master.addWorksheet(sheetName);
+  const targetWs = master.addWorksheet(targetName);
 
   // Copy column widths
   sourceWs.columns.forEach((col, idx) => {
@@ -73,7 +58,7 @@ export async function mergeUploadedSheet(
     if (col.width) targetCol.width = col.width;
   });
 
-  // Copy row heights + all cell data (values, styles, fills, borders)
+  // Copy rows: values + styles + fills + borders
   sourceWs.eachRow({ includeEmpty: true }, (row, rowNumber) => {
     const targetRow = targetWs.getRow(rowNumber);
     if (row.height) targetRow.height = row.height;
@@ -81,25 +66,27 @@ export async function mergeUploadedSheet(
     row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       const targetCell = targetRow.getCell(colNumber);
 
-      // --- Copy value ---
+      // Value
       targetCell.value = cell.value;
 
-      // --- Copy full style (font, alignment, numFmt) ---
+      // Full style (font, alignment, numFmt, fill)
       if (cell.style) {
-        targetCell.style = JSON.parse(JSON.stringify(cell.style));
+        try {
+          targetCell.style = JSON.parse(JSON.stringify(cell.style));
+        } catch {
+          // fallback — copy individually
+        }
       }
 
-      // --- Ensure fill is present for known statuses ---
+      // Ensure status cells always have the right background fill
       const cellValue = typeof cell.value === 'string' ? cell.value.trim() : '';
-      const hasFill =
-        cell.fill &&
-        (cell.fill as ExcelJS.FillPattern).pattern === 'solid' &&
-        (cell.fill as ExcelJS.FillPattern).fgColor?.argb &&
-        (cell.fill as ExcelJS.FillPattern).fgColor!.argb !== 'FF000000' &&
-        (cell.fill as ExcelJS.FillPattern).fgColor!.argb !== 'FFFFFFFF' &&
-        (cell.fill as ExcelJS.FillPattern).fgColor!.argb !== '00000000';
+      const fp = targetCell.fill as ExcelJS.FillPattern | undefined;
+      const hasSolidFill =
+        fp?.pattern === 'solid' &&
+        fp.fgColor?.argb &&
+        !['FFFFFFFF', 'FF000000', '00000000'].includes(fp.fgColor.argb);
 
-      if (!hasFill && STATUS_COLORS[cellValue]) {
+      if (!hasSolidFill && STATUS_COLORS[cellValue]) {
         targetCell.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -107,7 +94,7 @@ export async function mergeUploadedSheet(
         };
       }
 
-      // Always apply thin border so the grid looks clean
+      // Always ensure thin border for grid appearance
       targetCell.border = {
         top:    { style: 'thin' },
         bottom: { style: 'thin' },
@@ -119,78 +106,97 @@ export async function mergeUploadedSheet(
     targetRow.commit();
   });
 
-  // Copy merged-cell regions
-  // @ts-ignore — mergeCells is internal but works fine
-  if (sourceWs.mergeCells) {
-    // ExcelJS exposes _merges as an object
-    const merges: Record<string, ExcelJS.Range> = (sourceWs as any)._merges || {};
-    Object.keys(merges).forEach((key) => {
-      const m = merges[key];
-      if (m) {
-        try {
-          targetWs.mergeCells(m.top, m.left, m.bottom, m.right);
-        } catch {
-          /* ignore duplicate merge errors */
-        }
-      }
-    });
-  }
-
-  const buffer = await master.xlsx.writeBuffer();
-  return Buffer.from(buffer);
+  // Copy merged cell regions
+  const merges: Record<string, ExcelJS.Range> = (sourceWs as any)._merges || {};
+  Object.keys(merges).forEach((key) => {
+    const m = merges[key];
+    if (m) {
+      try { targetWs.mergeCells(m.top, m.left, m.bottom, m.right); } catch { /* ignore */ }
+    }
+  });
 }
 
 /**
- * Read the uploaded Excel sheet data in the same format as readSheetData()
- * so the frontend table can display it immediately.
+ * Find a worksheet in the uploaded workbook whose name matches the given pattern
+ * (case-insensitive). Returns undefined if not found.
+ *
+ * Matching strategy (tried in order):
+ *  1. Exact match
+ *  2. Case-insensitive exact match
+ *  3. Sheet name contains both the month name and the year
  */
-export async function readUploadedSheetPreview(
-  uploadBuffer: Buffer,
-): Promise<{ headers: string[]; rows: { value: string; color: string | null }[][] }> {
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(uploadBuffer as any);
-  const ws = wb.worksheets[0];
-  if (!ws) throw new Error('No sheet found in uploaded file.');
+function findSheet(
+  wb: ExcelJS.Workbook,
+  month: number,
+  year: number,
+  isLeaves: boolean,
+): ExcelJS.Worksheet | undefined {
+  const monthName = MONTHS[month - 1].toLowerCase();
+  const yearStr   = String(year);
 
-  const headers: string[] = [];
-  const rows: { value: string; color: string | null }[][] = [];
+  return wb.worksheets.find(ws => {
+    const name = ws.name.toLowerCase().trim();
+    const hasMonth = name.includes(monthName);
+    const hasYear  = name.includes(yearStr);
+    const hasLeaves = name.includes('leave');
 
-  ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    const rowData: { value: string; color: string | null }[] = [];
-    row.eachCell({ includeEmpty: true }, (cell) => {
-      let value = '';
-      if (cell.value !== null && cell.value !== undefined) {
-        if (typeof cell.value === 'object' && 'result' in cell.value) {
-          value = String((cell.value as any).result ?? '');
-        } else {
-          value = String(cell.value);
-        }
-      }
-
-      let color: string | null = null;
-      const fp = cell.fill as ExcelJS.FillPattern | undefined;
-      if (fp?.pattern === 'solid' && fp.fgColor?.argb) {
-        const argb = fp.fgColor.argb;
-        // Exclude white, black, transparent
-        if (!['FFFFFFFF', 'FF000000', '00000000', 'FFFDFDFD'].includes(argb)) {
-          color = '#' + argb.slice(2); // Drop the alpha prefix → #RRGGBB
-        }
-      }
-
-      // Fall back to known status colors
-      if (!color && STATUS_COLORS[value.trim()]) {
-        color = '#' + STATUS_COLORS[value.trim()].slice(2);
-      }
-
-      rowData.push({ value, color });
-    });
-
-    if (rowNumber === 1) {
-      rowData.forEach(c => headers.push(c.value));
-    } else {
-      rows.push(rowData);
-    }
+    if (!hasMonth || !hasYear) return false;
+    return isLeaves ? hasLeaves : !hasLeaves;
   });
+}
 
-  return { headers, rows };
+/**
+ * Merge the uploaded Excel buffer into the master workbook buffer.
+ * Copies both the attendance sheet and the leaves sheet for the given month.
+ *
+ * @param masterBuffer   Existing master (may be null)
+ * @param uploadBuffer   The Excel file the user uploaded
+ * @param month          1–12
+ * @param year           e.g. 2026
+ * @returns { buffer, copiedSheets }
+ */
+export async function mergeUploadedSheet(
+  masterBuffer: Buffer | null,
+  uploadBuffer: Buffer,
+  month: number,
+  year: number,
+): Promise<{ buffer: Buffer; copiedSheets: string[] }> {
+  // Load master
+  const master = new ExcelJS.Workbook();
+  if (masterBuffer) await master.xlsx.load(masterBuffer as any);
+
+  // Load uploaded file
+  const uploaded = new ExcelJS.Workbook();
+  await uploaded.xlsx.load(uploadBuffer as any);
+
+  if (uploaded.worksheets.length === 0) throw new Error('Uploaded Excel has no sheets.');
+
+  const copiedSheets: string[] = [];
+
+  // --- Attendance sheet ---
+  const attTargetName = buildSheetName(month, year);        // "September 2026"
+  const attSource     = findSheet(uploaded, month, year, false);
+
+  if (attSource) {
+    await copySheet(master, attSource, attTargetName);
+    copiedSheets.push(attTargetName);
+  } else {
+    // Fallback: if user uploaded a single-sheet file, use that sheet as attendance
+    if (uploaded.worksheets.length === 1) {
+      await copySheet(master, uploaded.worksheets[0], attTargetName);
+      copiedSheets.push(attTargetName);
+    }
+  }
+
+  // --- Leaves sheet ---
+  const leavesTargetName = buildLeavesSheetName(month, year); // "September leaves 2026"
+  const leavesSource     = findSheet(uploaded, month, year, true);
+
+  if (leavesSource) {
+    await copySheet(master, leavesSource, leavesTargetName);
+    copiedSheets.push(leavesTargetName);
+  }
+
+  const buffer = await master.xlsx.writeBuffer();
+  return { buffer: Buffer.from(buffer), copiedSheets };
 }

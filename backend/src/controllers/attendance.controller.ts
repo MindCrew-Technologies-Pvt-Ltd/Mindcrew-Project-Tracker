@@ -280,12 +280,13 @@ export const uploadDirectExcel: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const sheetName = buildSheetName(month, year);
     const existingMaster = readMaster();
-    const updatedMaster  = await mergeUploadedSheet(existingMaster, file.buffer, sheetName);
+    const { buffer: updatedMaster, copiedSheets } = await mergeUploadedSheet(existingMaster, file.buffer, month, year);
     writeMaster(updatedMaster);
 
-    success(res, { sheetName }, `Excel uploaded and merged as "${sheetName}" successfully`);
+    const mainSheetName = copiedSheets.length > 0 ? copiedSheets[0] : buildSheetName(month, year);
+    const sheetsMsg = copiedSheets.join(' & ');
+    success(res, { sheetName: mainSheetName }, `Excel uploaded and merged (${sheetsMsg}) successfully`);
   } catch (err: any) {
     error(res, err.message || 'Failed to process Excel file', 500);
   }
