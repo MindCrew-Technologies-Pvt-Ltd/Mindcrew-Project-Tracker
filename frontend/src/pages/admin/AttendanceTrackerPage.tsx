@@ -44,8 +44,9 @@ export default function AttendanceTrackerPage() {
   const excelFileRef = useRef<HTMLInputElement>(null);
 
   const { user, isAdmin } = useAuth();
-  const isHR = user?.jobRoles?.some((r: string) => r.toUpperCase().includes('HR')) || false;
-  const canEdit = isAdmin || isHR;
+  const hasHR = user?.jobRoles?.some((r: string) => r.toUpperCase().includes('HR')) || false;
+  const hasManager = user?.jobRoles?.some((r: string) => r.toUpperCase().includes('MANAGER')) || false;
+  const canEdit = isAdmin || (hasHR && hasManager);
 
   const fetchSheets = useCallback(async () => {
     try {
@@ -109,21 +110,16 @@ export default function AttendanceTrackerPage() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePdfSelectAndUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f && f.type === 'application/pdf') {
-      setFile(f);
-    } else if (f) {
+    if (!f) return;
+    if (f.type !== 'application/pdf') {
       setToast({ msg: 'Please select a PDF file', severity: 'error' });
+      return;
     }
-  };
-
-  const handleUpload = async () => {
-    if (!file) return;
     setUploading(true);
     try {
-      const res = await attendanceService.uploadPdf(file);
-      setFile(null);
+      const res = await attendanceService.uploadPdf(f);
       if (fileRef.current) fileRef.current.value = '';
       await fetchSheets();
       setActiveSheet(res.data.data.month);
@@ -280,6 +276,22 @@ export default function AttendanceTrackerPage() {
               <>
                 <Button
                   variant="outlined"
+                  color="info"
+                  startIcon={<CloudUpload />}
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? 'Uploading...' : 'Upload PDF'}
+                </Button>
+                <input
+                  type="file"
+                  ref={fileRef}
+                  onChange={handlePdfSelectAndUpload}
+                  accept=".pdf"
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outlined"
                   color="success"
                   startIcon={<TableChart />}
                   onClick={handleOpenExcelDialog}
@@ -301,79 +313,27 @@ export default function AttendanceTrackerPage() {
         }
       />
 
-      <Grid container spacing={3} sx={{ flexGrow: 1, overflow: 'hidden' }}>
-        {/* ---- Sidebar ---- */}
-        <Grid item xs={12} md={4} lg={3} sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-
+      <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* ---- Top Row Cards ---- */}
+        <Grid container spacing={2} sx={{ mb: 2 }}>
           {/* User Leave Balance Card (for all users) */}
           {!isAdmin && userLeaveBalance !== null && (
-            <Card sx={{ mb: 2, bgcolor: '#e8f5e9', border: '1px solid #a5d6a7' }}>
-              <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
-                <Typography variant="subtitle2" color="success.dark" fontWeight="bold" gutterBottom>
-                  Available Leave Balance
-                </Typography>
-                <Typography variant="h3" color="success.main" fontWeight={800}>
-                  {userLeaveBalance}
-                </Typography>
-                <Typography variant="caption" color="success.dark">
-                  For the selected month
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* PDF Upload Card - ONLY FOR HR/ADMIN */}
-          {canEdit && (
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>Upload Report</Typography>
-                <Box
-                  onClick={() => fileRef.current?.click()}
-                  sx={{
-                    border: '2px dashed',
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    p: 2,
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    bgcolor: 'background.default',
-                    '&:hover': { bgcolor: 'action.hover' }
-                  }}
-                >
-                  <input
-                    type="file"
-                    ref={fileRef}
-                    onChange={handleFileSelect}
-                    accept=".pdf"
-                    style={{ display: 'none' }}
-                  />
-                  <CloudUpload sx={{ fontSize: 32, color: 'text.secondary', mb: 0.5 }} />
-                  {file ? (
-                    <Typography variant="body1" color="primary">{file.name}</Typography>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Click to browse or drop PDF here
-                    </Typography>
-                  )}
-                </Box>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  sx={{ mt: 2 }}
-                  disabled={!file || uploading}
-                  onClick={handleUpload}
-                >
-                  {uploading ? <CircularProgress size={24} color="inherit" /> : 'Process PDF'}
-                </Button>
-              </CardContent>
-            </Card>
+            <Grid item xs={12} sm={4} md={3}>
+              <Card sx={{ bgcolor: '#e8f5e9', border: '1px solid #a5d6a7', height: '100%', minHeight: 64 }}>
+                <CardContent sx={{ py: 1, px: 2, '&:last-child': { pb: 1 } }}>
+                  <Typography variant="subtitle2" color="success.dark" fontWeight="bold">
+                    Leave Balance: <span style={{ fontSize: '1.4rem', marginLeft: '8px' }}>{userLeaveBalance}</span>
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           )}
 
           {/* Legend Card */}
-          <Card sx={{ mb: 2, flexGrow: 1 }}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Legend</Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+          <Grid item xs={12} sm={!isAdmin && userLeaveBalance !== null ? 8 : 12} md={!isAdmin && userLeaveBalance !== null ? 9 : 12}>
+            <Card sx={{ height: '100%', minHeight: 64 }}>
+              <CardContent sx={{ py: 1, px: 2, display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap', '&:last-child': { pb: 1 } }}>
+                <Typography variant="subtitle2" color="text.secondary" fontWeight="bold">Legend:</Typography>
                 {[
                   { label: 'Present', color: 'transparent', border: '1px solid #ccc' },
                   { label: 'Absent', color: '#FF0000' },
@@ -384,16 +344,16 @@ export default function AttendanceTrackerPage() {
                 ].map(item => (
                   <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: item.color, border: item.border || 'none', flexShrink: 0 }} />
-                    <Typography variant="caption">{item.label}</Typography>
+                    <Typography variant="caption" fontWeight="500">{item.label}</Typography>
                   </Box>
                 ))}
-              </Box>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
 
         {/* ---- Main Sheet Area ---- */}
-        <Grid item xs={12} md={8} lg={9} sx={{ height: '100%' }}>
+        <Box sx={{ flexGrow: 1, height: '100%' }}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs

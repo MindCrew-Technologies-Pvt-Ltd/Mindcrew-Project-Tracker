@@ -25,11 +25,11 @@ const requireHrOrAdmin: RequestHandler = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     const isAdmin = user?.role === 'ADMIN' || user?.jobRoles?.includes('Admin');
-    const isHR = user?.jobRoles?.some(
-      (r: string) => r.toUpperCase() === 'HR' || r.toUpperCase().includes('HR')
-    );
-    if (!isAdmin && !isHR) {
-      res.status(403).json({ success: false, message: 'Access denied. HR and Admin only.' });
+    const hasHR = user?.jobRoles?.some((r: string) => r.toUpperCase().includes('HR'));
+    const hasManager = user?.jobRoles?.some((r: string) => r.toUpperCase().includes('MANAGER'));
+    
+    if (!isAdmin && !(hasHR && hasManager)) {
+      res.status(403).json({ success: false, message: 'Access denied. HR+Manager and Admin only.' });
       return;
     }
     next();

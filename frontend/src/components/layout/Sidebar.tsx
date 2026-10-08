@@ -238,7 +238,10 @@ const SidebarContent = ({ onClose, collapsed, onToggleCollapse }: ContentProps) 
           </>
         )}
 
-        {(isAdmin || user?.jobRoles?.some((r) => r.toUpperCase() === 'HR' || r.toUpperCase().includes('HR'))) && (
+        {(isAdmin || (
+          user?.jobRoles?.some((r) => r.toUpperCase().includes('HR')) &&
+          user?.jobRoles?.some((r) => r.toUpperCase().includes('MANAGER'))
+        )) && (
           <>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }} />
             {!collapsed && (
