@@ -4,6 +4,7 @@ import prisma from '../config/prisma';
 import { RequestHandler } from 'express';
 import {
   uploadMiddleware,
+  uploadExcelMiddleware,
   uploadPdf,
   getSheets,
   getSheetData,
@@ -11,6 +12,7 @@ import {
   downloadMaster,
   sendReport,
   deleteMasterFile,
+  uploadDirectExcel,
 } from '../controllers/attendance.controller';
 
 const router = Router();
@@ -40,6 +42,7 @@ const requireHrOrAdmin: RequestHandler = async (req, res, next) => {
 router.use(authenticate, requireHrOrAdmin);
 
 router.post('/upload-pdf', uploadMiddleware, uploadPdf);
+router.post('/upload-excel', uploadExcelMiddleware, uploadDirectExcel);
 router.get('/get-sheets', getSheets);
 router.get('/get-sheet-data/:sheetName', getSheetData);
 router.post('/save-sheet/:sheetName', saveSheet);

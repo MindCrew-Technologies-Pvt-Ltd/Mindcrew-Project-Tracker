@@ -10,12 +10,14 @@ import { readMaster, writeMaster, savePdf, deleteMaster } from '../services/atte
 import { parsePdfReport } from '../services/attendance/pdfParser';
 import { generateExcel } from '../services/attendance/excelGenerator';
 import { getAvailableSheets, readSheetData, saveSheetData } from '../services/attendance/excelReader';
+import { mergeUploadedSheet, buildSheetName } from '../services/attendance/excelDirectUpload';
 import prisma from '../config/prisma';
 import nodemailer from 'nodemailer';
 
 // Multer in-memory storage (file stays in RAM, never hits disk until we choose to save)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 export const uploadMiddleware = upload.single('file');
+export const uploadExcelMiddleware = upload.single('file');
 
 /**
  * POST /api/attendance/upload-pdf
@@ -250,3 +252,42 @@ export const deleteMasterFile: RequestHandler = async (_req, res, next) => {
     success(res, null, 'Data cleared successfully');
   } catch (err) { next(err); }
 };
+
+/**
+ * POST /api/attendance/upload-excel
+ * Upload a pre-filled Excel sheet directly.
+ * Body params (multipart/form-data):
+ *   file   – the .xlsx file
+ *   month  – 1-12 (number)
+ *   year   – e.g. 2026 (number)
+ */
+export const uploadDirectExcel: RequestHandler = async (req, res, next) => {
+  try {
+    const file = req.file;
+    if (!file) { error(res, 'No file uploaded', 400); return; }
+
+    const ext = file.originalname.toLowerCase();
+    if (!ext.endsWith('.xlsx') && !ext.endsWith('.xls')) {
+      error(res, 'Only Excel files (.xlsx / .xls) are allowed', 400);
+      return;
+    }
+
+    const month = parseInt(req.body.month as string, 10);
+    const year  = parseInt(req.body.year  as string, 10);
+
+    if (!month || month < 1 || month > 12 || !year || year < 2000 || year > 2100) {
+      error(res, 'Valid month (1-12) and year are required', 400);
+      return;
+    }
+
+    const sheetName = buildSheetName(month, year);
+    const existingMaster = readMaster();
+    const updatedMaster  = await mergeUploadedSheet(existingMaster, file.buffer, sheetName);
+    writeMaster(updatedMaster);
+
+    success(res, { sheetName }, `Excel uploaded and merged as "${sheetName}" successfully`);
+  } catch (err: any) {
+    error(res, err.message || 'Failed to process Excel file', 500);
+  }
+};
+

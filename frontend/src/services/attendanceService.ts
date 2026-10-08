@@ -49,6 +49,19 @@ const attendanceService = {
 
   /** Clear all attendance data */
   deleteMaster: () => axiosInstance.delete(`${API}/delete-master`),
+
+  /** Upload a pre-filled Excel sheet directly */
+  uploadDirectExcel: (file: File, month: number, year: number) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('month', String(month));
+    fd.append('year', String(year));
+    return axiosInstance.post<{ data: { sheetName: string }; message: string }>(
+      `${API}/upload-excel`,
+      fd,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
 };
 
 export default attendanceService;

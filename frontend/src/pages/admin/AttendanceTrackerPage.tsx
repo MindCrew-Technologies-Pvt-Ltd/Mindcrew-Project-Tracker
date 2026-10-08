@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, Button, Tabs, Tab, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
-  CircularProgress, Grid, Alert, Snackbar, IconButton, Tooltip
+  CircularProgress, Grid, Alert, Snackbar, IconButton, Tooltip,
+  MenuItem, Select, FormControl, InputLabel, Divider,
 } from '@mui/material';
-import { Save, Download, CloudUpload, Email, Description, DeleteOutline } from '@mui/icons-material';
+import { Save, Download, CloudUpload, Email, Description, DeleteOutline, TableChart } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import attendanceService, { SheetData } from '../../services/attendanceService';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -12,6 +13,11 @@ import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 // Status options for attendance sheet
 const STATUS_OPTIONS = ['P', 'A', 'HD', 'SL', 'Weekly Off', 'WFH', ''];
 const LEAVES_FORMULA_COLUMNS = [0, 5, 6, 7, 8, 10, 11];
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 export default function AttendanceTrackerPage() {
   const [sheets, setSheets] = useState<string[]>([]);
@@ -25,7 +31,15 @@ export default function AttendanceTrackerPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [toast, setToast] = useState<{ msg: string; severity: 'success' | 'error' | 'info' } | null>(null);
 
+  // Direct Excel upload state
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [excelMonth, setExcelMonth] = useState<number>(new Date().getMonth() + 1);
+  const [excelYear, setExcelYear] = useState<number>(new Date().getFullYear());
+  const [uploadingExcel, setUploadingExcel] = useState(false);
+
   const fileRef = useRef<HTMLInputElement>(null);
+  const excelFileRef = useRef<HTMLInputElement>(null);
+
 
   const fetchSheets = useCallback(async () => {
     try {
@@ -163,6 +177,32 @@ export default function AttendanceTrackerPage() {
     }
   };
 
+  const handleExcelFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f && (f.name.endsWith('.xlsx') || f.name.endsWith('.xls'))) {
+      setExcelFile(f);
+    } else if (f) {
+      setToast({ msg: 'Please select an Excel (.xlsx) file', severity: 'error' });
+    }
+  };
+
+  const handleUploadExcel = async () => {
+    if (!excelFile) return;
+    setUploadingExcel(true);
+    try {
+      const res = await attendanceService.uploadDirectExcel(excelFile, excelMonth, excelYear);
+      setExcelFile(null);
+      if (excelFileRef.current) excelFileRef.current.value = '';
+      await fetchSheets();
+      setActiveSheet(res.data.data.sheetName);
+      setToast({ msg: res.data.message || 'Excel uploaded successfully!', severity: 'success' });
+    } catch (err: any) {
+      setToast({ msg: err.response?.data?.message || 'Excel upload failed', severity: 'error' });
+    } finally {
+      setUploadingExcel(false);
+    }
+  };
+
   const getStatusColor = (val: string) => {
     switch (val) {
       case 'P': return 'transparent';
@@ -270,6 +310,88 @@ export default function AttendanceTrackerPage() {
                 onClick={handleUpload}
               >
                 {uploading ? <CircularProgress size={24} color="inherit" /> : 'Process PDF'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Direct Excel Upload Card */}
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <TableChart sx={{ color: 'success.main', fontSize: 20 }} />
+                <Typography variant="h6">Upload Excel Directly</Typography>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+
+              {/* Month + Year selectors */}
+              <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Month</InputLabel>
+                  <Select
+                    label="Month"
+                    value={excelMonth}
+                    onChange={(e) => setExcelMonth(Number(e.target.value))}
+                  >
+                    {MONTH_NAMES.map((m, i) => (
+                      <MenuItem key={m} value={i + 1}>{m}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 90 }}>
+                  <InputLabel>Year</InputLabel>
+                  <Select
+                    label="Year"
+                    value={excelYear}
+                    onChange={(e) => setExcelYear(Number(e.target.value))}
+                  >
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                      <MenuItem key={y} value={y}>{y}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* File drop zone */}
+              <Box
+                onClick={() => excelFileRef.current?.click()}
+                sx={{
+                  border: '2px dashed',
+                  borderColor: excelFile ? 'success.main' : 'divider',
+                  borderRadius: 2,
+                  p: 2,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  bgcolor: excelFile ? 'success.50' : 'background.default',
+                  '&:hover': { bgcolor: 'action.hover' },
+                  transition: 'all 0.2s',
+                }}
+              >
+                <input
+                  type="file"
+                  ref={excelFileRef}
+                  onChange={handleExcelFileSelect}
+                  accept=".xlsx,.xls"
+                  style={{ display: 'none' }}
+                />
+                <TableChart sx={{ fontSize: 32, color: excelFile ? 'success.main' : 'text.secondary', mb: 0.5 }} />
+                {excelFile ? (
+                  <Typography variant="body2" color="success.main" fontWeight={600}>{excelFile.name}</Typography>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    Click to browse Excel file (.xlsx)
+                  </Typography>
+                )}
+              </Box>
+
+              <Button
+                variant="contained"
+                color="success"
+                fullWidth
+                sx={{ mt: 2 }}
+                disabled={!excelFile || uploadingExcel}
+                onClick={handleUploadExcel}
+              >
+                {uploadingExcel ? <CircularProgress size={24} color="inherit" /> : 'Upload Excel Sheet'}
               </Button>
             </CardContent>
           </Card>
