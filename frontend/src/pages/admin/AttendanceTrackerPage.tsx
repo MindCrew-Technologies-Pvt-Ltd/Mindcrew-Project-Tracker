@@ -82,7 +82,7 @@ export default function AttendanceTrackerPage() {
       if (data && data.is_leaves) {
         const userRow = data.rows.find((r: string[]) => r[0] === user.name);
         if (userRow) {
-          const balIdx = data.headers.findIndex((h: string) => h === 'Total Leave Balance');
+          const balIdx = data.headers.findIndex((h: string) => h === 'H2-G2 Leave Balance' || h === 'Total Leave Balance');
           if (balIdx !== -1) {
             setUserLeaveBalance(userRow[balIdx]);
           } else {
