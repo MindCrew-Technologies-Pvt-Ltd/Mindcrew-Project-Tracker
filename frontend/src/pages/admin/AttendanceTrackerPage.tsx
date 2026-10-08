@@ -25,7 +25,6 @@ export default function AttendanceTrackerPage() {
   const [sheets, setSheets] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState<string>('');
   const [sheetData, setSheetData] = useState<SheetData | null>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -494,8 +493,8 @@ export default function AttendanceTrackerPage() {
               )}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* ===== Direct Excel Upload Dialog ===== */}
       <Dialog
