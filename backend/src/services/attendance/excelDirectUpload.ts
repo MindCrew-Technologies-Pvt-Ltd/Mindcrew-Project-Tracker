@@ -146,6 +146,15 @@ function findSheet(
   const monthName = MONTHS[month - 1].toLowerCase();
   const yearStr   = String(year);
 
+  const exactExpected = isLeaves 
+    ? `${monthName} leaves ${yearStr}`
+    : `${monthName} ${yearStr}`;
+
+  // 1. Exact match
+  let match = wb.worksheets.find(ws => ws.name.toLowerCase().trim() === exactExpected);
+  if (match) return match;
+
+  // 2. Partial match
   return wb.worksheets.find(ws => {
     const name = ws.name.toLowerCase().trim();
     const hasMonth = name.includes(monthName);
