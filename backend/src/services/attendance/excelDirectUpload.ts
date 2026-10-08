@@ -66,8 +66,20 @@ async function copySheet(
     row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       const targetCell = targetRow.getCell(colNumber);
 
-      // Value
-      targetCell.value = cell.value;
+      // Flatten value to prevent broken formulas across workbooks
+      if (cell.value && typeof cell.value === 'object') {
+        if ('result' in cell.value) {
+          targetCell.value = (cell.value as any).result;
+        } else if ('richText' in cell.value) {
+          targetCell.value = (cell.value as any).richText.map((rt: any) => rt.text).join('');
+        } else if ('formula' in cell.value) {
+          targetCell.value = ''; // formula without result
+        } else {
+          targetCell.value = cell.value;
+        }
+      } else {
+        targetCell.value = cell.value;
+      }
 
       // Full style (font, alignment, numFmt, fill)
       if (cell.style) {

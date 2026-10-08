@@ -63,6 +63,9 @@ function cellStr(cell: ExcelJS.Cell): string {
   if (typeof v === 'object' && 'formula' in v) {
     return ''; // formula without cached result
   }
+  if (typeof v === 'object' && 'richText' in v) {
+    return (v as any).richText.map((rt: any) => rt.text).join('');
+  }
   return String(v);
 }
 
@@ -91,14 +94,15 @@ export async function readSheetData(
     // Header row = 1
     for (let col = 1; col <= ws.columnCount; col++) {
       const val = ws.getCell(1, col).value;
-      if (val) headers.push(String(val));
+      headers.push(val ? String(val) : `Col${col}`);
     }
   } else {
     // Header row = 2 (row 1 is day names)
+    // Always start with Name and ID
     headers.push('Name', 'Employee ID');
     for (let col = 3; col <= ws.columnCount; col++) {
       const val = ws.getCell(2, col).value;
-      if (val) headers.push(String(val));
+      headers.push(val ? String(val) : `Col${col}`);
     }
   }
 
