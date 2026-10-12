@@ -25,7 +25,7 @@ function syncDatabaseSchema(): void {
   const isCompiled = __filename.endsWith('.js');
   if (!isCompiled || process.env.DISABLE_AUTO_DB_PUSH) return;
   logger.info('Syncing database schema (prisma db push)...');
-  execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
+  execSync('npx prisma db push --skip-generate --accept-data-loss', { stdio: 'inherit' });
   logger.info('Database schema in sync');
 }
 

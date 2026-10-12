@@ -58,6 +58,7 @@ const ProjectEditPage = () => {
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [imageErrors, setImageErrors] = useState<{ logo?: string; screenshot?: string }>({});
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<CreateProjectPayload>({
     resolver: yupResolver(projectSchema) as any,
@@ -150,8 +151,12 @@ const ProjectEditPage = () => {
       managerId: data.managerId || '',
       ownerId: data.ownerId || '',
     };
+    setSubmitError(null);
     const result = await dispatch(updateProjectThunk({ id: project.id, payload }));
-    if (!updateProjectThunk.fulfilled.match(result)) return;
+    if (!updateProjectThunk.fulfilled.match(result)) {
+      setSubmitError((result.payload as string) || 'Failed to update project');
+      return;
+    }
 
     // Upload replacements and best-effort remove the doc they replace.
     const makeForm = (file: File, category: string) => {
@@ -421,11 +426,14 @@ const ProjectEditPage = () => {
             </Card>
           </Grid>
         </Grid>
-        <Box sx={{ display: 'flex', gap: 2, mt: 2, justifyContent: 'flex-end' }}>
-          <Button variant="outlined" onClick={() => navigate(ROUTES.PROJECT_DETAIL(project.id))} disabled={loading}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={22} color="inherit" /> : 'Save Changes'}
-          </Button>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1.5, mt: 2 }}>
+          {submitError && <Alert severity="error" sx={{ width: '100%' }}>{submitError}</Alert>}
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" onClick={() => navigate(ROUTES.PROJECT_DETAIL(project.id))} disabled={loading}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={loading}>
+              {loading ? <CircularProgress size={22} color="inherit" /> : 'Save Changes'}
+            </Button>
+          </Box>
         </Box>
       </Box>
     </Box>

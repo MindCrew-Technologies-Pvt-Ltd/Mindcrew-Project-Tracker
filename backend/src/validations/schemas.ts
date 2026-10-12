@@ -101,12 +101,31 @@ export const createProjectSchema = Joi.object({
   ownerId: Joi.string().allow(null, '').optional(),
 });
 
-// Update is a partial: the edit form may submit a subset, so the otherwise
-// required fields become optional here.
-export const updateProjectSchema = createProjectSchema.fork(
-  ['name', 'clientName', 'status', 'priority', 'technologies', 'startDate'],
-  (s) => s.allow('', null).optional()
-);
+// Update schema: all fields are optional and accept null or empty strings
+// to avoid rejecting valid edits when existing project data has null/empty fields.
+export const updateProjectSchema = Joi.object({
+  name: Joi.string().allow('', null).optional(),
+  clientName: Joi.string().allow('', null).optional(),
+  clientLocation: Joi.string().allow('', null).optional(),
+  clientWhatsapp: Joi.string().allow('', null).optional(),
+  clientGmail: Joi.string().allow('', null).optional(),
+  description: Joi.string().allow('', null).optional(),
+  status: Joi.string().valid(...STATUS_VALUES).allow('', null).optional(),
+  priority: Joi.string().valid(...PRIORITY_VALUES).allow('', null).optional(),
+  technologies: Joi.array().items(Joi.string()).allow(null).optional(),
+  tags: Joi.array().items(Joi.string()).allow(null).optional(),
+  repositoryUrls: Joi.array().items(Joi.string().allow('', null)).allow(null).optional(),
+  liveUrls: Joi.array().items(Joi.string().allow('', null)).allow(null).optional(),
+  videoUrls: Joi.array().items(Joi.string().allow('', null)).allow(null).optional(),
+  startDate: Joi.date().allow(null, '').optional(),
+  endDate: Joi.date().allow(null, '').optional(),
+  deadline: Joi.date().allow(null, '').optional(),
+  budget: Joi.number().allow(null, '').optional(),
+  ongoing: Joi.boolean().allow(null).optional(),
+  teamMemberIds: Joi.array().items(Joi.string()).allow(null).optional(),
+  managerId: Joi.string().allow(null, '').optional(),
+  ownerId: Joi.string().allow(null, '').optional(),
+});
 
 // ---- Weekly updates (mirrors weeklyUpdateSchema) ----
 
