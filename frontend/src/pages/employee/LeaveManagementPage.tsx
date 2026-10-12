@@ -231,14 +231,29 @@ export default function LeaveManagementPage() {
     return true;
   });
 
-  // Stats calculation
+  // Stats calculation (filtered for currentMonth)
   const approvedLeaves = myRequests.filter(r => r.status === 'APPROVED');
   
   const calculateDays = (type: LeaveType) => {
+    const monthStart = currentMonth.startOf('month');
+    const monthEnd = currentMonth.endOf('month');
+
     return approvedLeaves
       .filter(r => r.type === type)
       .reduce((acc, r) => {
-        const days = dayjs(r.endDate).diff(dayjs(r.startDate), 'day') + 1;
+        const reqStart = dayjs(r.startDate).startOf('day');
+        const reqEnd = dayjs(r.endDate).startOf('day');
+
+        // Check if leave overlaps with the month
+        if (reqEnd.isBefore(monthStart, 'day') || reqStart.isAfter(monthEnd, 'day')) {
+          return acc;
+        }
+
+        // Clamp dates to the month boundaries
+        const effectiveStart = reqStart.isBefore(monthStart, 'day') ? monthStart : reqStart;
+        const effectiveEnd = reqEnd.isAfter(monthEnd, 'day') ? monthEnd : reqEnd;
+
+        const days = effectiveEnd.diff(effectiveStart, 'day') + 1;
         return acc + (days > 0 ? days : 1);
       }, 0);
   };
