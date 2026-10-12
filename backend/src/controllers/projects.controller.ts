@@ -58,6 +58,12 @@ export const getProject: RequestHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const parseDate = (d: any) => {
+  if (!d) return null;
+  const parsed = new Date(d);
+  return isNaN(parsed.getTime()) ? null : parsed;
+};
+
 export const createProject: RequestHandler = async (req, res, next) => {
   try {
     const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, teamMemberIds, managerId } = req.body;
@@ -71,7 +77,28 @@ export const createProject: RequestHandler = async (req, res, next) => {
     const duplicate = await prisma.project.findFirst({ where: { ownerId: req.user!.id, name: { equals: name, mode: 'insensitive' } }, select: { id: true } });
     if (duplicate) { error(res, `You already have a project named "${name}"`, 409); return; }
     const project = await prisma.project.create({
-      data: { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies: technologies ?? [], tags: tags ?? [], repositoryUrls: repositoryUrls ?? [], liveUrls: liveUrls ?? [], videoUrls: videoUrls ?? [], startDate: startDate ? new Date(startDate) : undefined, endDate: endDate ? new Date(endDate) : undefined, deadline: deadline ? new Date(deadline) : undefined, budget, ownerId: req.user!.id, managerId: managerId || null, teamMembers: Array.isArray(teamMemberIds) && teamMemberIds.length ? { create: teamMemberIds.map((uid: string) => ({ userId: uid })) } : undefined },
+      data: {
+        name,
+        clientName: clientName || null,
+        clientLocation: clientLocation || null,
+        clientWhatsapp: clientWhatsapp || null,
+        clientGmail: clientGmail || null,
+        description: description || null,
+        status,
+        priority,
+        technologies: Array.isArray(technologies) ? technologies : [],
+        tags: Array.isArray(tags) ? tags : [],
+        repositoryUrls: Array.isArray(repositoryUrls) ? repositoryUrls.filter(Boolean) : [],
+        liveUrls: Array.isArray(liveUrls) ? liveUrls.filter(Boolean) : [],
+        videoUrls: Array.isArray(videoUrls) ? videoUrls.filter(Boolean) : [],
+        startDate: parseDate(startDate) || undefined,
+        endDate: parseDate(endDate) || undefined,
+        deadline: parseDate(deadline) || undefined,
+        budget: budget !== null && budget !== '' && budget !== undefined && !isNaN(Number(budget)) ? Number(budget) : null,
+        ownerId: req.user!.id,
+        managerId: managerId || null,
+        teamMembers: Array.isArray(teamMemberIds) && teamMemberIds.length ? { create: teamMemberIds.map((uid: string) => ({ userId: uid })) } : undefined,
+      },
       include: { owner: { select: { id: true, name: true, email: true } }, manager: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } } },
     });
     await logActivity({ userId: req.user!.id, action: 'CREATE', module: 'PROJECT', description: `Created project "${project.name}"` });
@@ -100,9 +127,28 @@ export const updateProject: RequestHandler = async (req, res, next) => {
 
     const isAdminOrManager = req.user?.role === 'ADMIN' || !!req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'MANAGER');
     
-    const updateData: any = { ...(name !== undefined && { name }), ...(clientName !== undefined && { clientName }), ...(clientLocation !== undefined && { clientLocation }), ...(clientWhatsapp !== undefined && { clientWhatsapp }), ...(clientGmail !== undefined && { clientGmail }), ...(description !== undefined && { description }), ...(status !== undefined && { status }), ...(priority !== undefined && { priority }), ...(technologies !== undefined && { technologies }), ...(tags !== undefined && { tags }), ...(repositoryUrls !== undefined && { repositoryUrls }), ...(liveUrls !== undefined && { liveUrls }), ...(videoUrls !== undefined && { videoUrls }), ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }), ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }), ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }), ...(budget !== undefined && { budget }), ...(managerId !== undefined && { managerId: managerId || null }) };
+    const updateData: any = {
+      ...(name !== undefined && { name }),
+      ...(clientName !== undefined && { clientName: clientName || null }),
+      ...(clientLocation !== undefined && { clientLocation: clientLocation || null }),
+      ...(clientWhatsapp !== undefined && { clientWhatsapp: clientWhatsapp || null }),
+      ...(clientGmail !== undefined && { clientGmail: clientGmail || null }),
+      ...(description !== undefined && { description: description || null }),
+      ...(status !== undefined && { status }),
+      ...(priority !== undefined && { priority }),
+      ...(technologies !== undefined && { technologies }),
+      ...(tags !== undefined && { tags: Array.isArray(tags) ? tags : [] }),
+      ...(repositoryUrls !== undefined && { repositoryUrls }),
+      ...(liveUrls !== undefined && { liveUrls }),
+      ...(videoUrls !== undefined && { videoUrls }),
+      ...(startDate !== undefined && { startDate: parseDate(startDate) }),
+      ...(endDate !== undefined && { endDate: parseDate(endDate) }),
+      ...(deadline !== undefined && { deadline: parseDate(deadline) }),
+      ...(budget !== undefined && { budget: budget !== null && budget !== '' && !isNaN(Number(budget)) ? Number(budget) : null }),
+      ...(managerId !== undefined && { managerId: managerId || null }),
+    };
     
-    if (ownerId !== undefined && isAdminOrManager) {
+    if (ownerId && isAdminOrManager) {
       updateData.ownerId = ownerId;
     }
 

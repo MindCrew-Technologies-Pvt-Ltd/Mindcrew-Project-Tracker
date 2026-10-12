@@ -92,18 +92,18 @@ const ProjectEditPage = () => {
   useEffect(() => {
     if (project) {
       reset({
-        name: project.name,
-        clientName: project.clientName,
+        name: project.name || '',
+        clientName: project.clientName || '',
         clientLocation: project.clientLocation || '',
         clientWhatsapp: project.clientWhatsapp || '',
         clientGmail: project.clientGmail || '',
-        description: project.description,
-        startDate: project.startDate?.slice(0, 10),
-        endDate: project.endDate?.slice(0, 10),
+        description: project.description || '',
+        startDate: project.startDate ? project.startDate.slice(0, 10) : '',
+        endDate: project.endDate ? project.endDate.slice(0, 10) : '',
         status: project.status,
         priority: project.priority,
-        technologies: project.technologies,
-        tags: project.tags,
+        technologies: project.technologies || [],
+        tags: project.tags || [],
         ownerId: project.ownerId || '',
         managerId: project.managerId || '',
       });
@@ -134,12 +134,21 @@ const ProjectEditPage = () => {
 
     const payload: CreateProjectPayload = {
       ...data,
+      name: data.name?.trim(),
+      clientName: data.clientName?.trim() || '',
+      clientLocation: data.clientLocation?.trim() || '',
+      clientWhatsapp: data.clientWhatsapp?.trim() || '',
+      clientGmail: data.clientGmail?.trim() || '',
+      description: data.description?.trim() || '',
+      startDate: data.startDate || '',
       // '' clears the end date on the backend (Ongoing project)
-      endDate: ongoing ? '' : data.endDate,
+      endDate: ongoing ? '' : (data.endDate || ''),
       ongoing,
       repositoryUrls: repoUrls.filter(u => u.trim()),
       liveUrls: liveUrls.filter(u => u.trim()),
       videoUrls: videoUrls.filter(u => u.trim()),
+      managerId: data.managerId || '',
+      ownerId: data.ownerId || '',
     };
     const result = await dispatch(updateProjectThunk({ id: project.id, payload }));
     if (!updateProjectThunk.fulfilled.match(result)) return;
@@ -341,7 +350,7 @@ const ProjectEditPage = () => {
                             </MenuItem>
                             {managers.map(m => (
                               <MenuItem key={m.id} value={m.id}>
-                                {m.name} {m.employeeId ? `(${m.employeeId})` : ''}
+                                {m.name}
                               </MenuItem>
                             ))}
                           </Select>

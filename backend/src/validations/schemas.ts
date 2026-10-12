@@ -79,24 +79,24 @@ const HEALTH_VALUES = ['ON_TRACK', 'AT_RISK', 'DELAYED'] as const;
 
 export const createProjectSchema = Joi.object({
   name: Joi.string().min(2).required(),
-  clientName: Joi.string().required(),
-  clientLocation: Joi.string().allow('').optional(),
-  clientWhatsapp: Joi.string().allow('').optional(),
+  clientName: Joi.string().allow('', null).optional(),
+  clientLocation: Joi.string().allow('', null).optional(),
+  clientWhatsapp: Joi.string().allow('', null).optional(),
   clientGmail: Joi.string().email().allow('', null).optional().messages({ 'string.email': 'Must be a valid email' }),
-  description: Joi.string().allow('').optional(),
+  description: Joi.string().allow('', null).optional(),
   status: Joi.string().valid(...STATUS_VALUES).required(),
   priority: Joi.string().valid(...PRIORITY_VALUES).required(),
   technologies: Joi.array().items(Joi.string()).min(1).required().messages({ 'array.min': 'Select at least one technology' }),
-  tags: Joi.array().items(Joi.string()).optional(),
-  repositoryUrls: Joi.array().items(Joi.string().allow('')).optional(),
-  liveUrls: Joi.array().items(Joi.string().allow('')).optional(),
-  videoUrls: Joi.array().items(Joi.string().allow('')).optional(),
+  tags: Joi.array().items(Joi.string()).allow(null).optional(),
+  repositoryUrls: Joi.array().items(Joi.string().allow('', null)).allow(null).optional(),
+  liveUrls: Joi.array().items(Joi.string().allow('', null)).allow(null).optional(),
+  videoUrls: Joi.array().items(Joi.string().allow('', null)).allow(null).optional(),
   startDate: Joi.date().allow(null, '').optional(),
   endDate: Joi.date().allow(null, '').optional(),
   deadline: Joi.date().allow(null, '').optional(),
-  budget: Joi.number().optional(),
-  ongoing: Joi.boolean().optional(),
-  teamMemberIds: Joi.array().items(Joi.string()).optional(),
+  budget: Joi.number().allow(null, '').optional(),
+  ongoing: Joi.boolean().allow(null).optional(),
+  teamMemberIds: Joi.array().items(Joi.string()).allow(null).optional(),
   managerId: Joi.string().allow(null, '').optional(),
   ownerId: Joi.string().allow(null, '').optional(),
 });
@@ -105,7 +105,7 @@ export const createProjectSchema = Joi.object({
 // required fields become optional here.
 export const updateProjectSchema = createProjectSchema.fork(
   ['name', 'clientName', 'status', 'priority', 'technologies', 'startDate'],
-  (s) => s.optional()
+  (s) => s.allow('', null).optional()
 );
 
 // ---- Weekly updates (mirrors weeklyUpdateSchema) ----

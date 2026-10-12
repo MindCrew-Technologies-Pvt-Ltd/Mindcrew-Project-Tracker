@@ -274,7 +274,7 @@ const ProjectCreatePage = () => {
                             </MenuItem>
                             {managers.map(m => (
                               <MenuItem key={m.id} value={m.id}>
-                                {m.name} {m.employeeId ? `(${m.employeeId})` : ''}
+                                {m.name}
                               </MenuItem>
                             ))}
                           </Select>
