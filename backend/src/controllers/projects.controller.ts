@@ -121,8 +121,11 @@ export const updateProject: RequestHandler = async (req, res, next) => {
     }
     const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, ownerId, managerId } = req.body;
 
-    if (name?.toLowerCase() === 'learning') {
+    if (existing.name.toLowerCase() !== 'learning' && name?.toLowerCase() === 'learning') {
       return next(new AppError('Renaming a project to "Learning" is not allowed.', 400));
+    }
+    if (existing.name.toLowerCase() === 'learning' && name && name.toLowerCase() !== 'learning') {
+      return next(new AppError('Renaming the "Learning" project is not allowed.', 400));
     }
 
     const isAdminOrManager = req.user?.role === 'ADMIN' || !!req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'MANAGER');
