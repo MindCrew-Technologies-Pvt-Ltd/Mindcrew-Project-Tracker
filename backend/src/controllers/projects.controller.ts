@@ -68,7 +68,7 @@ export const createProject: RequestHandler = async (req, res, next) => {
   try {
     const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, teamMemberIds, managerId } = req.body;
     
-    if (name?.toLowerCase() === 'learning') {
+    if (name?.trim().toLowerCase() === 'learning') {
       return next(new AppError('Creating a project named "Learning" is not allowed.', 400));
     }
 
@@ -121,10 +121,10 @@ export const updateProject: RequestHandler = async (req, res, next) => {
     }
     const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, ownerId, managerId } = req.body;
 
-    if (existing.name.toLowerCase() !== 'learning' && name?.toLowerCase() === 'learning') {
+    if (existing.name.trim().toLowerCase() !== 'learning' && name?.trim().toLowerCase() === 'learning') {
       return next(new AppError('Renaming a project to "Learning" is not allowed.', 400));
     }
-    if (existing.name.toLowerCase() === 'learning' && name && name.toLowerCase() !== 'learning') {
+    if (existing.name.trim().toLowerCase() === 'learning' && name && name.trim().toLowerCase() !== 'learning') {
       return next(new AppError('Renaming the "Learning" project is not allowed.', 400));
     }
 
