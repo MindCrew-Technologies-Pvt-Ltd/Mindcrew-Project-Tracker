@@ -78,6 +78,8 @@ enum LeaveType {
   WFH
   COMP_OFF
   SHORT_LEAVE
+  COMP_OFF_FULL_DAY
+  COMP_OFF_HALF_DAY
 }
 
 enum LeaveStatus {

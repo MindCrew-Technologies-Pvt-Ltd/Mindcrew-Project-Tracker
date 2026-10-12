@@ -44,9 +44,24 @@ const getTypeColor = (type: LeaveType) => {
     case 'FULL_DAY': return '#f44336'; // Red
     case 'HALF_DAY': return '#ffeb3b'; // Yellow
     case 'WFH': return '#4caf50'; // Green
-    case 'COMP_OFF': return '#9c27b0'; // Purple
+    case 'COMP_OFF':
+    case 'COMP_OFF_FULL_DAY': return '#9c27b0'; // Purple
+    case 'COMP_OFF_HALF_DAY': return '#ba68c8'; // Lighter Purple
     case 'SHORT_LEAVE': return '#ff9800'; // Orange
     default: return '#ccc';
+  }
+};
+
+const formatLeaveType = (type: LeaveType | string) => {
+  switch (type) {
+    case 'FULL_DAY': return 'Full Day Leave';
+    case 'HALF_DAY': return 'Half Day Leave';
+    case 'SHORT_LEAVE': return 'Short Leave';
+    case 'WFH': return 'Work From Home';
+    case 'COMP_OFF': return 'Comp-Off';
+    case 'COMP_OFF_FULL_DAY': return 'Comp-Off (Full Day)';
+    case 'COMP_OFF_HALF_DAY': return 'Comp-Off (Half Day)';
+    default: return String(type).replace(/_/g, ' ');
   }
 };
 
@@ -232,7 +247,7 @@ export default function LeaveManagementPage() {
   const totalHalf = calculateDays('HALF_DAY');
   const totalShort = calculateDays('SHORT_LEAVE');
   const totalWfh = calculateDays('WFH');
-  const totalCompOff = calculateDays('COMP_OFF');
+  const totalCompOff = calculateDays('COMP_OFF') + calculateDays('COMP_OFF_FULL_DAY') + calculateDays('COMP_OFF_HALF_DAY');
 
   // Mini Calendar logic (currentMonth state based)
   const startOfMonth = currentMonth.startOf('month');
@@ -320,7 +335,7 @@ export default function LeaveManagementPage() {
                     .slice(myPage * myRowsPerPage, myPage * myRowsPerPage + myRowsPerPage)
                     .map((req) => (
                     <TableRow key={req.id}>
-                      <TableCell><Chip label={req.type.replace('_', ' ')} size="small" /></TableCell>
+                      <TableCell><Chip label={formatLeaveType(req.type)} size="small" /></TableCell>
                       <TableCell>
                         {dayjs(req.startDate).format('MMM D, YYYY')} 
                         {req.startDate !== req.endDate && ` - ${dayjs(req.endDate).format('MMM D, YYYY')}`}
@@ -408,7 +423,8 @@ export default function LeaveManagementPage() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('HALF_DAY'), borderRadius: '50%', width: 12, height: 12 }}/> Half Day</Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('SHORT_LEAVE'), borderRadius: '50%', width: 12, height: 12 }}/> Short Leave</Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('WFH'), borderRadius: '50%', width: 12, height: 12 }}/> WFH</Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('COMP_OFF'), borderRadius: '50%', width: 12, height: 12 }}/> Comp</Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('COMP_OFF_FULL_DAY'), borderRadius: '50%', width: 12, height: 12 }}/> Comp Full</Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Box sx={{ w: 12, h: 12, bgcolor: getTypeColor('COMP_OFF_HALF_DAY'), borderRadius: '50%', width: 12, height: 12 }}/> Comp Half</Box>
               </Box>
             </Paper>
           </Grid>
@@ -509,7 +525,7 @@ export default function LeaveManagementPage() {
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell><Chip label={req.type.replace('_', ' ')} size="small" /></TableCell>
+                    <TableCell><Chip label={formatLeaveType(req.type)} size="small" /></TableCell>
                     <TableCell>
                       {dayjs(req.startDate).format('MMM D')} - {dayjs(req.endDate).format('MMM D, YYYY')}
                     </TableCell>
@@ -587,7 +603,8 @@ export default function LeaveManagementPage() {
                 <MenuItem value="HALF_DAY">Half Day Leave</MenuItem>
                 <MenuItem value="SHORT_LEAVE">Short Leave</MenuItem>
                 <MenuItem value="WFH">Work From Home</MenuItem>
-                <MenuItem value="COMP_OFF">Comp-Off</MenuItem>
+                <MenuItem value="COMP_OFF_FULL_DAY">Comp-Off (Full Day)</MenuItem>
+                <MenuItem value="COMP_OFF_HALF_DAY">Comp-Off (Half Day)</MenuItem>
               </Select>
             </FormControl>
             <TextField

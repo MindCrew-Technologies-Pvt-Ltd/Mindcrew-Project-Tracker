@@ -51,7 +51,7 @@ export const createLeaveRequest: RequestHandler = async (req, res, next) => {
       select: { name: true, employeeId: true, managerEmployeeIds: true },
     });
 
-    const typeLabel = type === 'FULL_DAY' ? 'Full Day Leave' : type === 'HALF_DAY' ? 'Half Day Leave' : type === 'SHORT_LEAVE' ? 'Short Leave' : type === 'COMP_OFF' ? 'Comp-Off' : 'WFH';
+    const typeLabel = type === 'FULL_DAY' ? 'Full Day Leave' : type === 'HALF_DAY' ? 'Half Day Leave' : type === 'SHORT_LEAVE' ? 'Short Leave' : type === 'COMP_OFF_HALF_DAY' ? 'Comp-Off (Half Day)' : type === 'COMP_OFF_FULL_DAY' || type === 'COMP_OFF' ? 'Comp-Off (Full Day)' : 'WFH';
 
     if (employee) {
       // 1. Notify selected managers
@@ -219,7 +219,7 @@ export const updateLeaveStatus: RequestHandler = async (req, res, next) => {
 
     // Notify the employee that their request was reviewed (in-app + push)
     const emoji = status === 'APPROVED' ? '✅' : '❌';
-    const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'SHORT_LEAVE' ? 'Short Leave' : leave.type === 'COMP_OFF' ? 'Comp-Off' : 'WFH';
+    const typeLabel = leave.type === 'FULL_DAY' ? 'Leave' : leave.type === 'HALF_DAY' ? 'Half Day Leave' : leave.type === 'SHORT_LEAVE' ? 'Short Leave' : leave.type === 'COMP_OFF_HALF_DAY' ? 'Comp-Off (Half Day)' : leave.type === 'COMP_OFF_FULL_DAY' || leave.type === 'COMP_OFF' ? 'Comp-Off (Full Day)' : 'WFH';
     await createNotification({
       userId: leave.userId,
       title: `${emoji} ${typeLabel} ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,

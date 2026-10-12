@@ -151,7 +151,7 @@ export async function generateExcel(
 
       if (leaveForDay) {
         if (leaveForDay.type === 'WFH') status = 'WFH';
-        else if (leaveForDay.type === 'COMP_OFF') status = 'Comp Off';
+        else if (leaveForDay.type === 'COMP_OFF' || leaveForDay.type === 'COMP_OFF_FULL_DAY' || leaveForDay.type === 'COMP_OFF_HALF_DAY') status = 'Comp Off';
         else if (leaveForDay.type === 'FULL_DAY') status = 'A'; 
         else if (leaveForDay.type === 'HALF_DAY') status = 'HD';
         else if (leaveForDay.type === 'SHORT_LEAVE') status = 'SL';
