@@ -65,6 +65,8 @@ export const projectSchema = yup.object({
   priority: yup.string().required('Priority is required'),
   technologies: yup.array().of(yup.string()).min(1, 'Select at least one technology').required(),
   tags: yup.array().of(yup.string()),
+  managerId: yup.string().nullable().optional(),
+  ownerId: yup.string().nullable().optional(),
 });
 
 export const weeklyUpdateSchema = yup.object({

@@ -97,6 +97,8 @@ export const createProjectSchema = Joi.object({
   budget: Joi.number().optional(),
   ongoing: Joi.boolean().optional(),
   teamMemberIds: Joi.array().items(Joi.string()).optional(),
+  managerId: Joi.string().allow(null, '').optional(),
+  ownerId: Joi.string().allow(null, '').optional(),
 });
 
 // Update is a partial: the edit form may submit a subset, so the otherwise

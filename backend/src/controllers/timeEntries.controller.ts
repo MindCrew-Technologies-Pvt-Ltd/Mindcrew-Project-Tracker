@@ -82,17 +82,18 @@ export const getProjectTimeEntries: RequestHandler = async (req, res, next) => {
     const projectId = sp(req.params.projectId);
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, name: true, ownerId: true, teamMembers: { select: { userId: true } } },
+      select: { id: true, name: true, ownerId: true, managerId: true, teamMembers: { select: { userId: true } } },
     });
     if (!project) return next(new AppError('Project not found', 404));
 
     const isAdminOrManager = req.user!.role === 'ADMIN' || !!req.user!.jobRoles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'MANAGER');
     const isOwner = project.ownerId === req.user!.id;
+    const isProjectManager = project.managerId === req.user!.id;
     const isTeamMember = project.teamMembers.some((m) => m.userId === req.user!.id);
     const isLearningProject = project.name.trim().toLowerCase() === 'learning';
 
     let canSeeAll = false;
-    if (isAdminOrManager || isOwner) {
+    if (isAdminOrManager || isOwner || isProjectManager) {
        canSeeAll = true;
     } else if (isTeamMember) {
        canSeeAll = !isLearningProject;

@@ -16,6 +16,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAuth } from '../../hooks/useAuth';
 import { fetchProjectByIdThunk, updateProjectThunk } from '../../store/slices/projectsSlice';
 import projectsService from '../../services/projectsService';
+import usersService from '../../services/usersService';
 import documentsService from '../../services/documentsService';
 import { ProjectDocument } from '../../types/document.types';
 import { projectSchema } from '../../utils/validators';
@@ -33,8 +34,10 @@ const ProjectEditPage = () => {
   const { user, isAdmin } = useAuth();
   const isAdminOrManager = isAdmin || !!user?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER');
   const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+  const [managers, setManagers] = useState<{ id: string; name: string; employeeId?: string }[]>([]);
 
   useEffect(() => {
+    usersService.getManagers().then(r => setManagers(r.data?.data || [])).catch(() => {});
     if (isAdminOrManager) {
       projectsService.getAssignableUsers().then(r => setUsers(r.data?.data || [])).catch(() => {});
     }
@@ -102,6 +105,7 @@ const ProjectEditPage = () => {
         technologies: project.technologies,
         tags: project.tags,
         ownerId: project.ownerId || '',
+        managerId: project.managerId || '',
       });
       setRepoUrls(project.repositoryUrls?.length ? project.repositoryUrls : ['']);
       setLiveUrls(project.liveUrls?.length ? project.liveUrls : ['']);
@@ -318,6 +322,35 @@ const ProjectEditPage = () => {
                         renderInput={(params) => <TextField {...params} label="Technology Stack" placeholder="Select or type to add" error={!!errors.technologies} helperText={errors.technologies ? String(errors.technologies.message) : 'Press Enter to add custom technology'} />}
                       />
                     )} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
+                      <InputLabel>Reporting Manager (Project Manager)</InputLabel>
+                      <Controller
+                        name="managerId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            label="Reporting Manager (Project Manager)"
+                          >
+                            <MenuItem value="">
+                              <em>None (Self / Not Assigned)</em>
+                            </MenuItem>
+                            {managers.map(m => (
+                              <MenuItem key={m.id} value={m.id}>
+                                {m.name} {m.employeeId ? `(${m.employeeId})` : ''}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        Select the manager responsible for reviewing timesheets of this project.
+                      </Typography>
+                    </FormControl>
                   </Grid>
                   {isAdminOrManager && (
                     <Grid item xs={12}>

@@ -36,7 +36,7 @@ const TeamMembersTab = ({ project, canEdit, onChanged }: Props) => {
   }));
 
   // Users not already the owner or an existing member
-  const takenIds = new Set([project.owner?.id, ...members.map((m) => m.userId)].filter(Boolean));
+  const takenIds = new Set([project.owner?.id, project.manager?.id, ...members.map((m) => m.userId)].filter(Boolean));
   const options = users.filter((u) => !takenIds.has(u.id));
 
   const handleAdd = async () => {
@@ -70,6 +70,15 @@ const TeamMembersTab = ({ project, canEdit, onChanged }: Props) => {
             <ListItemText
               primary={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography variant="body1">{project.owner.name}</Typography><Chip label="Owner" size="small" color="primary" /></Box>}
               secondary={project.owner.email}
+            />
+          </ListItem>
+        )}
+        {project.manager && project.manager.id !== project.owner?.id && (
+          <ListItem>
+            <ListItemAvatar><Avatar sx={{ bgcolor: '#4F46E5', color: '#fff' }}>{project.manager.name?.charAt(0).toUpperCase()}</Avatar></ListItemAvatar>
+            <ListItemText
+              primary={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Typography variant="body1">{project.manager.name}</Typography><Chip label="Reporting Manager" size="small" sx={{ bgcolor: '#EEF0FF', color: '#4338CA', fontWeight: 600 }} /></Box>}
+              secondary={project.manager.email}
             />
           </ListItem>
         )}

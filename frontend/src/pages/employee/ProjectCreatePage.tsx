@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -14,6 +14,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { createProjectThunk } from '../../store/slices/projectsSlice';
 import documentsService from '../../services/documentsService';
+import usersService from '../../services/usersService';
 import { projectSchema } from '../../utils/validators';
 import { TECHNOLOGY_OPTIONS, TAG_OPTIONS } from '../../constants/status';
 import PageHeader from '../../components/common/PageHeader';
@@ -25,6 +26,7 @@ const ProjectCreatePage = () => {
   const navigate = useNavigate();
   const { loading, error } = useAppSelector((s) => s.projects);
 
+  const [managers, setManagers] = useState<{ id: string; name: string; employeeId?: string }[]>([]);
   const [repoUrls, setRepoUrls] = useState<string[]>(['']);
   const [liveUrls, setLiveUrls] = useState<string[]>(['']);
   const [videoUrls, setVideoUrls] = useState<string[]>(['']);
@@ -40,8 +42,12 @@ const ProjectCreatePage = () => {
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<CreateProjectPayload>({
     resolver: yupResolver(projectSchema) as any,
-    defaultValues: { status: 'ACTIVE', priority: 'MEDIUM', technologies: [], tags: [] },
+    defaultValues: { status: 'ACTIVE', priority: 'MEDIUM', technologies: [], tags: [], managerId: '' },
   });
+
+  useEffect(() => {
+    usersService.getManagers().then(res => setManagers(res.data?.data || [])).catch(() => {});
+  }, []);
 
   const addUrl = (setter: React.Dispatch<React.SetStateAction<string[]>>) =>
     setter(prev => [...prev, '']);
@@ -67,6 +73,7 @@ const ProjectCreatePage = () => {
 
     const payload: CreateProjectPayload = {
       ...data,
+      managerId: data.managerId || undefined,
       endDate: ongoing ? undefined : data.endDate,
       ongoing,
       repositoryUrls: repoUrls.filter(u => u.trim()),
@@ -251,6 +258,31 @@ const ProjectCreatePage = () => {
                           {(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as ProjectPriority[]).map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
                         </Select>
                       )} />
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
+                      <InputLabel>Reporting Manager (Project Manager)</InputLabel>
+                      <Controller
+                        name="managerId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || ''} label="Reporting Manager (Project Manager)">
+                            <MenuItem value="">
+                              <em>None (Self / Not Assigned)</em>
+                            </MenuItem>
+                            {managers.map(m => (
+                              <MenuItem key={m.id} value={m.id}>
+                                {m.name} {m.employeeId ? `(${m.employeeId})` : ''}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                      <FormHelperText>
+                        Select the manager responsible for reviewing timesheets of this project.
+                      </FormHelperText>
                     </FormControl>
                   </Grid>
 

@@ -174,18 +174,37 @@ export async function assertWeekReviewer(
     }
   }
 
-  const ownedProjectWithTime = await prisma.timeEntry.findFirst({
+  const managedProjectWithTime = await prisma.timeEntry.findFirst({
     where: {
       userId: week.userId,
       isoYear: week.isoYear,
       isoWeek: week.isoWeek,
-      project: { ownerId: user.id },
+      project: {
+        OR: [
+          { managerId: user.id },
+          { managerId: null, ownerId: user.id },
+        ],
+      },
     },
     select: { id: true },
   });
-  if (!ownedProjectWithTime) {
-    throw new AppError('Only an owner of a project in this timesheet, a reporting manager, or an admin can review it', 403);
+  if (!managedProjectWithTime) {
+    throw new AppError('Only the project manager of a project in this timesheet, or an admin can review it', 403);
   }
+}
+
+/** Project ids managed or owned by this user (for manager-scoped queues/reports). */
+export async function managedProjectIds(userId: string): Promise<string[]> {
+  const rows = await prisma.project.findMany({
+    where: {
+      OR: [
+        { managerId: userId },
+        { managerId: null, ownerId: userId },
+      ],
+    },
+    select: { id: true },
+  });
+  return rows.map((r) => r.id);
 }
 
 /** Project ids owned by this user (for owner-scoped queues/reports). */
@@ -194,7 +213,7 @@ export async function ownedProjectIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-/** May the user read another user's time data? (self, admin, or owner of ≥1 project, or reporting manager) */
+/** May the user read another user's time data? (self, admin, or manager of ≥1 project, or reporting manager) */
 export async function canReadUserTime(targetUserId: string, user: AuthUser): Promise<boolean> {
   if (targetUserId === user.id) return true;
   
@@ -220,6 +239,14 @@ export async function canReadUserTime(targetUserId: string, user: AuthUser): Pro
     }
   }
 
-  const owns = await prisma.project.findFirst({ where: { ownerId: user.id }, select: { id: true } });
-  return !!owns;
+  const manages = await prisma.project.findFirst({
+    where: {
+      OR: [
+        { managerId: user.id },
+        { managerId: null, ownerId: user.id },
+      ],
+    },
+    select: { id: true },
+  });
+  return !!manages;
 }

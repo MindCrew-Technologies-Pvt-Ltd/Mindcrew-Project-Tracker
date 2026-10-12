@@ -25,6 +25,8 @@ export interface Project {
   budget?: number;
   ownerId?: string;
   owner?: ProjectOwner;
+  managerId?: string;
+  manager?: ProjectOwner;
   teamMembers: any[];
   repositoryUrls?: string[];
   liveUrls?: string[];
@@ -53,6 +55,7 @@ export interface CreateProjectPayload {
   videoUrls?: string[];
   teamMemberIds?: string[];
   ownerId?: string;
+  managerId?: string;
 }
 
 export interface ProjectFilters {

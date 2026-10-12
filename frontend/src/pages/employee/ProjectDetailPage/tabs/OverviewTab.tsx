@@ -40,6 +40,7 @@ const OverviewTab = ({ project }: Props) => (
             { label: 'Start Date', value: formatDate(project.startDate) },
             { label: 'End Date', value: formatDate(project.endDate || project.deadline) || 'Ongoing' },
             { label: 'Owner', value: project.owner?.name },
+            { label: 'Reporting Manager', value: project.manager?.name },
             { label: 'Created', value: formatDate(project.createdAt) },
           ].map(({ label, value }) => (
             <Box key={label} sx={{ mb: 1.5 }}>

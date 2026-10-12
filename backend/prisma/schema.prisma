@@ -118,6 +118,7 @@ model User {
   updatedAt           DateTime  @updatedAt
 
   ownedProjects     Project[]           @relation("owner")
+  managedProjects   Project[]           @relation("projectManager")
   projectMembers    ProjectMember[]
   weeklyUpdates     WeeklyUpdate[]
   documents         Document[]
@@ -157,10 +158,12 @@ model Project {
   deadline       DateTime?
   budget         Float?
   ownerId        String
+  managerId      String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   owner         User            @relation("owner", fields: [ownerId], references: [id])
+  manager       User?           @relation("projectManager", fields: [managerId], references: [id])
   teamMembers   ProjectMember[]
   weeklyUpdates WeeklyUpdate[]
   documents     Document[]

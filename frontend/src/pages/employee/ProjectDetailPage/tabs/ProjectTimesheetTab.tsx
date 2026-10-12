@@ -42,7 +42,7 @@ const ProjectTimesheetTab = ({ project }: Props) => {
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!data) return null;
 
-  const isAdminOrManager = isAdmin || !!user?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER') || project.ownerId === user?.id;
+  const isAdminOrManager = isAdmin || !!user?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER') || project.ownerId === user?.id || project.managerId === user?.id;
   const isLearningProject = project.name.trim().toLowerCase() === 'learning';
   const showDropdown = isAdminOrManager;
 

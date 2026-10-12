@@ -274,7 +274,7 @@ const ApprovalsPage = () => {
       <Tooltip title="View week" arrow>
         <IconButton size="small" sx={{ color: '#4F46E5' }} onClick={(e) => { e.stopPropagation(); openDrawer(w.id); }}><ViewIcon fontSize="small" /></IconButton>
       </Tooltip>
-      {isManagerOrAdmin && w.user?.id !== user?.id && (
+      {w.user?.id !== user?.id && (
         <>
           <Tooltip title="Approve" arrow>
             <IconButton size="small" sx={{ color: '#15803D' }} onClick={(e) => { e.stopPropagation(); handleApprove(w.id); }}><ApproveIcon fontSize="small" /></IconButton>
@@ -426,7 +426,7 @@ const ApprovalsPage = () => {
             emptyText="No timesheets waiting for review"
             selectable
             isRowSelectable={(w) => w.user?.id !== user?.id}
-            bulkActions={(selectedIds, clearSelection) => isManagerOrAdmin ? (
+            bulkActions={(selectedIds, clearSelection) => (
               <>
                 <Button size="small" color="success" variant="outlined" startIcon={<ApproveIcon fontSize="small" />} onClick={() => handleBulkApprove(selectedIds, clearSelection)}>
                   Approve
@@ -435,7 +435,7 @@ const ApprovalsPage = () => {
                   Reject
                 </Button>
               </>
-            ) : null}
+            )}
             onRowClick={(w) => openDrawer(w.id)}
             rowActions={pendingActions}
             minWidth={960}
@@ -613,12 +613,12 @@ const ApprovalsPage = () => {
               ))}
             </Box>
 
-            {detail.status === 'SUBMITTED' && (drawerReadOnly || !isManagerOrAdmin || detail.userId === user?.id) && (
+            {detail.status === 'SUBMITTED' && (drawerReadOnly || detail.userId === user?.id) && (
               <Box sx={{ px: 3, py: 2, borderTop: '1px solid #E9EBF2' }}>
-                <Alert severity="info" sx={{ py: 0.5 }}>Waiting for the project owner's approval — no action needed from you.</Alert>
+                <Alert severity="info" sx={{ py: 0.5 }}>Waiting for the project manager's approval — no action needed from you.</Alert>
               </Box>
             )}
-            {detail.status === 'SUBMITTED' && !drawerReadOnly && isManagerOrAdmin && detail.userId !== user?.id && (
+            {detail.status === 'SUBMITTED' && !drawerReadOnly && detail.userId !== user?.id && (
               <Box sx={{ px: 3, py: 2, borderTop: '1px solid #E9EBF2', display: 'flex', gap: 1.5 }}>
                 <Button
                   fullWidth variant="contained" color="success" startIcon={<ApproveIcon />}

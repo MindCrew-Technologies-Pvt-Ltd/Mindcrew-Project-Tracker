@@ -103,30 +103,52 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
       currentUser.jobRoles.some(r => r.toUpperCase() === 'ADMIN') ||
       (currentUser.jobRoles.some(r => r.toUpperCase() === 'HR') && currentUser.jobRoles.some(r => r.toUpperCase() === 'MANAGER'));
     
-    let userFilter: Record<string, unknown> = {};
-    if (!isAdmin) {
-      const empId = currentUser.employeeId;
-      const empIdNum = empId?.replace('MCT-', '');
-      const empIdFull = empIdNum ? `MCT-${empIdNum}` : undefined;
+    let where: Record<string, unknown> = { status };
+    let managedProjectIds: string[] = [];
 
-      const directReports = empId ? await prisma.user.findMany({
+    if (!isAdmin) {
+      const managedProjects = await prisma.project.findMany({
         where: {
           OR: [
-            { managerEmployeeIds: { has: empId } },
-            ...(empIdNum ? [{ managerEmployeeIds: { has: empIdNum } }] : []),
-            ...(empIdFull ? [{ managerEmployeeIds: { has: empIdFull } }] : [])
-          ]
+            { managerId: currentUser.id },
+            { managerId: null, ownerId: currentUser.id },
+          ],
         },
-        select: { id: true }
-      }) : [];
-      const reportIds = directReports.map(u => u.id).filter(id => id !== req.user!.id);
+        select: { id: true },
+      });
+      managedProjectIds = managedProjects.map(p => p.id);
 
-      // They can see their own timesheets and timesheets of direct reports.
-      const allowedUserIds = Array.from(new Set([req.user!.id, ...reportIds]));
-      
-      userFilter = { userId: { in: allowedUserIds } };
+      if (managedProjectIds.length === 0) {
+        return paginated(res, [], 0, page, pageSize);
+      }
+
+      const matchingWeeks = await prisma.timeEntry.findMany({
+        where: {
+          projectId: { in: managedProjectIds },
+          userId: { not: currentUser.id },
+        },
+        select: {
+          userId: true,
+          isoYear: true,
+          isoWeek: true,
+        },
+        distinct: ['userId', 'isoYear', 'isoWeek'],
+      });
+
+      if (matchingWeeks.length === 0) {
+        return paginated(res, [], 0, page, pageSize);
+      }
+
+      where = {
+        status,
+        OR: matchingWeeks.map(w => ({
+          userId: w.userId,
+          isoYear: w.isoYear,
+          isoWeek: w.isoWeek,
+        })),
+      };
     }
-    const where = { status, ...userFilter };
+
     const [items, total] = await Promise.all([
       prisma.timesheetWeek.findMany({
         where, skip, take,
@@ -143,13 +165,19 @@ export const pendingWeeks: RequestHandler = async (req, res, next) => {
     // Attach per-week project chips + billable split for the queue table.
     const enriched = await Promise.all(items.map(async (w) => {
       const entries = await prisma.timeEntry.findMany({
-        where: { userId: w.userId, isoYear: w.isoYear, isoWeek: w.isoWeek },
+        where: {
+          userId: w.userId,
+          isoYear: w.isoYear,
+          isoWeek: w.isoWeek,
+          ...(isAdmin ? {} : { projectId: { in: managedProjectIds } }),
+        },
         include: { project: { select: { id: true, name: true } } },
       });
       const billableMinutes = entries.filter((e) => e.billable).reduce((s, e) => s + e.minutes, 0);
+      const totalMinutes = isAdmin ? w.totalMinutes : entries.reduce((s, e) => s + e.minutes, 0);
       const projects = [...new Map(entries.map((e) => [e.project.id, e.project])).values()];
       const managerNames = (w.user.managerEmployeeIds || []).map(id => managerMap.get(id)).filter(Boolean).join(', ');
-      return { ...w, user: { ...w.user, managerNames }, entryCount: entries.length, billableMinutes, projects, label: weekLabel(w.isoYear, w.isoWeek) };
+      return { ...w, totalMinutes, user: { ...w.user, managerNames }, entryCount: entries.length, billableMinutes, projects, label: weekLabel(w.isoYear, w.isoWeek) };
     }));
     paginated(res, enriched, total, page, pageSize);
   } catch (err) { next(err); }
@@ -164,8 +192,33 @@ export const getWeekDetail: RequestHandler = async (req, res, next) => {
     });
     if (!week) return next(new AppError('Timesheet not found', 404));
     if (week.userId !== req.user!.id) await assertWeekReviewer(week, req.user!);
+
+    const fullUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    const isAdmin = 
+      fullUser?.role === 'ADMIN' || 
+      fullUser?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN') ||
+      ((fullUser?.jobRoles?.some(r => r.toUpperCase() === 'HR') ?? false) && 
+       (fullUser?.jobRoles?.some(r => r.toUpperCase() === 'MANAGER') ?? false));
+
+    const isSelf = week.userId === req.user!.id;
+    let projectFilter: Record<string, unknown> = {};
+
+    if (!isAdmin && !isSelf) {
+      const managedProjects = await prisma.project.findMany({
+        where: {
+          OR: [
+            { managerId: req.user!.id },
+            { managerId: null, ownerId: req.user!.id },
+          ],
+        },
+        select: { id: true },
+      });
+      const managedProjectIds = managedProjects.map(p => p.id);
+      projectFilter = { projectId: { in: managedProjectIds } };
+    }
+
     const entries = await prisma.timeEntry.findMany({
-      where: { userId: week.userId, isoYear: week.isoYear, isoWeek: week.isoWeek },
+      where: { userId: week.userId, isoYear: week.isoYear, isoWeek: week.isoWeek, ...projectFilter },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       include: { project: { select: { id: true, name: true } } },
     });

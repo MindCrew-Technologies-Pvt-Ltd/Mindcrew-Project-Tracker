@@ -31,12 +31,12 @@ export const getProjects: RequestHandler = async (req, res, next) => {
     if (startDate) andClauses.push({ startDate: { gte: new Date(startDate) } });
     if (endDate) andClauses.push({ endDate: { lte: new Date(endDate) } });
     // Everyone may see every project (per SRS). `scope=mine` narrows to projects
-    // the user owns or is a team member of (used by the dashboard and "My Projects").
-    if (scope === 'mine') andClauses.push({ OR: [{ ownerId: req.user!.id }, { teamMembers: { some: { userId: req.user!.id } } }] });
+    // the user owns, manages, or is a team member of (used by the dashboard and "My Projects").
+    if (scope === 'mine') andClauses.push({ OR: [{ ownerId: req.user!.id }, { managerId: req.user!.id }, { teamMembers: { some: { userId: req.user!.id } } }] });
 
     const where: Prisma.ProjectWhereInput = andClauses.length ? { AND: andClauses } : {};
     const [items, total] = await Promise.all([
-      prisma.project.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, include: { owner: { select: { id: true, name: true, email: true } }, _count: { select: { teamMembers: true, weeklyUpdates: true } } } }),
+      prisma.project.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, include: { owner: { select: { id: true, name: true, email: true } }, manager: { select: { id: true, name: true, email: true } }, _count: { select: { teamMembers: true, weeklyUpdates: true } } } }),
       prisma.project.count({ where }),
     ]);
     paginated(res, items, total, page, pageSize);
@@ -48,7 +48,7 @@ export const getProject: RequestHandler = async (req, res, next) => {
     const id = sp(req.params.id);
     const project = await prisma.project.findUnique({
       where: { id },
-      include: { owner: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } }, weeklyUpdates: { orderBy: { createdAt: 'desc' }, take: 1 }, _count: { select: { documents: true, editRequests: true } } },
+      include: { owner: { select: { id: true, name: true, email: true } }, manager: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } }, weeklyUpdates: { orderBy: { createdAt: 'desc' }, take: 1 }, _count: { select: { documents: true, editRequests: true } } },
     });
     if (!project) return next(new AppError('Project not found', 404));
 
@@ -60,7 +60,7 @@ export const getProject: RequestHandler = async (req, res, next) => {
 
 export const createProject: RequestHandler = async (req, res, next) => {
   try {
-    const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, teamMemberIds } = req.body;
+    const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, teamMemberIds, managerId } = req.body;
     
     if (name?.toLowerCase() === 'learning') {
       return next(new AppError('Creating a project named "Learning" is not allowed.', 400));
@@ -71,8 +71,8 @@ export const createProject: RequestHandler = async (req, res, next) => {
     const duplicate = await prisma.project.findFirst({ where: { ownerId: req.user!.id, name: { equals: name, mode: 'insensitive' } }, select: { id: true } });
     if (duplicate) { error(res, `You already have a project named "${name}"`, 409); return; }
     const project = await prisma.project.create({
-      data: { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies: technologies ?? [], tags: tags ?? [], repositoryUrls: repositoryUrls ?? [], liveUrls: liveUrls ?? [], videoUrls: videoUrls ?? [], startDate: startDate ? new Date(startDate) : undefined, endDate: endDate ? new Date(endDate) : undefined, deadline: deadline ? new Date(deadline) : undefined, budget, ownerId: req.user!.id, teamMembers: Array.isArray(teamMemberIds) && teamMemberIds.length ? { create: teamMemberIds.map((uid: string) => ({ userId: uid })) } : undefined },
-      include: { owner: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } } },
+      data: { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies: technologies ?? [], tags: tags ?? [], repositoryUrls: repositoryUrls ?? [], liveUrls: liveUrls ?? [], videoUrls: videoUrls ?? [], startDate: startDate ? new Date(startDate) : undefined, endDate: endDate ? new Date(endDate) : undefined, deadline: deadline ? new Date(deadline) : undefined, budget, ownerId: req.user!.id, managerId: managerId || null, teamMembers: Array.isArray(teamMemberIds) && teamMemberIds.length ? { create: teamMemberIds.map((uid: string) => ({ userId: uid })) } : undefined },
+      include: { owner: { select: { id: true, name: true, email: true } }, manager: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } } },
     });
     await logActivity({ userId: req.user!.id, action: 'CREATE', module: 'PROJECT', description: `Created project "${project.name}"` });
     success(res, project, 'Project created', 201);
@@ -86,12 +86,13 @@ export const updateProject: RequestHandler = async (req, res, next) => {
     if (!existing) return next(new AppError('Project not found', 404));
     const isAdmin = req.user?.role === 'ADMIN' || req.user?.jobRoles?.includes('Admin');
     const isOwner = existing.ownerId === req.user!.id;
-    if (!isAdmin && !isOwner) {
+    const isProjectManager = existing.managerId === req.user!.id;
+    if (!isAdmin && !isOwner && !isProjectManager) {
       // An approved edit request grants permanent edit access (no expiry).
       const approved = await prisma.editRequest.findFirst({ where: { projectId: id, requestedById: req.user!.id, status: 'APPROVED' } });
       if (!approved) return next(new AppError('No permission to update this project', 403));
     }
-    const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, ownerId } = req.body;
+    const { name, clientName, clientLocation, clientWhatsapp, clientGmail, description, status, priority, technologies, tags, repositoryUrls, liveUrls, videoUrls, startDate, endDate, deadline, budget, ownerId, managerId } = req.body;
 
     if (name?.toLowerCase() === 'learning') {
       return next(new AppError('Renaming a project to "Learning" is not allowed.', 400));
@@ -99,7 +100,7 @@ export const updateProject: RequestHandler = async (req, res, next) => {
 
     const isAdminOrManager = req.user?.role === 'ADMIN' || !!req.user?.jobRoles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'MANAGER');
     
-    const updateData: any = { ...(name !== undefined && { name }), ...(clientName !== undefined && { clientName }), ...(clientLocation !== undefined && { clientLocation }), ...(clientWhatsapp !== undefined && { clientWhatsapp }), ...(clientGmail !== undefined && { clientGmail }), ...(description !== undefined && { description }), ...(status !== undefined && { status }), ...(priority !== undefined && { priority }), ...(technologies !== undefined && { technologies }), ...(tags !== undefined && { tags }), ...(repositoryUrls !== undefined && { repositoryUrls }), ...(liveUrls !== undefined && { liveUrls }), ...(videoUrls !== undefined && { videoUrls }), ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }), ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }), ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }), ...(budget !== undefined && { budget }) };
+    const updateData: any = { ...(name !== undefined && { name }), ...(clientName !== undefined && { clientName }), ...(clientLocation !== undefined && { clientLocation }), ...(clientWhatsapp !== undefined && { clientWhatsapp }), ...(clientGmail !== undefined && { clientGmail }), ...(description !== undefined && { description }), ...(status !== undefined && { status }), ...(priority !== undefined && { priority }), ...(technologies !== undefined && { technologies }), ...(tags !== undefined && { tags }), ...(repositoryUrls !== undefined && { repositoryUrls }), ...(liveUrls !== undefined && { liveUrls }), ...(videoUrls !== undefined && { videoUrls }), ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }), ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }), ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }), ...(budget !== undefined && { budget }), ...(managerId !== undefined && { managerId: managerId || null }) };
     
     if (ownerId !== undefined && isAdminOrManager) {
       updateData.ownerId = ownerId;
@@ -108,7 +109,7 @@ export const updateProject: RequestHandler = async (req, res, next) => {
     const updated = await prisma.project.update({
       where: { id },
       data: updateData,
-      include: { owner: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } } },
+      include: { owner: { select: { id: true, name: true, email: true } }, manager: { select: { id: true, name: true, email: true } }, teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } } },
     });
     await logActivity({ userId: req.user!.id, action: 'UPDATE', module: 'PROJECT', description: `Updated project "${updated.name}"` });
     success(res, updated);
