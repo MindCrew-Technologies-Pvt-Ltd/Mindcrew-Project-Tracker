@@ -177,7 +177,7 @@ const TimeEntryDialog = ({ open, entry, defaultDate, defaultProjectId, dateLocke
           </Grid>
           <Grid item xs={12}>
             <TextField
-              label="Description (optional)" fullWidth multiline rows={2}
+              label="Description (optional)" fullWidth multiline rows={5}
               {...register('description')}
             />
           </Grid>
