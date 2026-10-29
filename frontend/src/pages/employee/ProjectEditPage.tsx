@@ -125,13 +125,12 @@ const ProjectEditPage = () => {
     setter(prev => prev.filter((_, i) => i !== index));
 
   const onSubmit = async (data: CreateProjectPayload) => {
-    // Mandatory images: logo (existing or new) and ≥1 screenshot after removals.
+    // Logo is optional; at least one screenshot is required after removals.
     const keptScreenshots = existingScreenshots.filter(d => !removedScreenshotIds.includes(d.id));
     const imgErrs: { logo?: string; screenshot?: string } = {};
-    if (!existingLogo && !logoFile) imgErrs.logo = 'Project logo is required';
     if (keptScreenshots.length + screenshotFiles.length === 0) imgErrs.screenshot = 'At least one screenshot is required';
     setImageErrors(imgErrs);
-    if (imgErrs.logo || imgErrs.screenshot) return;
+    if (imgErrs.screenshot) return;
 
     const payload: CreateProjectPayload = {
       ...data,
@@ -203,7 +202,7 @@ const ProjectEditPage = () => {
 
   const LogoPicker = () => (
     <Box>
-      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>Project Logo *</Typography>
+      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>Project Logo (optional)</Typography>
       <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
         {logoFile
           ? <Thumb src={URL.createObjectURL(logoFile)} name={logoFile.name} onRemove={() => setLogoFile(null)} />
@@ -400,7 +399,7 @@ const ProjectEditPage = () => {
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>Project Images</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                  Both are required — they live in the project's Documents tab.
+                  Logo is optional. At least one screenshot is required — images are saved in the project's Documents tab.
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>

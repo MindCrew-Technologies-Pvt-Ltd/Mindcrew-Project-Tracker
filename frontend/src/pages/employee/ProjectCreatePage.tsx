@@ -63,12 +63,11 @@ const ProjectCreatePage = () => {
 
   const onSubmit = async (data: CreateProjectPayload) => {
     if (submitting) return;
-    // Logo and at least one screenshot are mandatory (they land in the Documents tab).
+    // Logo is optional; at least one screenshot is required (they land in the Documents tab).
     const imgErrs: { logo?: string; screenshot?: string } = {};
-    if (!logoFile) imgErrs.logo = 'Project logo is required';
     if (screenshotFiles.length === 0) imgErrs.screenshot = 'At least one screenshot is required';
     setImageErrors(imgErrs);
-    if (imgErrs.logo || imgErrs.screenshot) return;
+    if (imgErrs.screenshot) return;
     setSubmitting(true);
 
     const payload: CreateProjectPayload = {
@@ -84,17 +83,18 @@ const ProjectCreatePage = () => {
     if (!createProjectThunk.fulfilled.match(result)) { setSubmitting(false); return; }
     {
       const projectId = result.payload.id;
-      // Attach logo + screenshot as project documents so they show in the Documents tab.
+      // Attach logo (if provided) + screenshots as project documents so they show in the Documents tab.
       const makeForm = (file: File, category: string) => {
         const fd = new FormData();
         fd.append('file', file);
         fd.append('category', category);
         return fd;
       };
-      const uploads = await Promise.allSettled([
-        documentsService.uploadDocument(projectId, makeForm(logoFile!, 'LOGO')),
+      const uploadItems = [
+        ...(logoFile ? [documentsService.uploadDocument(projectId, makeForm(logoFile, 'LOGO'))] : []),
         ...screenshotFiles.map(f => documentsService.uploadDocument(projectId, makeForm(f, 'SCREENSHOTS'))),
-      ]);
+      ];
+      const uploads = await Promise.allSettled(uploadItems);
       if (uploads.some(u => u.status === 'rejected')) {
         setUploadWarning('The project was created, but some images failed to upload. You can add them from the Documents tab.');
         setTimeout(() => navigate(ROUTES.PROJECT_DETAIL(projectId)), 2500);
@@ -366,11 +366,11 @@ const ProjectCreatePage = () => {
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>Project Images</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                  Both are required — they are saved to the project's Documents tab.
+                  Logo is optional. At least one screenshot is required — they are saved to the project's Documents tab.
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <ImagePicker label="Project Logo" file={logoFile} onPick={(f) => { setLogoFile(f); setImageErrors(prev => ({ ...prev, logo: undefined })); }} error={imageErrors.logo} />
+                    <ImagePicker label="Project Logo (optional)" file={logoFile} onPick={(f) => { setLogoFile(f); setImageErrors(prev => ({ ...prev, logo: undefined })); }} error={imageErrors.logo} />
                   </Grid>
                   <Grid item xs={12}>
                     <ScreenshotsPicker
