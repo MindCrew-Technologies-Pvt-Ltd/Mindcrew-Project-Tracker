@@ -63,11 +63,8 @@ const ProjectCreatePage = () => {
 
   const onSubmit = async (data: CreateProjectPayload) => {
     if (submitting) return;
-    // Logo is optional; at least one screenshot is required (they land in the Documents tab).
-    const imgErrs: { logo?: string; screenshot?: string } = {};
-    if (screenshotFiles.length === 0) imgErrs.screenshot = 'At least one screenshot is required';
-    setImageErrors(imgErrs);
-    if (imgErrs.screenshot) return;
+    // Both logo and screenshot are optional (they land in the Documents tab).
+    setImageErrors({});
     setSubmitting(true);
 
     const payload: CreateProjectPayload = {
@@ -106,7 +103,7 @@ const ProjectCreatePage = () => {
 
   const ScreenshotsPicker = ({ files, onAdd, onRemove, error: pickError }: { files: File[]; onAdd: (fs: File[]) => void; onRemove: (i: number) => void; error?: string }) => (
     <Box>
-      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>Project Screenshots * <Typography component="span" variant="caption" color="text.secondary">(one or more)</Typography></Typography>
+      <Typography variant="body2" fontWeight={500} color="text.secondary" mb={1}>Project Screenshots (optional)</Typography>
       {files.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
           {files.map((f, i) => (
@@ -366,7 +363,7 @@ const ProjectCreatePage = () => {
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>Project Images</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                  Logo is optional. At least one screenshot is required — they are saved to the project's Documents tab.
+                  Both logo and screenshots are optional — they are saved to the project's Documents tab.
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
